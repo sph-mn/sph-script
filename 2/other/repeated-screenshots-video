@@ -1,5 +1,5 @@
 #!/bin/sh
-# tracking-screenshots-video :: path-directory [skip-resize?]
+# repeated-screenshots-video :: path-directory [skip-resize?]
 # creates a video from a directory filled with png files.
 # if skip-resize? is "true", then it is assumed that the resize-pass has already run and resized pictures are available in the $source/edit directory.
 #   this speeds up the compilation process significantly
@@ -13,7 +13,7 @@ source=$1
 skip_resize=$2
 
 # prepare target directory
-target=$HOME/temp/tracking-screenshots.$(basename $source)
+target=$HOME/temp/repeated-screenshots.$(basename $source)
 if [ -e $target ]
 then
   echo file exists
