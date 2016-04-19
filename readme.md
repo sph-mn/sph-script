@@ -1,7 +1,5 @@
 see [sph-script](http://sph.mn/content/1467)
 
-list of included scripts:
-
 ```
 1
 ├── filesystem
