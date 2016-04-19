@@ -1,0 +1,14 @@
+#!/usr/bin/guile
+!#
+
+; copy all tracks from an audio disc as separate files to the current directory, then eject the disc and convert all files to flac
+
+(import (sph))
+
+(define* (audio-disc->flac-files #:optional (target-directory (getenv "PWD")))
+  (if (not (equal? (getenv "PWD") target-directory))
+    (begin (if (not (file-exists? target-directory)) (mkdir target-directory))
+      (chdir target-directory)))
+  (system "cdparanoia -B && eject && flac --delete-input-file --best *wav"))
+
+(apply audio-disc->flac-files (tail (command-line)))

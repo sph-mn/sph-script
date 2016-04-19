@@ -1,0 +1,29 @@
+#!/usr/bin/guile
+!#
+(import
+  (rnrs sorting)
+  (sph list)
+  (sph)
+  (sph string)
+  (sph filesystem)
+  (sph cli-old))
+
+(define config.exec (cli-init))
+(define keyless-args (assoc-ref config.exec (q ())))
+
+(define (name-sort paths)
+  (each
+    (l (path)
+      (let*
+        ( (file-name (basename path))
+          (new-name
+            (string-join
+              (delete-duplicates-sorted
+                (list-sort string< (string-split file-name #\.)))
+              ".")))
+        (if (not (string=? new-name file-name))
+          (let (new-path (string-append (dirname path) "/" new-name))
+            (rename-file path (get-unique-target-path new-path))))))
+    paths))
+
+(name-sort keyless-args)

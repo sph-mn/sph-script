@@ -1,0 +1,31 @@
+#!/usr/bin/guile
+!#
+
+;set-permissions :: octal-value path ...
+;ensures that the execute bit is set for directories with non-zero permissions.
+(import (sph))
+
+(define (add-execute-bit a)
+  (let* ((a (if (= 0 (logand a 6)) a (logior a 1))) (a (if (= 0 (logand a 48)) a (logior a 8))))
+    (if (= 0 (logand a 384)) a (logior a 64))))
+
+(define (string->permission-values value) "string -> (list integer integer)"
+  (let (value (string->number value 8)) (list value (add-execute-bit value))))
+
+(define (set-permissions-cli value . paths)
+  (let*
+    ( (paths (if (null? paths) (list (getcwd)) paths))
+      (stat-info->permission-value
+        (apply (l (f d) (l (stat-info) (if (eqv? (q directory) (stat:type stat-info)) d f)))
+          (string->permission-values value)))
+      (set
+        (l (e)
+          (false-if-exception
+            (let (stat-info (stat e))
+              (if (member (stat:type stat-info) (ql regular directory))
+                (let* ((permission-value (stat-info->permission-value stat-info)))
+                  (if (not (eqv? (stat:perms stat-info) permission-value))
+                    (chmod e permission-value)))))))))
+    (each set paths)))
+
+(apply set-permissions-cli (tail (program-arguments)))

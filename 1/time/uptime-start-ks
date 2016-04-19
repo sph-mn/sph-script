@@ -1,0 +1,11 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common))
+
+(let
+  ( (day-seconds (seconds->day-seconds (current-time)))
+    (uptime-seconds
+      (string->number (first (string-split (shell-eval->string "cat /proc/uptime") #\space)))))
+  (display (simple-format-number (inexact->exact (- day-seconds uptime-seconds)) 3 2))
+  (display "\n"))

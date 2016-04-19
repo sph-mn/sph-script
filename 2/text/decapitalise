@@ -1,0 +1,7 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common) (ice-9 rdelim) (guile))
+
+(rw-port->port (l (port) (read-delimited " " port (q concat)))
+  (l (a port) (display (string-downcase-first a) port)) (current-input-port) (current-output-port))

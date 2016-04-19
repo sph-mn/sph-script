@@ -1,0 +1,6 @@
+#!/usr/bin/guile
+!#
+;reverses the order of words each other line, so lines can be read ltr and rtl alternatingly
+
+(import (sph) (sph two))
+(port-each-line-alternate-direction (current-input-port) (l (e) (display e)))

@@ -1,0 +1,6 @@
+#!/bin/sh
+
+b=$(basename "$2")
+d=$(dirname "$2")
+
+mv "$2" "$d/$1$b"

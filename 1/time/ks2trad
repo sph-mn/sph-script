@@ -1,0 +1,14 @@
+#!/usr/bin/guile
+!#
+
+;displays given day kiloseconds converted to hh:mm:ss time notation
+;ks2trad :: number
+;example: ks2trad 53.4 -> 14:50:00
+
+(import (sph common))
+(define (pad-zeros-2 a) (pad-with-zeros a 2))
+
+(let (ks (string->number (first (tail (program-arguments)))))
+  (apply simple-format #t
+    "~A:~A:~A\n"
+    (map (compose pad-zeros-2 number->string) (seconds->hours-minutes-seconds (* 1000 ks)))))

@@ -1,0 +1,29 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common) (sph lang scm-format))
+
+(define (scm-suffix-file-path arg)
+  (if (string-suffix? ".scm" arg) arg
+    (if (file-exists? arg) arg
+      (let (arg-with-suffix (string-append arg ".scm"))
+        (if (file-exists? arg-with-suffix) arg-with-suffix arg)))))
+
+(let*
+  ( (options ((cli-create #:options (q ((in-place #:names #\i) ((source-path ...)))))))
+    (source-path (alist-ref options (q source-path))))
+  (if source-path
+    (each
+      (l (file-path)
+        (let (file-path (scm-suffix-file-path file-path))
+          ( (if (assoc-ref options (q in-place))
+              (l (res)
+                (if (not (string-null? res))
+                  (begin
+                    (copy-file file-path
+                      (get-unique-target-path (string-append "/tmp/" (basename file-path))))
+                    (call-with-output-file file-path (l (file) (display res file))))))
+              display)
+            (call-with-input-file file-path scm-format-port))))
+      source-path)
+    (display (scm-format-port (current-input-port)))))

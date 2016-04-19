@@ -1,0 +1,11 @@
+#!/bin/sh
+# run "git status" in all directories in the current directory
+
+t=$PWD
+for k in *
+do
+  echo
+  echo "-- $k --"
+  cd "$k" && git status
+  cd $t
+done

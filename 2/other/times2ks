@@ -1,0 +1,15 @@
+#!/usr/bin/guile
+!#
+
+;converts all iso time hh:[mm:ss] patterns in string read from current input port to day kiloseconds.
+
+(import (sph common) (sph one) (sph process) (ice-9 regex))
+(define time-pattern "[0-9]{1,2}(:[0-9]{1,2}){1,2}")
+
+(display
+  (regexp-substitute/global #f time-pattern
+    (port->string (current-input-port)) (q pre)
+    (l (match)
+      (string-trim-right
+        (shell-eval->string (string-append "trad2ks " (match:substring match)))))
+    (q post)))

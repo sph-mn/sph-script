@@ -1,0 +1,8 @@
+#!/usr/bin/guile
+!#
+
+(import (sph) (sph cli) (sph read-write) (rnrs io ports))
+
+(let (options ((cli-create #:help "prints input data in binary representation")))
+  (rw-port->port get-u8 (l (e port) (display (number->string e 2) port) (display " " port))
+    (current-input-port) (current-output-port)))

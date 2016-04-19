@@ -1,0 +1,44 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common) (sxml simple) (sph lang plcss))
+(define command-line-interface (cli-create #:options (q (((path-source path-target ...))))))
+
+(define default-style
+  (css
+    ("img" width "100%")
+    (".noresize img" width auto)
+    ("pre" background-color "#ddd" padding "2px")
+    ("h1, h2, h3" font-weight normal)
+    ((".remark-code, .remark-inline-code, body, h1, h2, h3") font-family monospace)
+    ("h2" font-size "27px !important") ("h3" font-size "22px !important")))
+
+(define* (layout #:optional (content "") (title "") (style default-style))
+  (qq
+    (html (head (title (unquote title)) (meta (@ (charset "utf-8"))) (style (unquote style)))
+      (body
+        (textarea (@ (id source)) "class: center, middle\n"
+          (unquote content) "\n---\nend of presentation.\n")
+        (script (@ (src "https://gnab.github.io/remark/downloads/remark-latest.min.js")) "")
+        (script "var slideshow = remark.create();")))))
+
+(define (append-suffix-html a) (string-append a ".html"))
+
+(define (create-target-path path-source-file path-target)
+  (if path-target
+    (if (is-directory? path-target)
+      (append-suffix-html (path-append path-target (basename path-source-file))) path-target)
+    (append-suffix-html path-source-file)))
+
+(define (create-presentation)
+  (let (config (command-line-interface))
+    (each
+      (let (path-target (first-or-false (alist-quoted-ref config path-target (list))))
+        (l (e)
+          (let (path (remove-filename-extension e))
+            (call-with-output-file (create-target-path path path-target)
+              (l (port) (display "<!doctype html>" port)
+                (sxml->xml (layout (file->string e) (basename path)) port))))))
+      (pass-if (alist-quoted-ref config path-source) list (list)))))
+
+(create-presentation)

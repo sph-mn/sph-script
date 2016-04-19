@@ -1,0 +1,54 @@
+#!/usr/bin/guile
+!#
+
+; converts an indented-tree to the freemind .mm format
+
+(import (sph) (only (sph tree) tree-map-lists denoted-tree->prefix-tree)
+  (sph lang indent-syntax) (only (sxml simple) sxml->xml)
+  (only (srfi srfi-1) remove) (only (sph list) list-sort-with-accessor)
+  (rnrs sorting) (only (sph list) map-with-index))
+
+(define (string->node arg . content)
+  (if (string? arg)
+    (let (arg (string-trim-both arg))
+      (if (string-null? arg) arg
+        (let (attributes (qq (@ (TEXT (unquote arg)))))
+          (qq
+            (node
+              (unquote
+                (if (null? content) attributes (append attributes (list (list (q FOLDED) "true")))))
+              (unquote-splicing content))))))
+    arg))
+
+(define (port->nodes-sxml arg)
+  (map string->node
+    (tree-map-lists (l (ele) (apply string->node (first ele) (map string->node (tail ele))))
+      (denoted-tree->prefix-tree (read-space-indent-tree-string->denoted-tree arg)))))
+
+(define (sort+position-nodes arg)
+  (let*
+    ( (nodes
+        (list-sort-with-accessor string<?
+          (l (ele) (first (tail (first (tail (first (tail ele))))))) arg))
+      (nodes-half-len (ceiling (/ (length nodes) 2))))
+    (map-with-index
+      (l (index ele)
+        (if (list? ele)
+          (pairs (first ele)
+            (append (first (tail ele))
+              (list (list (q POSITION) (if (< index nodes-half-len) (q left) (q right)))))
+            (tail (tail ele)))
+          ele))
+      nodes)))
+
+(define (port->freemind-port arg port)
+  (sxml->xml
+    (qq
+      (map (@ (version "1.0.0"))
+        (node (@ (TEXT "main")) (unquote-splicing (sort+position-nodes (port->nodes-sxml arg))))))
+    port))
+
+(define (port->freemind-string arg)
+  (call-with-output-string (l (port) (port->freemind-port arg port))))
+
+(port->freemind-port (current-input-port) (current-output-port))

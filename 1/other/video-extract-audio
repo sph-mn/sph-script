@@ -1,0 +1,51 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common) (sph lang indent-syntax) (sph cli) (json parser))
+
+(define (guile-hash-table->alist a)
+  (hash-map->list
+    (l (key value)
+      (pair key
+        (cond ((hash-table? value) (guile-hash-table->alist value))
+          ((list? value) (map guile-hash-table->alist value))
+          ((vector? value) (vector-map guile-hash-table->alist value)) (else value))))
+    a))
+
+(define-as codec-name->extension-ht hashtable "vorbis" "ogg")
+(define (codec-name->extension a) (hashtable-ref codec-name->extension-ht a a))
+
+(define (ffprobe-audio-codec path)
+  (false-if-exception
+    (let*
+      ( (json
+          (json-string->scm
+            (execute->string "ffprobe" "-v"
+              "quiet" "-print_format" "json" "-show_streams" "-select_streams" "a" path)))
+        (codec-names
+          (map (l (e) (alist-ref e "codec_name"))
+            (alist-ref (guile-hash-table->alist json) "streams"))))
+      (if (null? codec-names) codec-names (first codec-names)))))
+
+(define (ffmpeg-extract-audio path-source)
+  (and-let*
+    ( (audio-codec (codec-name->extension (ffprobe-audio-codec path-source)))
+      (path-destination (string-append path-source "." audio-codec)))
+    (execute "ffmpeg" "-i" path-source "-c" "copy" "-map" "0:a" path-destination)))
+
+(define (run)
+  (let*
+    ( (description
+        "extract audio streams from video files, by default without quality loss\n  filenames will be \"{source-path}.{audio-filename-extension}\"")
+      (dependencies (q ("sph-lib" "guile-json" "ffmpeg" "ffprobe")))
+      (about
+        (qq
+          ( ("description" (unquote description))
+            ("depends on" (unquote (string-join dependencies " ")))
+            ("maintainer and copyright" "sph@posteo.eu | http://sph.mn") ("license" "gpl3+"))))
+      (options
+        ( (cli-create #:description description
+            #:about (prefix-tree->indent-tree-string about) #:options (ql ((source-path ...)))))))
+    (map ffmpeg-extract-audio (alist-ref options (q source-path) (list)))))
+
+(run)

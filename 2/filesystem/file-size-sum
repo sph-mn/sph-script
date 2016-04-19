@@ -1,0 +1,11 @@
+#!/usr/bin/guile
+!#
+
+;displays the sum of the number of bits of content of files given as a newline separated string on standard-input
+(import (sph) (sph stream) (srfi srfi-41))
+
+(display
+  (stream-fold (l (r e) (catch #t (l () (+ (* 8 (stat:size (stat e))) r)) (l exc r))) 0
+    (port->line-stream (current-input-port))))
+
+(newline)

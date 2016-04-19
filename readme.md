@@ -1,0 +1,1 @@
+[sph-script](http://sph.mn/content/1467)

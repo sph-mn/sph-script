@@ -1,0 +1,13 @@
+#!/bin/sh
+# creates a screenshot every n seconds
+# depends on "scrot"
+
+# config
+interval=24
+destination=$HOME/temp/other/tracking-screenhots/$(d)
+
+mkdir -p $destination
+while true; do
+  scrot --focused $destination/%s.png
+  sleep $interval
+done

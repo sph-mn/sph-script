@@ -1,0 +1,9 @@
+#!/bin/sh
+# scales all png or jpg images in a directory using graphicsmagick. a new directory "edit" is created where result images are put
+# scale :: width
+
+mkdir -p edit
+for k in *.png *.jpg
+do
+  gm convert -size $1\>x "$k" -resize $1\>x +profile "*" edit/"$k".jpg
+done

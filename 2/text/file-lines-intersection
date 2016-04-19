@@ -1,0 +1,19 @@
+#!/usr/bin/guile
+!#
+
+;file-path ... -> newline-separated-strings
+;displays the common lines of two or more files.
+;"grep -F -x -f file1 file2" might be a better solution.
+(import (sph common) (sph read-write))
+
+(define (call-with-input-files proc . paths)
+  (let* ((files (map (l (e) (open-file e "r")) paths)) (r (apply proc files))) (each close files) r))
+
+(define result
+  (apply call-with-input-files
+    (l files
+      (fold (l (e r) (intersection (port-lines-map identity e) r))
+        (port-lines-map identity (first files)) (tail files)))
+    (tail (program-arguments))))
+
+(each (l (e) (display-line e)) result)

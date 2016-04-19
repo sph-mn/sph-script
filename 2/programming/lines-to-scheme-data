@@ -1,0 +1,7 @@
+#!/usr/bin/guile
+!#
+
+(import (sph) (sph read-write))
+(display "(list")
+(port-lines-each (l (e) (display " ") (write e)) (current-input-port))
+(display ")")

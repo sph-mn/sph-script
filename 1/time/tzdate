@@ -1,0 +1,15 @@
+#!/bin/sh
+# show date and time in filtered time zones.
+# tzdate :: timezone-name
+
+search=$1
+zoneinfo=/usr/share/zoneinfo/posix/
+format='%a %F %T'
+
+find $zoneinfo -type f \
+  | grep -i "$search" \
+  | while read z
+    do
+      d=$(TZ=$z date +"$format")
+      printf "%-34s %23s\n" ${z#$zoneinfo} "$d"
+    done

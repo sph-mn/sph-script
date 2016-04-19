@@ -1,0 +1,32 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common))
+
+(define program-description
+  "mkdir-wrap works similar to mkdir.
+  if directories to be created exist, they become sub-directories of newly created ones.
+  example:
+  let there be directories a b
+  \"mkdir-wrap a\" will rename a, create a, and move the renamed a into the new a
+  the end result will be a/a b")
+
+(define config ((cli-create)))
+
+(define (call-with-arguments config proc)
+  (apply proc (consecutive (l (e) (not (string-prefix? "-" e))) (alist-quoted-ref config unnamed))))
+
+(define (rename-existing a) "string:path -> string:new-path"
+  (let (r (get-unique-target-path a)) (rename-file a r) r))
+
+(define (re-rename-existing renamed existing)
+  (map (l (a b) (rename-file a (path-append b (basename b)))) renamed existing))
+
+(define (mkdir-wrap directories mkdir-arguments)
+  (let*
+    ( (existing-directories (filter file-exists? directories))
+      (existing-directories-renamed (map rename-existing existing-directories)))
+    (apply execute "mkdir" (append mkdir-arguments directories))
+    (re-rename-existing existing-directories-renamed existing-directories)))
+
+(call-with-arguments config mkdir-wrap)

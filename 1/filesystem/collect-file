@@ -1,0 +1,26 @@
+#!/usr/bin/guile
+!#
+
+; collect-file :: source-path ...
+
+(import (sph common))
+
+(define destination
+  (string-append (getenv "HOME") "/temp/collections/collected." (current-local-iso-date-string) "/"))
+
+(define description
+  (string-append
+    "hardlinks or copies files into a automatically chosen target directory. the current destination directory is "
+    (string-quote destination)))
+
+; one use case is browsing files and using right click actions to collect files.
+; does not use symlinks because copying symlinks copies only symlinks and also does not create copies and one may want to use the collected files in various ways
+
+(define command-line-interface (cli-create #:description description (ql (path ...))))
+
+(define (collect-path a)
+  (let (path-destination (string-append destination (basename a)))
+    (or (false-if-exception (link a path-destination)) (copy-file a path-destination))))
+
+(let (arguments (command-line-interface)) (ensure-directory-structure destination)
+  (and-let* ((paths (alist-quoted-ref arguments path))) (each collect-path paths)))

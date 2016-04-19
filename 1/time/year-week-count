@@ -1,0 +1,14 @@
+#!/usr/bin/ruby
+
+require 'date'
+
+def num_weeks(year = Date.today.year)
+  # all years starting with Thursday, and leap years starting with Wednesday have 53 weeks
+  # http://en.wikipedia.org/wiki/ISO_week_date#Last_week
+  d = Date.new year, 1, 1
+  if d.wday == 4 then 53
+  elsif d.leap? and d.wday == 3 then 53
+  else 52 end
+end
+
+puts num_weeks()

@@ -1,0 +1,32 @@
+#!/bin/sh
+# mariadb-create-user-database :: database [username password]
+# create the sql to create a database in mariadb and a user that has all privileges on the database.
+# username and password are optional. if username is ommited it is set to the database name.
+# if password is ommitted it is set to the username.
+
+if [ $# -eq 0 ]
+then
+  echo database_name username password
+  exit
+fi
+
+if [[ $# -eq 1 ]]; then
+  database=$1
+  username=$1
+  password=$1
+elif [[ $# -eq 2 ]]; then
+  database=$1
+  username=$2
+  password=$2
+elif [[ $# -eq 3 ]]; then
+  database=$1
+  username=$2
+  password=$3
+fi
+
+echo "start transaction;"
+echo "create database $database;"
+echo "create user '$username'@'%' identified by '$password';"
+echo "grant all privileges on $database.* to '$username'@'%';"
+echo "flush privileges;"
+echo "commit;"

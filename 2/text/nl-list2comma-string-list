@@ -1,0 +1,2 @@
+#!/bin/ruby
+$stdin.each_line do |e| puts "\"#{e.strip}\"," end

@@ -1,0 +1,2 @@
+#!/bin/sh
+ruby -e '$stdin.each_line{|e| e =~ / function/ ? puts("\n" + e) : puts(e) }'

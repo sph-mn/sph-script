@@ -1,0 +1,29 @@
+#!/usr/bin/guile
+!#
+
+;delete-if-empty :: path ...
+;tries to delete all empty directories and empty files found among the given paths and directory trees. deletes deeper files first
+
+(import (sph common))
+
+(define (get-sorted-paths e)
+  (append (map tail (list-sort-with-accessor > first (map (l (e) (pair (string-count e #\/) e)) (directory-tree-paths e)))) (list e)))
+
+(define (delete-if-empty . path)
+  (each
+    (l (e)
+      (let (stat-info (stat e))
+        (if (eqv? (q regular)(stat:type stat-info))
+          (if (= 0 (stat:size stat-info)) (delete-file e))
+          (each
+            (l (e)
+              (let (stat-info (stat e))
+                (case (stat:type stat-info)
+                  ((regular) (if (= 0 (stat:size stat-info)) (delete-file e)))
+                  ((directory) (false-if-exception (rmdir e))))))
+            (get-sorted-paths e))
+
+          )))
+    path))
+
+(apply delete-if-empty (tail (command-line)))

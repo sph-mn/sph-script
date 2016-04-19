@@ -1,0 +1,14 @@
+#!/usr/bin/guile
+!#
+;displays relative directory references upwards as a path. example: "../../".
+;
+;can be used with bash like this to change n directories upwards:
+;up() {
+;    eval $(display-relative-path-up $*)
+;}
+;up 3
+
+(import (sph) (sph list))
+(define arguments (tail (program-arguments)))
+(define times (if (null? arguments) 1 (string->number (first arguments))))
+(display (string-join (make-list times "../") ""))

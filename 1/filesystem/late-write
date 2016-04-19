@@ -1,0 +1,21 @@
+#!/usr/bin/guile
+!#
+
+;depends on sph-lib
+
+(import (sph common))
+
+(define description
+  "write to output file only after all data from standard input has been read. allows to overwrite source files when using shell output redirection")
+
+(define command-line-interface
+  (cli-create #:options (ql ((output-file) #:required? #t)) #:description description))
+
+(define (late-write target-file-path)
+  (let* ((file (temp-file-port (dirname target-file-path))) (file-path (port-filename file)))
+    (port-copy-all (current-input-port) file) (close file) (rename-file file-path target-file-path)))
+
+(define (late-write-cli)
+  (alist-quoted-bind (command-line-interface) (output-file) (late-write output-file)))
+
+(late-write-cli)

@@ -1,0 +1,79 @@
+#!/usr/bin/guile
+!#
+
+(import (ice-9 ftw) (sph common)
+  (sph cli) (sph process) (sph lang indent-syntax) (except (srfi srfi-1) map))
+
+(define mount-directory (string-append (getenv "HOME") "/mnt/"))
+(define (mountpoint? path) (exit-value-zero? (execute "mountpoint" "--quiet" path)))
+(define (file-system-fold-ignore path stat result) result)
+
+(define (create-target-path source-path)
+  "string -> string
+  {first-part/last-second-part.last-part/}"
+  (let* ((source-path (delete "" (path->list source-path))) (suffix (tail source-path)))
+    (string-append mount-directory
+      (string-downcase
+        (string-append (first source-path) "/"
+          (string-join (if (null? suffix) suffix (take-right suffix (min 2 (length suffix)))) "."))))))
+
+(define (display-line-string . a) (display (string-join a " ")) (newline))
+
+(define (mount-home use-sudo? dry-run? mount-options . paths) "boolean boolean (string ...)"
+  (map
+    (l (path)
+      (let
+        ( (target (create-target-path path))
+          (shell-eval+check-result (if dry-run? display-line-string shell-eval+check-result)))
+        (and (shell-eval+check-result (string-append "mkdir -p " (string-quote target)))
+          (shell-eval+check-result
+            (string-append (if use-sudo? "sudo " "") "mount "
+              (string-quote path) " "
+              (string-quote target) (if mount-options (string-append " " mount-options) ""))))))
+    paths))
+
+(define (test-create-target-path) "test the target path creation"
+  (display
+    (string-append "test "
+      (if
+        (and
+          (string-equal? (string-append mount-directory "192.168.1.70/shared")
+            (create-target-path "//192.168.1.70/shared"))
+          (string-equal? (string-append mount-directory "dev/mapper.abc")
+            (create-target-path "/dev/mapper/abc")))
+        "success" "fail")
+      "\n")))
+
+(define (remove-empty-mount-directories) "max depth of mount-home mountpoints is two"
+  (let (mount-directory (remove-trailing-slash mount-directory))
+    (file-system-fold (l (path stat result) (not (mountpoint? path))) file-system-fold-ignore
+      file-system-fold-ignore
+      (l (path stat result)
+        (if (string-equal? mount-directory path) result (false-if-exception (rmdir path))))
+      file-system-fold-ignore (l (name stat error-number result) result) 0 mount-directory)))
+
+(define (run)
+  (let*
+    ( (dependencies (ql "sph-lib" "mount" "mkdir" "mountpoint" "[sudo]"))
+      (description
+        "mount filesystems to $HOME/mnt/{first-part-of-source-path/second-last-part.last-part}")
+      (about
+        (qq
+          ( ("description" (unquote description))
+            ("benefits" "paths are automatically chosen" "paths are predictable"
+              "mount multiple sources in one call")
+            ("depends on" (unquote (string-join dependencies " ")))
+            ("maintainer and copyright" "sph@posteo.eu | http://sph.mn") ("license" "gpl3+"))))
+      (options
+        ( (cli-create #:version 1
+            #:description description
+            #:about (prefix-tree->indent-tree-string about)
+            #:options
+            (ql (user #:names #\u #:value-required? #t) (dry-run #:names #\d)
+              (sudo #:names #\s) (mount-options #:names #\o #:value-required? #t) ((source-path ...)))))))
+    (apply mount-home (alist-ref options (q sudo))
+      (alist-ref options (q dry-run)) (alist-ref options (q mount-options))
+      (alist-ref options (q source-path) (list)))
+    (remove-empty-mount-directories)))
+
+(run)

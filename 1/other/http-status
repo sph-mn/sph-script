@@ -1,0 +1,2 @@
+#!/bin/sh
+curl -o /dev/null --silent --write-out "%{http_code}\n" "$1"

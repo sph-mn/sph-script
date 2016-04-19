@@ -1,0 +1,5 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common))
+(display-line (seconds->day-seconds-string (current-time)))

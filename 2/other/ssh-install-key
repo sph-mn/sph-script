@@ -1,0 +1,5 @@
+#!/bin/sh
+# ssh-install-key :: full-key-name remote-host-uri
+# install an ssh public key on the remote server
+
+ssh-copy-id -i ~/.ssh/$1 $2

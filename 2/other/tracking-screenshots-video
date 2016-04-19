@@ -1,0 +1,36 @@
+#!/bin/sh
+# tracking-screenshots-video :: path-directory [skip-resize?]
+# creates a video from a directory filled with png files.
+# if skip-resize? is "true", then it is assumed that the resize-pass has already run and resized pictures are available in the $source/edit directory.
+#   this speeds up the compilation process significantly
+
+# config
+size=320x240
+speed=10/1
+
+# program-arguments
+source=$1
+skip_resize=$2
+
+# prepare target directory
+target=$HOME/temp/tracking-screenshots.$(basename $source)
+if [ -e $target ]
+then
+  echo file exists
+  exit 1
+fi
+
+# resize images to have the same width/height. otherwise the video width/height changes with each image
+cd $source
+mkdir -p edit
+if [ $skip_resize ]
+then
+  echo resize skipped
+else
+  echo resizing
+  delete-duplicate-files $PWD
+  find -name "*.png" |parallel mogrify -resize $size -background black -gravity center -extent $size -define png:color-type=2 -path edit
+fi
+
+# create video
+ffmpeg -framerate $speed -pattern_type glob -i "edit/*.png" -c:v libx264 -r 30 -pix_fmt yuv420p $target.mp4

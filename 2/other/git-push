@@ -1,0 +1,4 @@
+#!/bin/sh
+# add all files in the current directory to the index, commit with "-" as the commit message and push
+
+git add --all && git commit -m'-' && git push

@@ -1,0 +1,27 @@
+#!/usr/bin/guile
+!#
+
+(import (rnrs sorting) (sph list)
+  (only (sph filesystem) get-unique-target-path path->full-path) (sph) (sph string) (sph cli-old))
+
+(define config.exec (cli-init))
+(define keyless-args (assoc-ref config.exec (q ())))
+
+(define (path-add-names path names)
+  (string-append (dirname path) "/"
+    (string-join
+      (delete-duplicates-sorted
+        (list-sort string< (append (string-split (basename path) #\.) names)))
+      ".")))
+
+(define (name-add names paths)
+  (let (names (filter (l (ele) (not (string-null? ele))) names))
+    (if (not (null? names))
+      (each
+        (l (path)
+          (let* ((path (path->full-path path)) (next-path (path-add-names path names)))
+            (if (not (string=? next-path path))
+              (rename-file path (get-unique-target-path next-path)))))
+        paths))))
+
+(name-add (string-split (first keyless-args) #\.) (tail keyless-args))

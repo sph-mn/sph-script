@@ -1,0 +1,33 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common) (sph cli) (sph process) (sph lang indent-syntax))
+(define program-description "mount remote filesystems using sshfs to $HOME/mnt/{hostname}")
+(define program-dependencies (q ("sph-lib" "sshfs" "mkdir")))
+
+(define-as about quasiquote
+  ( ("description" (unquote program-description))
+    ("benefits" "paths are automatically chosen" "paths are predictable"
+      "paths are in the home directory")
+    ("depends on" (unquote (string-join program-dependencies " "))) ("license" "GPLv3")
+    ("maintainer and copyright" "sph@posteo.eu | http://sph.io")))
+
+(define (create-target-argument hostname)
+  (string-append (getenv "HOME") "/mnt/" (string-downcase hostname)))
+
+(define (create-source-argument user hostname path)
+  (string-append (or (and user (string-append user "@")) "") hostname ":" (or path "/")))
+
+(define (mount-sshfs-home hostname path user . sshfs-arguments)
+  (let (target (create-target-argument hostname))
+    (and (execute+check-result "mkdir" "-p" target)
+      (execute+check-result "sshfs" (create-source-argument user hostname path) target))))
+
+(let
+  (options
+    ( (cli-create #:description program-description
+        #:about (prefix-tree->indent-tree-string about)
+        #:options (ql (path #:names #\p #:value-required? #t) (user #:names #\u #:value-required? #t) ((hostname sshfs-argument ...))))))
+  (apply mount-sshfs-home (alist-ref options (q hostname))
+    (alist-ref options (q path)) (alist-ref options (q user))
+    (or (alist-ref options (q sshfs-argument)) (list))))

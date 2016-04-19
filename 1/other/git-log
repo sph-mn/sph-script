@@ -1,0 +1,1 @@
+git log --decorate --format=format:'%ae %ad %s %h' --name-status --date=short --reverse -n 16 $* |ruby -e '$stdin.each_line {|line| puts line.sub("@intera.de", "").sub(/\[[A-Z]+\] /, "") }'

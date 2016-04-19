@@ -1,0 +1,7 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common))
+
+(apply (l (program-name . paths) (each (l (e) (rename-file e (string-downcase e))) paths))
+  (program-arguments))

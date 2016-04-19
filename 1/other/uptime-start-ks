@@ -1,0 +1,5 @@
+#!/usr/bin/guile
+!#
+
+(import (sph) (sph two))
+(display-line (seconds->short-kiloseconds-string (os-seconds-at-boot)))

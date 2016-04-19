@@ -1,0 +1,10 @@
+#!/usr/bin/guile
+!#
+
+(import (sph process) (sph) (sph filesystem))
+
+(let (target (string-trim-right (shell-eval->string "zenity --entry")))
+  (if (> (string-length target) 0)
+    (begin (if (not (file-exists? target)) (mkdir target))
+      (if (is-directory? target) (apply execute "mv" "-t" target (tail (program-arguments)))
+        (debug-log "target exists and is not a directory")))))

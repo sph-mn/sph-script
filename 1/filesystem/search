@@ -1,0 +1,5 @@
+#!/bin/sh
+# search :: search-string ...
+# search inside files under the current working directory and list paths of matching files
+clear
+grep --recursive --files-with-matches --ignore-case --fixed-strings "$*" *

@@ -1,0 +1,4 @@
+#!/bin/sh
+# pass all arguments to the editor program configured with the $EDITOR environment variable
+
+$EDITOR $*

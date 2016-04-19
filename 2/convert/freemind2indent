@@ -1,0 +1,27 @@
+#!/usr/bin/guile
+!#
+
+;converts from the freemind .mm format to a space indented tree
+
+(import (sph) (sxml simple)
+  (only (sph list) tail-ref) (ice-9 match)
+  (only (sph alist) alist-ref) (only (sph tree) tree-map-lists)
+  (sph lang indent-syntax))
+
+(define (freemind->prefix-tree arg)
+  (first
+    (tree-map-lists
+      (l (ele)
+        (match ele
+          ( ( (quote node) ((quote @) attributes ...) body ...)
+            (let (text (alist-ref attributes (q TEXT)))
+              (if text (pair (first text) (filter list? body)) ele)))
+          (else ele)))
+      (filter list? (tail-ref (list-ref (xml->sxml arg) 1) 2)))))
+
+(define (freemind->port arg port)
+  (display
+    (string-join (map prefix-tree->indent-tree-string (tail (freemind->prefix-tree arg))) "\n") port))
+
+(define (freemind->string arg) (call-with-output-string (l (port) (freemind->port arg port))))
+(freemind->port (current-input-port) (current-output-port))

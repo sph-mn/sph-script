@@ -1,0 +1,8 @@
+#!/bin/sh
+# split-flac-cue :: path-file-cue path-file-flac
+# split a flac file corresponding to a cue file
+# depends on "shnsplit" from "shntool"
+
+cue=$1
+file=$2
+shnsplit -f "$cue" -o flac -t "%n.%t" "$file" < "$cue"

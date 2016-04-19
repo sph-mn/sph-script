@@ -1,0 +1,7 @@
+#!/usr/bin/guile
+!#
+
+(import (sph process) (sph))
+
+(apply execute "name-del"
+  (string-trim-right (shell-eval->string "zenity --entry")) (tail (program-arguments)))

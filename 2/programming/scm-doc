@@ -1,0 +1,10 @@
+#!/usr/bin/guile
+!#
+
+(import (sph) (sph documentation) (only (sph one) string->datum) (only (sph string) parenthesise))
+
+(display
+  (format-module-documentation
+    (map (compose string->datum parenthesise) (tail (program-arguments))) (q default)))
+
+(newline)

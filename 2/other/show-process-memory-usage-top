@@ -1,0 +1,24 @@
+#!/usr/bin/guile
+!#
+
+; show a list of the programs that use the most memory
+; line format is: memory-usage-mebibits pid name
+
+(import (sph) (sph process))
+
+(define (get-process-info)
+  (map (l (e) (delete "" (string-split e #\space)))
+    (delete ""
+      (string-split (shell-eval->string "ps -eo rss,pid,cmd | sort -k 1 -nr | head") #\newline))))
+
+(define (kibibytes->mebibits a) (/ (* a 8) 1024))
+
+(each
+  (l (e)
+    (apply
+      (l (kb pid . name)
+        (display
+          (string-append (number->string (round (kibibytes->mebibits (string->number kb)))) " "
+            pid " " (string-join name " ") "\n")))
+      e))
+  (get-process-info))

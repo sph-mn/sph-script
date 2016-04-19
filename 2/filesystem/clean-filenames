@@ -1,0 +1,66 @@
+#!/usr/bin/guile
+!#
+;expects newline separated file paths on standard input and renames file names
+
+(import
+  (sph)
+  (sph one)
+  (sph cli)
+  (sph string)
+  (sph filesystem)
+  (ice-9 rdelim)
+  (ice-9 streams)
+  (sph ice-9-stream))
+
+(define config.exec ((cli-create
+      #:options (ql (dry-run)))))
+
+(define dry-run (assoc-ref config.exec (q dry-run)))
+
+(define default-clean-filename-config
+  (map (l (ele) (cons (make-regexp (first ele)) (tail ele)))
+    (q
+      (
+        ("--" . ".")
+        ("\\(invalid encoding\\)" . "")
+        (" *& *" . "+")
+        ("\\(" . ".")
+        ("\\)" . ".")
+        ("[^-+.öäüa-zA-Z0-9]" . " ")
+        ("\\.htm$" . ".html")
+        ("\\.jpeg$" . ".jpg")
+        (" - " . ".")
+        ("  +" . " ")
+        ("^\\W+" . "")
+        ("\\W+$" . "")
+        (" *\\. *" . ".")
+        ("\\.-" . ".")
+        ("-\\." . ".")
+        ("\\.$" . "")
+        ("^\\." . "")
+        ("\\.\\.+" . ".")
+        ))))
+
+(define (clean-filename arg)
+  (fold
+    (l (ele prev)
+      (regexp-replace prev (first ele) (tail ele)))
+    (string-downcase arg)
+    default-clean-filename-config))
+
+(define (rename-clean-path arg)
+  (let*
+    ( (full-path (path->full-path arg))
+      (new-path
+        (string-append (dirname full-path) "/"
+          (clean-filename (basename full-path)))))
+    (if (not (string-equal? new-path full-path))
+      (begin
+        (display
+          (string-append
+            (basename full-path) " -> "
+            (basename new-path) "\n"))
+        (if (not dry-run) (rename-file full-path new-path))))))
+
+(stream-each rename-clean-path
+  (port->stream (current-input-port) read-line))

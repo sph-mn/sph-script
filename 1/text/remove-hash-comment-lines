@@ -1,0 +1,10 @@
+#!/usr/bin/ruby
+
+def is_hash_comment a
+  (a.length > 0) && ('#' == a.lstrip[0])
+end
+
+$stdin.each_line {|e|
+  omit = is_hash_comment(e) || e.strip.empty?
+  if !omit then puts e end
+}

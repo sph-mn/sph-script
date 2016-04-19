@@ -1,0 +1,10 @@
+#!/usr/bin/guile
+!#
+; converts comma separated strings into newline separated strings.
+; reads from standard input
+; depends on: sph-lib
+
+(import (sph common) (sph read-write) (srfi srfi-41) (sph stream))
+
+(stream-each (l (e) (display (string-trim-both e)) (display "\n"))
+  (port->delimited-stream "," (current-input-port)))

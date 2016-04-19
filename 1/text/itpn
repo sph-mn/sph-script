@@ -1,0 +1,138 @@
+#!/usr/bin/guile
+!#
+
+(import (ice-9 ftw) (sph common) (sph lang itpn) (sph two) (sph lang indent-syntax))
+(define program-description "indent packet notation filter and transformer")
+;possible enhancements
+; * sort facets by facet frequency
+; * replace facets manually
+; * show only facets outside whitelist
+; * show filename in front of matches
+
+(define command-line-interface
+  (cli-create #:help program-description
+    #:options
+    (ql ((file-paths ...)) (search #:names #\s #:value-required? #t)
+      (search-suffix #:value-required? #t) (search-all #:names #\a #:value-required? #t)
+      (sort-facets) (exclude #:names #\e)
+      (syntax-check #:names #\c) (list-unique-facets) (list-prefixes #:names #\l) (sort-packets))))
+
+(define (create-parsed-itpn-processors arguments) "alist -> (procedure ...)"
+  (alist-quoted-bind arguments (search search-all search-suffix sort-facets exclude sort-packets)
+    (filter identity
+      (list (and sort-facets (l (a) (itfpn-facets-sort a string<?)))
+        (and (or search search-suffix search-all)
+          (let
+            ( (patterns-prefix (or (and search (string-split search #\,)) (list)))
+              (patterns-suffix (or (and search-suffix (string-split search-suffix #\,)) (list)))
+              (patterns-anywhere (or (and search-all (string-split search-all #\,)) (list))))
+            (l (parsed-itpn)
+              ( (if exclude tail first)
+                (itpn-filter-all-patterns-all-parts parsed-itpn patterns-prefix
+                  patterns-suffix patterns-anywhere)))))))))
+
+(define (get-all-itpn-from-standard-input)
+  (string-if-exception (read-space-indent-tree->prefix-tree (current-input-port))))
+
+(define (get-all-itpn-from-file-path path)
+  (string-if-exception
+    (call-with-input-file path (l (port) (read-space-indent-tree->prefix-tree port)))))
+
+(define (itpn-contains-empty-line? parsed-itpn) (contains? parsed-itpn ""))
+(define (itpn-empty-line-first-index parsed-itpn) (list-index-value parsed-itpn ""))
+
+(define (compact . a)
+  "list -> list
+  keep only true elements in list"
+  (apply filter identity a))
+
+(define (create-error-data file-name packet-number other)
+  (compact
+    (list "empty-line" (and file-name (string-append "file: " (string-quote file-name)))
+      (and packet-number (string-append "packet: " (number->string packet-number))) (and other))))
+
+(define (check-for-parse-errors& parsed-itpn file-name c)
+  (if (string? parsed-itpn)
+    (error-create (q syntax-invalid) (create-error-data file-name #f parsed-itpn))
+    (let (empty-line-index (itpn-empty-line-first-index parsed-itpn))
+      (if empty-line-index
+        (error-create (q syntax-invalid) (create-error-data file-name empty-line-index #f)) (c)))))
+
+(define (format-error-data a) (if (list? a) a (any->string a)))
+
+(define (display-error-and-exit error)
+  (display-line
+    (prefix-tree->indent-tree-string
+      (list (any->string (error-name error)) (format-error-data (error-data error))))
+    (current-error-port))
+  (exit 1))
+
+(define (file-system-fold-error name stat errno result)
+  (format (current-error-port) "warning: ~a: ~a~%" name (strerror errno)))
+
+(define (file-system-fold-identity name stat result) result)
+
+(define (file-system-fold* enter? leaf down up skip error init paths)
+  "procedure procedure procedure procedure procedure procedure any (string ...) -> any
+  maps paths with calls to file-system-fold. stops on error"
+  (first
+    (fold-multiple-with-continue
+      (l (path continue r)
+        (let (r-new (file-system-fold enter? leaf down up skip error r path))
+          (if (error? r-new) (list r-new) (continue r-new))))
+      paths init)))
+
+(define (input-handler paths process-one)
+  "(string ...) procedure:{parsed-itpn -> any} -> any
+  manages and accesses input resources and processing"
+  (if paths
+    (let (inaccessible-path (find (negate file-exists?) paths))
+      (if inaccessible-path (error-create (q inaccessible-path) inaccessible-path)
+        (file-system-fold* (l (path stat r) (not (error? r)))
+          (l (path stat r)
+            (if (error? r) r
+              (let (r-one (process-one (get-all-itpn-from-file-path path) (basename path)))
+                (if (error? r-one) r-one (append r r-one)))))
+          file-system-fold-identity file-system-fold-identity
+          file-system-fold-identity file-system-fold-error (list) paths)))
+    (process-one (get-all-itpn-from-standard-input) #f)))
+
+(define (process-one-proc arguments)
+  "alist -> error/any
+  creates a result for one list of parsed-itpn packets (for example read from the contents of a file or standard-input)"
+  (l (parsed-itpn file-name)
+    (check-for-parse-errors& parsed-itpn file-name
+      (thunk
+        (if (alist-quoted-ref arguments syntax-check) (list #t)
+          (if (alist-quoted-ref arguments list-unique-facets) (itfpn-facets parsed-itpn)
+            (let (prefix-tree (fold call parsed-itpn (create-parsed-itpn-processors arguments)))
+              (if (alist-quoted-ref arguments list-prefixes) (itpn-prefixes prefix-tree)
+                prefix-tree))))))))
+
+(define (process-after arguments result)
+  (if (alist-quoted-ref arguments list-unique-facets)
+    (list-sort string<? (delete-duplicates result))
+    (if (alist-quoted-ref arguments list-prefixes)
+      (if (alist-quoted-ref arguments sort-packets) (list-sort string<? result) result)
+      (list
+        (prefix-tree->indent-tree-string
+          (if (alist-quoted-ref arguments sort-packets) (itpn-packets-sort result string<?) result))))))
+
+(define (result-handler arguments a) "list list -> [list]"
+  (if (error? a) (display-error-and-exit a)
+    (if (null? a) (exit 0)
+      (if (boolean? (first a)) (exit (if (every identity a) 0 1))
+        (let (a (process-after arguments a))
+          (if (error? a) (display-error-and-exit a) (each display-line a)))))))
+
+(define (itpn-filter-cli)
+  (let (arguments (command-line-interface))
+    (result-handler arguments
+      (input-handler (alist-ref arguments (q file-paths)) (process-one-proc arguments)))))
+
+(itpn-filter-cli);;; note: source file /home/nonroot/.exec/scm-format
+;;;       newer than compiled /home/nonroot/.cache/guile/ccache/2.2-LE-8-3.7/mnt/sdb/nonroot/personal/authored/projects/public/sph-script/1/other/scm-format.go
+;;; note: auto-compilation is enabled, set GUILE_AUTO_COMPILE=0
+;;;       or pass the --no-auto-compile argument to disable.
+;;; compiling /home/nonroot/.exec/scm-format
+;;; compiled /home/nonroot/.cache/guile/ccache/2.2-LE-8-3.7/mnt/sdb/nonroot/personal/authored/projects/public/sph-script/1/other/scm-format.go

@@ -1,0 +1,2 @@
+#!/bin/sh
+ldd $* |grep -i "not found"

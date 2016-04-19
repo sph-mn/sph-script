@@ -1,0 +1,84 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common) (only (guile) stat stat:type stat:perms) (only (ice-9 ftw) scandir))
+(define program-description "a backup tool")
+(define program-dependencies (q ("pack")))
+(define default-target (getcwd))
+(define config-path (string-append (getenv "HOME") "/.config/backup/"))
+(define max-bits-for-high-compression (expt 2 31))
+
+(define (backup-file filelist-program name target options)
+  "string string:directory-path/false boolean"
+  (let
+    (size
+      (string->number
+        (string-trim-right
+          (process-create-chain-with-pipes->string #f filelist-program "file-size-sum"))))
+    (if
+      (and (not (alist-ref options (q encrypt))) (> size max-bits-for-high-compression)
+        (= 2
+          (length
+            (string-split (shell-eval->string (string-append filelist-program " |head -n 2"))
+              #\newline))))
+      (let (target (get-target name target #t)) (mkdir target)
+        (apply
+          (if (alist-ref options (q dry-run)) (l a (display (string-join a " ")) (newline)) system*)
+          "cp" "-t"
+          target (string-split (string-trim-right (shell-eval->string filelist-program)) #\newline)))
+      ( (if (alist-ref options (q dry-run)) display system)
+        (string-append filelist-program " | pack --read-paths=--"
+          (if target (string-append " --target=" (string-quote (get-target name target #t))) "")
+          (if (> size max-bits-for-high-compression) "" " --compression")
+          (if (alist-ref options (q dry-run)) " --dry-run" "")
+          (if (alist-ref options (q encrypt)) " --encryption" ""))))))
+
+(define (backup-tarsnap filelist-program target dry-run)
+  (let (path-filelist (string-quote (tmpnam)))
+    ( (if dry-run display system)
+      (string-append (string-quote filelist-program) " >"
+        path-filelist " && tarsnap -cf "
+        (string-quote (basename target)) " -T " path-filelist " && unlink " path-filelist))))
+
+(define (name->target-name name) (string-append name "." (current-datetime-string)))
+
+(define (get-target name target use-default-target)
+  (if target
+    (if (string-suffix? "/" target) (string-append target (name->target-name name)) target)
+    (string-append (if use-default-target default-target "") (name->target-name name))))
+
+(define (handle-list-option)
+  (false-if-exception
+    (display
+      (string-join
+        (filter
+          (l (e)
+            (and (not (or (string-equal? e ".") (string-equal? e "..")))
+              (let (stat-info (stat (string-append config-path e)))
+                (and (eqv? (q regular) (stat:type stat-info))
+                  (not (= 0 (logand 73 (stat:perms stat-info))))))))
+          (scandir config-path))
+        " ")))
+  (display "\n"))
+
+(define (backup options)
+  (if (alist-ref options (q list)) (handle-list-option)
+    (alist-quoted-bind options (name target tarsnap dry-run)
+      (let
+        ( (filelist-program (string-append config-path name))
+          (target (ensure-trailing-slash (or target (getcwd)))))
+        (if (is-directory? target)
+          (if tarsnap (backup-tarsnap filelist-program (get-target name target #f) dry-run)
+            (backup-file filelist-program name target options))
+          (display "target must be a directory\n"))))))
+
+(define command-line-interface
+  (cli-create #:description program-description
+    #:options
+    (ql (dry-run) (tarsnap #:names #\t)
+      (list #:names #\l #:description "shows the recognised backup configurations") (encrypt #:names #\e)
+      ((name)) ((target)))))
+
+(let (arguments (tail (program-arguments)))
+  (if (null? arguments) (command-line-interface (list "--help"))
+    (backup (command-line-interface arguments))))

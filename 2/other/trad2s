@@ -1,0 +1,11 @@
+#!/usr/bin/guile
+!#
+
+;convert from traditional hh[:mm:ss] time format to seconds
+
+(import (sph) (sph number) (sph one) (ice-9 match) (sph time))
+
+(match (program-arguments)
+  ((_ time-string)
+    (display-line (traditional-time-string->seconds time-string)))
+  (_ (display-line "missing argument")))

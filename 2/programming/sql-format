@@ -1,0 +1,2 @@
+#!/bin/sh
+sqlformat - -k lower -r

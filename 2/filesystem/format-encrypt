@@ -1,0 +1,42 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common) (sph lang indent-syntax))
+
+(define (format-encrypt target-device-path run?)
+  (let (device-mapper-path (string-replace-char target-device-path #\/ #\_))
+    (if (string-null? (shell-eval->string (string-append "mount |grep " device-mapper-path)))
+      (let
+        (commands
+          (list
+            (list "dd" "if=/dev/urandom"
+              (string-append "of=" target-device-path) "bs=512" "count=4000")
+            (list "cryptsetup" "luksFormat" target-device-path)
+            (list "cryptsetup" "luksOpen" target-device-path device-mapper-path)
+            (list "mkfs.ext4" (string-append "/dev/mapper/" device-mapper-path))))
+        (if run? (apply execute-and commands)
+          (each (l (e) (display (string-join e " ")) (newline)) commands)))
+      (display "target device is mounted. please unmount it first\n"))))
+
+(define (string-lines . a) (string-join a "  \n"))
+
+(define (run)
+  (let*
+    ( (dependencies (list "cryptsetup" "dd" "grep" "mkfs.ext4" "mount" "/dev/urandom"))
+      (description
+        (list "encrypt and format a block device or file with cryptsetup and luks."
+          "all previously existing data on the device or in the file will be deleted."
+          "uses luksFormat default options."
+          "no modifications are made unless the --run option has been specified"))
+      (about
+        (prefix-tree->indent-tree-string
+          (qq
+            ( ("description" (unquote-splicing description))
+              ("depends on" (unquote (string-join dependencies " ")))
+              ("maintainer and copyright" "sph@posteo.eu | http://sph.mn") ("license" "gpl3+")))))
+      (options
+        ( (cli-create #:about about
+            #:description (string-join description "\n  ") #:options (ql ((block-device-path) #f) (run #f))))))
+    (format-encrypt (alist-quoted-ref options block-device-path) (alist-quoted-ref options run))))
+
+(run)

@@ -1,0 +1,1 @@
+path-directories $* |xargs -d \\n -n 1 stat --format "%a %n"

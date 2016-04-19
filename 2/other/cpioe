@@ -1,0 +1,5 @@
+#!/bin/sh
+# extract from a cpio archive reading from standard input.
+# the content is copied into the current working directory
+
+cpio --extract --no-absolute-filenames -d $*

@@ -1,0 +1,28 @@
+#!/usr/bin/guile
+!#
+
+(import (rnrs base) (rnrs sorting) (sph) (sph cli) (sph two) (sph filesystem) (sph string))
+(define (get-target-file-name arg) (get-unique-target-path (remove-filename-extension arg)))
+
+(define (show-message arg options)
+  (if (assoc-ref options (q gui)) (system* "zenity" "--info" "--text" arg)
+    (begin (display arg) (newline))))
+
+(define (merge-files source-paths options)
+  (let*
+    ( (no-exec (assoc-ref options (q no-exec))) (source-paths (list-sort string< source-paths))
+      (target-size (apply + (map (l (ele) (stat:size (stat ele))) source-paths)))
+      (target-file-name (get-target-file-name (first source-paths))))
+    ( (if no-exec (l (arg) (show-message arg options)) system)
+      (string-append "cat" (string-join (map string-quote source-paths) " " (q prefix))
+        " >" (string-quote target-file-name)))
+    (if (not no-exec)
+      (if (= target-size (stat:size (stat target-file-name)))
+        (show-message (string-append (string-quote (basename target-file-name)) " success") options)
+        (show-message (string-append (string-quote (basename target-file-name)) "target file has not the expected size")
+          options)))))
+
+(let*
+  ( (cli (cli-create #:options (q ((no-exec) (gui) ((source-paths ...) #:required? #t)))))
+    (options (cli)))
+  (if (null? options) (cli (list "--help")) (merge-files (assoc-ref options (q source-paths)) options)))

@@ -1,0 +1,17 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common) (ice-9 regex))
+
+(define (iso-date-remove-prefix-zeros a)
+  (string-join
+    (let (a (string-split a #\-))
+      (pair (first a) (map (l (e) (if (string-prefix? "0" e) (string-drop e 1) e)) (tail a))))
+    "-"))
+
+(define (replace-iso-date-prefix-zeros a)
+  (regexp-substitute/global (current-output-port) "[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}"
+    a (q pre) (l (m) (iso-date-remove-prefix-zeros (match:substring m))) (q post)))
+
+(port-lines-each (l (e) (replace-iso-date-prefix-zeros e)) (current-input-port)
+  #:handle-delim (q concat))

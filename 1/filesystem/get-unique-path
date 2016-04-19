@@ -1,0 +1,5 @@
+#!/usr/bin/guile
+!#
+(import (sph common))
+
+(display (apply get-unique-target-path (tail (program-arguments))))

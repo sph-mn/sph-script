@@ -1,0 +1,5 @@
+#!/bin/sh
+# gui-md5sum :: path ...
+# display the md5sums of the paths given as arguments in a dialog window
+
+zenity --info --text "$(md5sum $*)"
