@@ -1,4 +1,4 @@
-see [sph-script](http://sph.mn/content/1467)
+see [sph-script](http://sph.mn/content/1467).
 
 ```
 1
