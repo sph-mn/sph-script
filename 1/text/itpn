@@ -143,8 +143,8 @@
   (let*
     ( (indent-level 0)
       (indent-level
-        (if (and show-file? (string? path)) (begin (display-line path) (+ 1 indent-level))
-          indent-level))
+        (if (and show-file? (not (null? a)) (string? path))
+          (begin (display-line path) (+ 1 indent-level)) indent-level))
       (indent-1 (create-indent indent-level)) (indent-2 (create-indent (+ 1 indent-level))))
     (each
       (l (packet)
