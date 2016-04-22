@@ -1,10 +1,9 @@
 #!/usr/bin/guile
 !#
 
-(import (ice-9 ftw) (sph common) (sph lang itpn) (sph two) (sph lang indent-syntax))
+(import (ice-9 ftw) (sph common) (sph lang itpn) (sph two) (sph lang indent-syntax) (sph replacement-table))
 (define program-description "indent packet notation filter and transformer")
 ;todo
-;  facet replacement
 ;  extract/partition facet matching content
 
 (define command-line-interface
@@ -12,20 +11,58 @@
     #:options
     (ql ((file-paths ...)) (search #:names #\s #:value-required? #t)
       (search-suffix #:value-required? #t) (search-all #:names #\a #:value-required? #t)
-      (sort-facets) (include-file-name-facets)
+      (sort-facets)
+      (replace-facet #:value-required? #t
+        #:description "value format: \"facet[.facet] facet[.facet]\"")
+      (replace-facets-from-file #:value-required? #t
+        #:description
+        "takes a path to a file that contains lines in the format \"facet replacement ...\"")
+      (include-file-name-facets)
       (format #:value-required? #t
         #:description "prefix/suffix/file. comma-separated list of names of parts to display")
       (exclude #:names #\e) (syntax-check #:names #\c) (list-unique-facets) (sort-packets))))
 
+(define (cli-parse-replace-facet a) "string:\"facet[.facet ...] facet[.facet ...]\" -> list"
+  (apply (l (facet replacements) (pair facet (string-split replacements #\.)))
+    (string-split a #\space)))
+
 (define (create-parsed-itpn-processors arguments) "alist -> (procedure ...)"
   (alist-quoted-bind arguments
-    (search search-all search-suffix sort-facets exclude sort-packets include-file-name-facets)
-    (filter identity
+    (search search-all search-suffix
+      sort-facets exclude
+      sort-packets include-file-name-facets replace-facet replace-facets-from-file)
+    (compact
       (list
         (and include-file-name-facets
           (l (a path)
             (let (file-name-prefix (string-join (string-split (basename path) #\.) " " (q suffix)))
               (map (l (a) (pair (string-append file-name-prefix (first a)) (tail a))) a))))
+        (and replace-facet
+          (let (replacements (cli-parse-replace-facet replace-facet))
+            (let ((old (first replacements)) (new (tail replacements)))
+              (l (a path)
+                (map
+                  (l (packet)
+                    (map-first
+                      (l (packet-prefix)
+                        (string-join
+                          (flatten
+                            (map (l (facet) (if (string-equal? old facet) new facet))
+                              (string-split packet-prefix #\space)))
+                          " "))
+                      packet))
+                  a)))))
+        (and (string? replace-facets-from-file)
+          (let (table (replacement-table-from-file replace-facets-from-file))
+            (l (a path)
+              (map
+                (l (packet)
+                  (map-first
+                    (l (packet-prefix)
+                      (string-join
+                        (list-replace-from-hashtable (string-split packet-prefix #\space) table) " "))
+                    packet))
+                a))))
         (and sort-facets (l (a path) (itfpn-facets-sort a string<?)))
         (and (or search search-suffix search-all)
           (let
@@ -46,11 +83,6 @@
 
 (define (itpn-contains-empty-line? parsed-itpn) (contains? parsed-itpn ""))
 (define (itpn-empty-line-first-index parsed-itpn) (list-index-value parsed-itpn ""))
-
-(define (compact . a)
-  "list -> list
-  keep only true elements in list"
-  (apply filter identity a))
 
 (define (create-error-data file-name packet-number other)
   (compact
