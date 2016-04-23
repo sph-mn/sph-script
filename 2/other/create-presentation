@@ -39,6 +39,6 @@
             (call-with-output-file (create-target-path path path-target)
               (l (port) (display "<!doctype html>" port)
                 (sxml->xml (layout (file->string e) (basename path)) port))))))
-      (pass-if (alist-quoted-ref config path-source) list (list)))))
+      (if-pass (alist-quoted-ref config path-source) list (list)))))
 
 (create-presentation)
