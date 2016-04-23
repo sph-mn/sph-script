@@ -1,7 +1,9 @@
 #!/usr/bin/guile
 !#
 
-(import (ice-9 ftw) (sph common) (sph lang itpn) (sph two) (sph lang indent-syntax) (sph replacement-table))
+(import (ice-9 ftw) (sph common)
+  (sph lang itpn) (sph two) (sph lang indent-syntax) (sph replacement-table))
+
 (define program-description "indent packet notation filter and transformer")
 ;todo
 ;  extract/partition facet matching content
@@ -26,6 +28,12 @@
   (apply (l (facet replacements) (pair facet (string-split replacements #\.)))
     (string-split a #\space)))
 
+(define (itpn-packet-map-facet-list proc packet)
+  (map-first (l (a) (string-join (proc (string-split a #\space)) " ")) packet))
+
+(define (itpn-packet-map-facets proc packet)
+  (itpn-packet-map-facet-list (l (a) (map proc a)) packet))
+
 (define (create-parsed-itpn-processors arguments) "alist -> (procedure ...)"
   (alist-quoted-bind arguments
     (search search-all search-suffix
@@ -38,29 +46,25 @@
             (let (file-name-prefix (string-join (string-split (basename path) #\.) " " (q suffix)))
               (map (l (a) (pair (string-append file-name-prefix (first a)) (tail a))) a))))
         (and replace-facet
-          (let (replacements (cli-parse-replace-facet replace-facet))
-            (let ((old (first replacements)) (new (tail replacements)))
+          (apply
+            (l (old . new)
               (l (a path)
                 (map
                   (l (packet)
-                    (map-first
-                      (l (packet-prefix)
-                        (string-join
-                          (flatten
-                            (map (l (facet) (if (string-equal? old facet) new facet))
-                              (string-split packet-prefix #\space)))
-                          " "))
+                    (itpn-packet-map-facet-list
+                      (l (a)
+                        (delete-duplicates
+                          (flatten (map (l (a) (if (string-equal? old a) new a)) a))))
                       packet))
-                  a)))))
+                  a)))
+            (cli-parse-replace-facet replace-facet)))
         (and (string? replace-facets-from-file)
           (let (table (replacement-table-from-file replace-facets-from-file))
             (l (a path)
               (map
                 (l (packet)
-                  (map-first
-                    (l (packet-prefix)
-                      (string-join
-                        (list-replace-from-hashtable (string-split packet-prefix #\space) table) " "))
+                  (itpn-packet-map-facet-list
+                    (l (a) (delete-duplicates (flatten (list-replace-from-hashtable a table))))
                     packet))
                 a))))
         (and sort-facets (l (a path) (itfpn-facets-sort a string<?)))
