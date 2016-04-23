@@ -79,6 +79,8 @@
                     packet))
                 a))))
         (and sort-facets (l (a path) (itfpn-facets-sort a string<?)))
+        ;the filters do not run sooner because matches and non-matches are passed up and might both be used
+        ;todo: make it so that it is determined, if it will be needed, and eventually search before all other processors
         (and (or search search-suffix search-all)
           (let
             ( (patterns-prefix (or (and search (string-split search #\,)) (list)))
@@ -144,29 +146,34 @@
     (let
       (with-type-and-create-result
         (l (c)
-          (cond
-            (syntax-check? (c (q syntax-check) (l (parsed-itpn path) (list #t))))
-            (list-unique-facets? (c (q unique-facets) (l (parsed-itpn path) (itfpn-facets parsed-itpn))))
+          (cond (syntax-check? (c (q syntax-check) (l (parsed-itpn path) (list #t))))
+            (list-unique-facets?
+              (c (q unique-facets) (l (parsed-itpn path) (itfpn-facets parsed-itpn))))
             (else
-              (l (parsed-itpn path)
-                (c (q parsed-itpn) (fold (l (proc r) (proc r path)) parsed-itpn parsed-itpn-processors)))))))
+              (c (q parsed-itpn)
+                (l (parsed-itpn path)
+                  (fold (l (proc r) (proc r path)) parsed-itpn parsed-itpn-processors)))))))
       (l (paths process-one)
         "(string ...) procedure:{parsed-itpn -> any} -> any
         manages and accesses input resources and processing"
-        (with-type-and-create-result (l (type create-result)
+        (with-type-and-create-result
+          (l (type create-result)
             (if paths
               (let (inaccessible-path (find (negate file-exists?) paths))
                 (if inaccessible-path (error-create (q inaccessible-path) inaccessible-path)
-                  (if-pass (file-system-fold* (l (path stat r) (not (error? r)))
+                  (error-pass-if-not
+                    (file-system-fold* (l (path stat r) (not (error? r)))
                       (l (path stat r)
                         (if (error? r) r
-                          (let (r-one (process-one (get-all-itpn-from-file-path path) path create-result))
+                          (let
+                            (r-one
+                              (process-one (get-all-itpn-from-file-path path) path create-result))
                             (if (error? r-one) r-one (pair r-one r)))))
                       file-system-fold-identity file-system-fold-identity
                       file-system-fold-identity file-system-fold-error (list) paths)
-                    (l (r) (pair ))
-                    )))
-              (list type (process-one (get-all-itpn-from-standard-input) (q standard-input) create-result)))))))))
+                    (l (r) (pair type r)))))
+              (list type
+                (process-one (get-all-itpn-from-standard-input) (q standard-input) create-result)))))))))
 
 (define (arguments->formats& arguments c)
   "list {show-file? show-prefix? show-suffix? -> any} -> any"
@@ -220,27 +227,28 @@
   (arguments->formats& arguments
     (l (show-file? show-prefix? show-suffix?)
       (l (result)
-        (fold
-          (l (a r)
-            (apply
-              (l (type path . data)
-                (if (eqv? (q parsed-itpn) type)
-                  (display-parsed-itpn-one path data show-file? show-prefix? show-suffix?)))
-              a))
-          (list) result)))))
+        (apply
+          (l (type . data)
+            (if (equal? (q parsed-itpn) type)
+              (map-apply
+                (l (path . data)
+                  (display-parsed-itpn-one path data show-file? show-prefix? show-suffix?))
+                data)
+              (debug-log result)))
+          result)))))
 
 (define (result-handler arguments a process-after output-handler) "list list -> [list]"
-  (debug-log a)
   (if (error? a) a
     (if (null? a) (exit 0)
       (case (first a) ((syntax-check) (exit (if (every identity (tail (tail a))) 0 1)))
-        ((parsed-itpn) (error-guard (process-after a) (output-handler a)))))))
+        ((parsed-itpn) (error-pass-if-not (process-after a) output-handler))))))
 
 (define (itpn-filter-cli)
   (let* ((arguments (command-line-interface)))
-    (error-if-call
+    (error-pass-if
       (result-handler arguments
-        (input-handler (alist-q-ref arguments file-paths) (process-one-proc arguments))
+        ( (input-handler-proc arguments) (alist-q-ref arguments file-paths)
+          (process-one-proc arguments))
         (process-after-proc arguments) (output-handler-proc arguments))
       display-error-and-exit)))
 
