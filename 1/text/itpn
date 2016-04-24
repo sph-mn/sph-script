@@ -6,10 +6,8 @@
 
 (define program-description "indent packet notation filter and transformer")
 ;todo
-;  standard-input
 ;  partition
-;  output-file
-;  extract
+;  output-to-source
 
 (define command-line-interface
   (cli-create #:help program-description
@@ -24,10 +22,11 @@
         "takes a path to a file that contains lines in the format \"facet replacement ...\"")
       (include-file-name-facets)
       (partition #:description
-        "split into matches and non-matches and write matches to standard output and non-matches to a file")
-      (extract #:description
-        "modify input files so that only non-matches remain in it and output matches")
-      (output-file #:names #\o #:value-required? #t)
+        "split into matches and non-matches. output-file-1 receives matches, output-file-2 non-matches, and i any of those is not specified output is written to standard output")
+      (output-to-source #:description
+        "overwrite source files with output that has no specified output-file and would be written to standard-output")
+      (output-file-1 #:value-required? #t #:description "path for a file to write matches to")
+      (output-file-2 #:value-required? #t #:description "path for a file to write non-matches to")
       (format #:value-required? #t
         #:description "prefix/suffix/file. comma-separated list of names of parts to display")
       (exclude #:names #\e) (syntax-check #:names #\c) (list-unique-facets) (sort-packets))))
@@ -43,7 +42,7 @@
   (itpn-packet-map-facet-list (l (a) (map proc a)) packet))
 
 (define (create-parsed-itpn-processors arguments) "alist -> (procedure ...)"
-  (alist-quoted-bind arguments
+  (alist-bind arguments
     (search search-all search-suffix
       sort-facets exclude
       sort-packets include-file-name-facets replace-facet replace-facets-from-file partition extract)
@@ -79,16 +78,15 @@
                     packet))
                 a))))
         (and sort-facets (l (a path) (itfpn-facets-sort a string<?)))
-        ;the filters do not run sooner because matches and non-matches are passed up and might both be used
-        ;todo: make it so that it is determined, if it will be needed, and eventually search before all other processors
+        ;an optimisation could be possible here by evaluating the search before other processors. questions are
+        ;if the search should run after replace and what happens when the list is split into matches and non-matches
         (and (or search search-suffix search-all)
           (let
             ( (patterns-prefix (or (and search (string-split search #\,)) (list)))
               (patterns-suffix (or (and search-suffix (string-split search-suffix #\,)) (list)))
               (patterns-anywhere (or (and search-all (string-split search-all #\,)) (list))))
             (l (parsed-itpn path)
-              ( (if exclude (if (or partition extract) reverse tail)
-                  (if (or partition extract) identity first))
+              ( (if exclude (if partition reverse tail) (if partition identity first))
                 (itpn-filter-all-patterns-all-parts parsed-itpn patterns-prefix
                   patterns-suffix patterns-anywhere)))))))))
 
@@ -139,20 +137,19 @@
       paths init)))
 
 (define (input-handler-proc arguments)
-  (let
-    ( (syntax-check? (alist-q-ref arguments syntax-check))
-      (list-unique-facets? (alist-q-ref arguments list-unique-facets))
-      (parsed-itpn-processors (create-parsed-itpn-processors arguments)))
-    (let
-      (with-type-and-create-result
-        (l (c)
-          (cond (syntax-check? (c (q syntax-check) (l (parsed-itpn path) (list #t))))
-            (list-unique-facets?
-              (c (q unique-facets) (l (parsed-itpn path) (itfpn-facets parsed-itpn))))
-            (else
-              (c (q parsed-itpn)
-                (l (parsed-itpn path)
-                  (fold (l (proc r) (proc r path)) parsed-itpn parsed-itpn-processors)))))))
+  (alist-bind arguments (list-unique-facets partition syntax-check)
+    (let*
+      ( (parsed-itpn-processors (create-parsed-itpn-processors arguments))
+        (apply-processors
+          (l (parsed-itpn path)
+            (fold (l (processor r) (processor r path)) parsed-itpn parsed-itpn-processors)))
+        (with-type-and-create-result
+          (l (c)
+            (cond (syntax-check (c (q syntax-check) (l (parsed-itpn path) (list #t))))
+              (list-unique-facets
+                (c (q unique-facets) (l (parsed-itpn path) (itfpn-facets parsed-itpn))))
+              (partition (c (q partition) apply-processors))
+              (else (c (q parsed-itpn) apply-processors))))))
       (l (paths process-one)
         "(string ...) procedure:{parsed-itpn -> any} -> any
         manages and accesses input resources and processing"
@@ -173,7 +170,7 @@
                       file-system-fold-identity file-system-fold-error (list) paths)
                     (l (r) (pair type r)))))
               (list type
-                (process-one (get-all-itpn-from-standard-input) (q standard-input) create-result)))))))))
+                (process-one (get-all-itpn-from-standard-input) "standard-input" create-result)))))))))
 
 (define (arguments->formats& arguments c)
   "list {show-file? show-prefix? show-suffix? -> any} -> any"
@@ -205,37 +202,49 @@
           (sort-packets? (result-map-data (l (a) (itpn-packets-sort a string<?)) result))
           (else result))))))
 
-(define (display-parsed-itpn-one path a show-file? show-prefix? show-suffix?)
+(define (display-parsed-itpn-one port path a show-file? show-prefix? show-suffix?)
   (let*
     ( (indent-level 0)
       (indent-level
         (if (and show-file? (not (null? a)) (string? path))
-          (begin (display-line path) (+ 1 indent-level)) indent-level))
+          (begin (display-line path port) (+ 1 indent-level)) indent-level))
       (indent-1 (create-indent indent-level)) (indent-2 (create-indent (+ 1 indent-level))))
     (each
       (l (packet)
         (let
           (indent-level
             (if show-prefix?
-              (begin (display-line (string-append indent-1 (first packet))) (+ 1 indent-level))
+              (begin (display-line (string-append indent-1 (first packet)) port) (+ 1 indent-level))
               indent-level))
           (if show-suffix?
-            (display-line (prefix-tree->indent-tree-string (tail packet) indent-level)))))
+            (display-line (prefix-tree->indent-tree-string (tail packet) indent-level) port))))
       a)))
 
 (define (output-handler-proc arguments) "list list ->"
-  (arguments->formats& arguments
-    (l (show-file? show-prefix? show-suffix?)
-      (l (result)
-        (apply
-          (l (type . data)
-            (if (equal? (q parsed-itpn) type)
-              (map-apply
-                (l (path . data)
-                  (display-parsed-itpn-one path data show-file? show-prefix? show-suffix?))
-                data)
-              (debug-log result)))
-          result)))))
+  (alist-bind arguments (output-file-1 output-file-2 output-to-source)
+    (let
+      (call-with-output-port
+        (l (file c) (if file (call-with-output-file file c) (c (current-output-port)))))
+      (arguments->formats& arguments
+        (l (show-file? show-prefix? show-suffix?)
+          (l (result)
+            (apply
+              (l (type . data)
+                (debug-log type data)
+                (case type
+                  ( (parsed-itpn)
+                    (call-with-output-port output-file-1
+                      (l (port)
+                        (map-apply
+                          (l (path . data)
+                            (display-parsed-itpn-one port path
+                              data show-file? show-prefix? show-suffix?))
+                          data))))
+                  ( (partition) (rw-with-temporary-file-port->file proc output-file)
+                    (call-with-output-port output-file-1
+                      (l (port-1) (call-with-output-port output-file-2 (l (port-2) #t)))))
+                  (else (display-line result))))
+              result)))))))
 
 (define (result-handler arguments a process-after output-handler) "list list -> [list]"
   (if (error? a) a

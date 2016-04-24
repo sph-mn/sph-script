@@ -14,7 +14,7 @@
 (define config ((cli-create)))
 
 (define (call-with-arguments config proc)
-  (apply proc (consecutive (l (e) (not (string-prefix? "-" e))) (alist-quoted-ref config unnamed))))
+  (apply proc (consecutive (l (e) (not (string-prefix? "-" e))) (alist-q-ref config unnamed))))
 
 (define (rename-existing a) "string:path -> string:new-path"
   (let (r (get-unique-target-path a)) (rename-file a r) r))

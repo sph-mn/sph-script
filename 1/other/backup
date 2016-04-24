@@ -63,7 +63,7 @@
 
 (define (backup options)
   (if (alist-ref options (q list)) (handle-list-option)
-    (alist-quoted-bind options (name target tarsnap dry-run)
+    (alist-bind options (name target tarsnap dry-run)
       (let
         ( (filelist-program (string-append config-path name))
           (target (ensure-trailing-slash (or target (getcwd)))))

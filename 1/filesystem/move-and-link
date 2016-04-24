@@ -14,7 +14,7 @@
     (if source-paths
       (let (target-directory (alist-ref cli-options (q target-directory)))
         (map
-          (if (alist-quoted-ref cli-options keey-directory-structure?)
+          (if (alist-q-ref cli-options keey-directory-structure?)
             (l (e) (move-and-link (path-append target-directory (dirname e)) e))
             (l (e) (move-and-link target-directory e)))
           source-paths))

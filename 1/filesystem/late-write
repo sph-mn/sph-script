@@ -11,7 +11,7 @@
   (cli-create #:options (ql ((output-file) #:required? #t)) #:description description))
 
 (define (late-write-cli)
-  (alist-quoted-bind (command-line-interface) (output-file)
+  (alist-bind (command-line-interface) (output-file)
     (rw-with-temporary-file-port->file
       (l (port-output) (port-copy-all (current-input-port) port-output)) output-file)))
 

@@ -37,7 +37,7 @@
           (begin (rmdir path) (if same-name (rename-file same-name path))))))))
 
 (define (splice options)
-  (alist-quoted-bind options (path dry-run)
+  (alist-bind options (path dry-run)
     (if path (each (l (e) (splice-one e dry-run)) (map path->full-path path)))))
 
 (let*

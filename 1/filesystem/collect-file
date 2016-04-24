@@ -23,4 +23,4 @@
     (or (false-if-exception (link a path-destination)) (copy-file a path-destination))))
 
 (let (arguments (command-line-interface)) (ensure-directory-structure destination)
-  (and-let* ((paths (alist-quoted-ref arguments path))) (each collect-path paths)))
+  (and-let* ((paths (alist-q-ref arguments path))) (each collect-path paths)))

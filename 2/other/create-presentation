@@ -33,12 +33,12 @@
 (define (create-presentation)
   (let (config (command-line-interface))
     (each
-      (let (path-target (first-or-false (alist-quoted-ref config path-target (list))))
+      (let (path-target (first-or-false (alist-q-ref config path-target (list))))
         (l (e)
           (let (path (remove-filename-extension e))
             (call-with-output-file (create-target-path path path-target)
               (l (port) (display "<!doctype html>" port)
                 (sxml->xml (layout (file->string e) (basename path)) port))))))
-      (if-pass (alist-quoted-ref config path-source) list (list)))))
+      (if-pass (alist-q-ref config path-source) list (list)))))
 
 (create-presentation)

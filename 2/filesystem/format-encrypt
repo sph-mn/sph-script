@@ -37,6 +37,6 @@
       (options
         ( (cli-create #:about about
             #:description (string-join description "\n  ") #:options (ql ((block-device-path) #f) (run #f))))))
-    (format-encrypt (alist-quoted-ref options block-device-path) (alist-quoted-ref options run))))
+    (format-encrypt (alist-q-ref options block-device-path) (alist-q-ref options run))))
 
 (run)
