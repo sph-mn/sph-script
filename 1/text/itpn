@@ -22,9 +22,9 @@
         "takes a path to a file that contains lines in the format \"facet replacement ...\"")
       (include-file-name-facets)
       (partition #:description
-        "split into matches and non-matches. output-file-1 receives matches, output-file-2 non-matches, and i any of those is not specified output is written to standard output")
+        "split into matches and non-matches. output-file-1 receives matches, output-file-2 non-matches, and if any of those is not specified output is written to standard output")
       (output-to-source #:description
-        "overwrite source files with output that has no specified output-file and would be written to standard-output")
+        "overwrite source files for output that has no specified output-file and would be written to standard-output")
       (output-file-1 #:value-required? #t #:description "path for a file to write matches to")
       (output-file-2 #:value-required? #t #:description "path for a file to write non-matches to")
       (format #:value-required? #t
@@ -80,7 +80,7 @@
         (and sort-facets (l (a path) (itfpn-facets-sort a string<?)))
         ;an optimisation could be possible here by evaluating the search before other processors. questions are
         ;if the search should run after replace and what happens when the list is split into matches and non-matches
-        (and (or search search-suffix search-all)
+        (and (or search search-suffix search-all partition)
           (let
             ( (patterns-prefix (or (and search (string-split search #\,)) (list)))
               (patterns-suffix (or (and search-suffix (string-split search-suffix #\,)) (list)))
@@ -222,27 +222,58 @@
 
 (define (output-handler-proc arguments) "list list ->"
   (alist-bind arguments (output-file-1 output-file-2 output-to-source)
-    (let
-      (call-with-output-port
-        (l (file c) (if file (call-with-output-file file c) (c (current-output-port)))))
+    (let*
+      ( (call-with-output-port
+          (l (file indirect? c)
+            (if indirect?
+              (if file (rw-with-temporary-file-port->file c file) (c (current-output-port)))
+              (if file (call-with-output-file file c) (c (current-output-port))))))
+        (call-with-output-ports
+          (l (data proc)
+            (if output-to-source
+              (call-with-output-port (or output-file-1 output-file-2) #f
+                (l (port-other)
+                  (map-apply
+                    (l (path . a)
+                      (call-with-output-port path #t
+                        (l (port-source)
+                          ;output-file-1 is mapped to take matches, output-file-2 takes non-matches
+                          (if output-file-1 (apply proc path port-other port-source a)
+                            (apply proc path port-source port-other a)))))
+                    data)))
+              (call-with-output-port output-file-1 #f
+                (l (port-1)
+                  (call-with-output-port output-file-2 #f
+                    (l (port-2) (map-apply (l a (apply proc port-1 port-2 a)) data)))))))))
       (arguments->formats& arguments
         (l (show-file? show-prefix? show-suffix?)
           (l (result)
             (apply
               (l (type . data)
-                (debug-log type data)
                 (case type
                   ( (parsed-itpn)
-                    (call-with-output-port output-file-1
-                      (l (port)
-                        (map-apply
-                          (l (path . data)
-                            (display-parsed-itpn-one port path
-                              data show-file? show-prefix? show-suffix?))
-                          data))))
-                  ( (partition) (rw-with-temporary-file-port->file proc output-file)
-                    (call-with-output-port output-file-1
-                      (l (port-1) (call-with-output-port output-file-2 (l (port-2) #t)))))
+                    (if output-to-source
+                      (map-apply
+                        (l (path . data)
+                          (call-with-output-port path #t
+                            (l (port)
+                              (display-parsed-itpn-one port path
+                                data show-file? show-prefix? show-suffix?))))
+                        data)
+                      (call-with-output-port output-file-1 #f
+                        (l (port)
+                          (map-apply
+                            (l (path . data)
+                              (display-parsed-itpn-one port path
+                                data show-file? show-prefix? show-suffix?))
+                            data)))))
+                  ( (partition)
+                    (call-with-output-ports data
+                      (l (port-matches port-non-matches path packets-matching packets-not-matching)
+                        (display-parsed-itpn-one port-matches path
+                          packets-matching show-file? show-prefix? show-suffix?)
+                        (display-parsed-itpn-one port-non-matches path
+                          packets-not-matching show-file? show-prefix? show-suffix?))))
                   (else (display-line result))))
               result)))))))
 
@@ -250,7 +281,7 @@
   (if (error? a) a
     (if (null? a) (exit 0)
       (case (first a) ((syntax-check) (exit (if (every identity (tail (tail a))) 0 1)))
-        ((parsed-itpn) (error-pass-if-not (process-after a) output-handler))))))
+        ((parsed-itpn partition) (error-pass-if-not (process-after a) output-handler))))))
 
 (define (itpn-filter-cli)
   (let* ((arguments (command-line-interface)))
