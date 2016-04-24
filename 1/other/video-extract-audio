@@ -27,11 +27,12 @@
             (alist-ref (guile-hash-table->alist json) "streams"))))
       (if (null? codec-names) codec-names (first codec-names)))))
 
-(define (ffmpeg-extract-audio path-source)
+(define (ffmpeg-extract-audio path-source format)
   (and-let*
-    ( (audio-codec (codec-name->extension (ffprobe-audio-codec path-source)))
+    ( (audio-codec (or format (codec-name->extension (ffprobe-audio-codec path-source))))
       (path-destination (string-append path-source "." audio-codec)))
-    (execute "ffmpeg" "-i" path-source "-c" "copy" "-map" "0:a" path-destination)))
+    (apply execute "ffmpeg" "-i"
+      path-source "-map" "0:a" path-destination (if format (list) (list "-c" "copy")))))
 
 (define (run)
   (let*
@@ -45,7 +46,13 @@
             ("maintainer and copyright" "sph@posteo.eu | http://sph.mn") ("license" "gpl3+"))))
       (options
         ( (cli-create #:description description
-            #:about (prefix-tree->indent-tree-string about) #:options (ql ((source-path ...)))))))
-    (map ffmpeg-extract-audio (alist-ref options (q source-path) (list)))))
+            #:about (prefix-tree->indent-tree-string about)
+            #:options
+            (ql
+              (format #:value-required? #t #:description "filename extension of the output format")
+              ((source-path ...))))))
+      (format (alist-ref options (q format))))
+    (map (l (source) (ffmpeg-extract-audio source format))
+      (alist-ref options (q source-path) (list)))))
 
 (run)
