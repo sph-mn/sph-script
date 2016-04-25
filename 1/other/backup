@@ -2,38 +2,9 @@
 !#
 
 (import (sph common) (only (guile) stat stat:type stat:perms) (only (ice-9 ftw) scandir))
-(define program-description "a backup tool")
-(define program-dependencies (q ("pack")))
 (define default-target (getcwd))
-(define config-path (string-append (getenv "HOME") "/.config/backup/"))
-(define max-bits-for-high-compression (expt 2 31))
 
-(define (backup-file filelist-program name target options)
-  "string string:directory-path/false boolean"
-  (let
-    (size
-      (string->number
-        (string-trim-right
-          (process-create-chain-with-pipes->string #f filelist-program "file-size-sum"))))
-    (if
-      (and (not (alist-ref options (q encrypt))) (> size max-bits-for-high-compression)
-        (= 2
-          (length
-            (string-split (shell-eval->string (string-append filelist-program " |head -n 2"))
-              #\newline))))
-      (let (target (get-target name target #t)) (mkdir target)
-        (apply
-          (if (alist-ref options (q dry-run)) (l a (display (string-join a " ")) (newline)) system*)
-          "cp" "-t"
-          target (string-split (string-trim-right (shell-eval->string filelist-program)) #\newline)))
-      ( (if (alist-ref options (q dry-run)) display system)
-        (string-append filelist-program " | pack --read-paths=--"
-          (if target (string-append " --target=" (string-quote (get-target name target #t))) "")
-          (if (> size max-bits-for-high-compression) "" " --compression")
-          (if (alist-ref options (q dry-run)) " --dry-run" "")
-          (if (alist-ref options (q encrypt)) " --encryption" ""))))))
-
-(define (backup-tarsnap filelist-program target dry-run)
+(define (create-result-backup-tarsnap filelist-program target dry-run)
   (let (path-filelist (string-quote (tmpnam)))
     ( (if dry-run display system)
       (string-append (string-quote filelist-program) " >"
@@ -47,38 +18,118 @@
     (if (string-suffix? "/" target) (string-append target (name->target-name name)) target)
     (string-append (if use-default-target default-target "") (name->target-name name))))
 
-(define (handle-list-option)
-  (false-if-exception
-    (display
-      (string-join
-        (filter
-          (l (e)
-            (and (not (or (string-equal? e ".") (string-equal? e "..")))
-              (let (stat-info (stat (string-append config-path e)))
-                (and (eqv? (q regular) (stat:type stat-info))
-                  (not (= 0 (logand 73 (stat:perms stat-info))))))))
-          (scandir config-path))
-        " ")))
-  (display "\n"))
+;-- --;
+(define program-description "a backup file creator")
+(define program-dependencies (q ("pack")))
+(define max-bits-for-compression (expt 2 31))
+(define path-config (string-append (getenv "HOME") "/.config/backup/"))
 
-(define (backup options)
-  (if (alist-ref options (q list)) (handle-list-option)
-    (alist-bind options (name target tarsnap dry-run)
+(define (source->file-size-sum source) "procedure:thunk:writes-paths-to-standard-output -> integer"
+  (string->number
+    (string-trim-right (process-create-chain-with-pipes->string #f source "file-size-sum"))))
+
+(define (pack-process-proc path dry-run encrypt size)
+  (thunk
+    (process-replace "pack" "--read-paths=--"
+      (list (and path (string-append "--target=" (get-target name target #t)))
+        (and (> size max-bits-for-compression) "--compression") (and dry-run "--dry-run")
+        (and encrypt "--encryption")))))
+
+(define create-result-backup-files
+  (let
+    (validate-destination-paths
+      (l (a)
+        (let (non-directories (filter (negate is-directory?) a))
+          (if (null? non-directories) #t
+            (error-create (q non-directory-destination-paths) non-directories)))))
+    (l (sources destinations encrypt dry-run)
       (let
-        ( (filelist-program (string-append config-path name))
-          (target (ensure-trailing-slash (or target (getcwd)))))
-        (if (is-directory? target)
-          (if tarsnap (backup-tarsnap filelist-program (get-target name target #f) dry-run)
-            (backup-file filelist-program name target options))
-          (display "target must be a directory\n"))))))
+        ( (destination-paths
+            (map ensure-trailing-slash
+              (if destinations (map path->full-path destinations) (list (getcwd)))))
+          (process-create-chain-with-pipes*
+            (if dry-run (l a (debug-log a)) process-create-chain-with-pipes)))
+        (error-identity-if (validate-destination-paths destination-paths)
+          (every
+            (l (source)
+              (let (size (source->file-size-sum source))
+                (every
+                  (l (destination-path)
+                    (process-create-chain-with-pipes* #f #f
+                      source (pack-process-proc destination-path dry-run encrypt size)))
+                  destination-paths)))
+            sources))))))
 
-(define command-line-interface
-  (cli-create #:description program-description
-    #:options
-    (ql (dry-run) (tarsnap #:names #\t)
-      (list #:names #\l #:description "shows the recognised backup configurations") (encrypt #:names #\e)
-      ((name)) ((target)))))
+(define (name->source-path a) "string -> string" (string-append path-config a))
 
-(let (arguments (tail (program-arguments)))
-  (if (null? arguments) (command-line-interface (list "--help"))
-    (backup (command-line-interface arguments))))
+(define (get-source-names) "-> (string ...)/false"
+  (false-if-exception
+    (filter
+      (l (e)
+        (and (not (or (string-equal? e ".") (string-equal? e "..")))
+          (let (stat-info (stat (string-append path-config e)))
+            (and (eqv? (q regular) (stat:type stat-info))
+              (not (= 0 (logand 73 (stat:perms stat-info))))))))
+      (scandir path-config))))
+
+(define (create-result-list-configs)
+  (display-line (string-join (list-sort string<? (get-source-names)) " ")) #f)
+
+(define (create-result-show-config source-names)
+  (each (l (a) (display (file->string (name->source-path a)))) source-names) #f)
+
+(define (create-result-list-files source-names)
+  (each (l (a) (execute (name->source-path a))) source-names) #f)
+
+(define (source-names->sources sources combine) "-> (list:proc-conf ...)"
+  (if combine
+    (list
+      (thunk (each (l (a) (execute->port (name->source-path a) (current-output-port))) sources)))
+    (map (l (a) (thunk (execute->port (current-output-port) (name->source-path a)))) sources)))
+
+(define create-result-backup
+  (let
+    (validate-source-names
+      (l (a)
+        (let (missing-source-names (complement a (get-source-names)))
+          (if (null? missing-source-names) #t
+            (error-create (q missing-source-names) missing-source-names)))))
+    (l (combine destinations dry-run encrypt source-names tarsnap)
+      (error-identity-if (validate-source-names source-names)
+        (let (sources (source-names->sources source-names combine))
+          (if tarsnap (create-result-backup-tarsnap sources dry-run)
+            (create-result-backup-files sources destinations encrypt dry-run)))))))
+
+(define*
+  (backup #:key combine destinations dry-run encrypt list-configs list-files show-config sources
+    tarsnap)
+  (cond (list-files (create-result-list-files sources)) (list-configs (create-result-list-configs))
+    (show-config (create-result-show-config sources))
+    (else (create-result-backup combine destinations dry-run encrypt sources tarsnap))))
+
+;todo: list-files, show-contents, backup multiple in series, combine
+
+(define backup-cli
+  (let
+    ( (cli-sources (l (a) (string-split a #\,)))
+      (command-line-interface
+        (cli-create #:description program-description
+          #:options
+          (ql (dry-run) (tarsnap #:names #\t)
+            (list-configs #:names #\l #:description "lists the recognised backup configurations")
+            (list-files #:description "list files that would be included in the backup")
+            (show-config #:description "display contents a configuration file")
+            (combine #:description
+              "combine all files corresponding to given configuration names and create one backup file")
+            (encrypt #:names #\e) ((sources destinations ...) #:required? #f #:value-required? #t)))))
+    (thunk
+      (let
+        (keyword-arguments
+          (append-map
+            (l (a)
+              (let ((key (first a)) (value (tail a)))
+                (list (symbol->keyword key) (case key ((sources) (cli-sources value)) (else value)))))
+            (command-line-interface)))
+        (apply backup keyword-arguments)))))
+
+(backup-cli)

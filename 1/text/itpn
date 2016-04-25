@@ -17,7 +17,7 @@
       (replace-facets-from-file #:value-required? #t
         #:description
         "takes a path to a file that contains lines in the format \"facet replacement ...\"")
-      (include-file-name-facets)
+      (add-file-name-facets)
       (partition #:description
         "split into matches and non-matches. output-file-1 receives matches, output-file-2 non-matches, and if any of those is not specified output is written to standard output")
       (output-to-source #:description
@@ -42,10 +42,10 @@
   (alist-bind arguments
     (search search-all search-suffix
       sort-facets exclude
-      sort-packets include-file-name-facets replace-facet replace-facets-from-file partition extract)
+      sort-packets add-file-name-facets replace-facet replace-facets-from-file partition extract)
     (compact
       (list
-        (and include-file-name-facets
+        (and add-file-name-facets
           (l (a path)
             (if (string? path)
               (let
