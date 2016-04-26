@@ -1,0 +1,25 @@
+#!/usr/bin/guile
+!#
+
+(import (sph) (sph read-write) (sph alist) (sph string) (sph cli))
+
+(define lines-filter-cli
+  (let
+    (cli
+      (cli-create #:options
+        (ql (negate) (or #:description "matching lines must contain any of the strings")
+          (and #:description "matching lines must contain all strings. the default") ((strings ...)))))
+    (thunk
+      (let*
+        ( (arguments (cli)) (strings (map string-downcase (alist-q-ref arguments strings (list))))
+          (negate? (alist-q-ref arguments negate)) (or? (alist-q-ref arguments or))
+          (and? (alist-q-ref arguments and)))
+        (if (null? strings) (port-copy-all (current-input-port) (current-output-port))
+          (let*
+            ( (match? (if or? string-contains-any? string-contains-every?))
+              (match-line? (l (line) (match? (string-downcase line) strings))))
+            (port-lines-each
+              (if negate? (l (line) (if (not (match-line? line)) (display-line line)))
+                (l (line) (if (match-line? line) (display-line line)))))))))))
+
+(lines-filter-cli)
