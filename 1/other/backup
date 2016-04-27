@@ -44,7 +44,7 @@
     (compact
       (list
         (and path (string-append "--target=" (create-full-destination-path source-name path #t)))
-        (and (> size max-bits-for-compression) "--compression") (and dry-run "--dry-run")
+        (and (<= size max-bits-for-compression) "--compression") (and dry-run "--dry-run")
         (and encrypt "--encryption")))))
 
 (define (pack-process-proc . a) (thunk (apply process-replace (apply pack-process-arguments a))))
