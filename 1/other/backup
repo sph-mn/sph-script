@@ -18,7 +18,13 @@
         (delete-file path-filelist)))
     sources))
 
-(define program-description "a backup file creator")
+(define program-description
+  (string-join
+    (list "a backup archive creator"
+      "sources are config file names and can be multiple names separated by a dot, for example \"mail.system.documents\""
+      "destinations are existing directory paths")
+    "\n  "))
+
 (define program-dependencies (q ("pack")))
 (define max-bits-for-compression (expt 2 31))
 (define path-config (string-append (getenv "HOME") "/.config/backup/"))
