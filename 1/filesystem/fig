@@ -1,4 +1,4 @@
 #!/bin/sh
-#usage "fig search-string ..."
-#list paths under the current working directory matching strings
-find |grep -i "$*"
+# usage: "fig search-string ..."
+# list paths under the current working directory matching strings
+find |lines-filter $*
