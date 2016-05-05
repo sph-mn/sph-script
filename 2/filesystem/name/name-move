@@ -7,6 +7,6 @@
   (if (> (string-length name) 0)
     (begin (if (not (file-exists? name)) (mkdir name))
       (if (is-directory? name) (apply execute "mv" "-t" name paths)
-        (debug-log "target exists and is not a directory")))))
+        (display-line "target exists and is not a directory")))))
 
 (apply move (tail (program-arguments)))

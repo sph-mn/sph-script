@@ -1,0 +1,10 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common) (sph filesystem faceted) (sph cli))
+
+(define (name-remove-cli)
+  (let (arguments ((cli-create #:options (ql ((names path ...) #:required? #t)))))
+    (alist-bind arguments (names path) (file-name-facet-remove (string-split names #\.) path))))
+
+(name-remove-cli)
