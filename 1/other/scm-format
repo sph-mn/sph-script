@@ -9,21 +9,36 @@
       (let (arg-with-suffix (string-append arg ".scm"))
         (if (file-exists? arg-with-suffix) arg-with-suffix arg)))))
 
-(let*
-  ( (options ((cli-create #:options (q ((in-place #:names #\i) ((source-path ...)))))))
-    (source-path (alist-ref options (q source-path))))
-  (if source-path
-    (each
-      (l (file-path)
-        (let (file-path (scm-suffix-file-path file-path))
-          ( (if (assoc-ref options (q in-place))
-              (l (res)
-                (if (not (string-null? res))
-                  (begin
-                    (copy-file file-path
-                      (get-unique-target-path (string-append "/tmp/" (basename file-path))))
-                    (call-with-output-file file-path (l (file) (display res file))))))
-              display)
-            (call-with-input-file file-path scm-format-port))))
-      source-path)
-    (display (scm-format-port (current-input-port)))))
+(define parse-program-arguments
+  (cli-create #:options
+    (q
+      ( (in-place #:names #\i)
+        (format #:value-required? #t #:description "a scheme list for scm-format format options")
+        (transform #:value-required? #t) ((source-path ...))))))
+
+(define (parse-scm-arg-hashtable a) (list->hashtable (string->datum a)))
+
+(define (create-config format transform)
+  (list->hashtable
+    (append (if format (list (q format) (parse-scm-arg-hashtable format)) (list))
+      (if transform (list (q transform) (parse-scm-arg-hashtable transform)) (list)))))
+
+(define (scm-format-file-path file-path in-place config)
+  (let (file-path (scm-suffix-file-path file-path))
+    ( (if in-place
+        (l (r)
+          (if (not (string-null? r))
+            (begin
+              (copy-file file-path
+                (get-unique-target-path (string-append "/tmp/" (basename file-path))))
+              (call-with-output-file file-path (l (file) (display r file))))))
+        display)
+      (call-with-input-file file-path (l (a) (scm-format-port a config))))))
+
+(define (scm-format-cli)
+  (alist-bind (parse-program-arguments) (source-path format transform in-place)
+    (let (config (create-config format transform))
+      (if source-path (each (l (a) (scm-format-file-path a in-place config)) source-path)
+        (display (scm-format-port (current-input-port) config))))))
+
+(scm-format-cli)
