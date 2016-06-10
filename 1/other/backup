@@ -75,7 +75,7 @@
                 (every
                   (l (destination-path)
                     (if dry-run
-                      (display-process-arguments
+                      (apply display-process-arguments
                         (pack-process-arguments (first source) destination-path
                           dry-run encrypt size))
                       (process-chain-finished-successfully?
@@ -136,7 +136,7 @@
 
 (define backup-cli
   (let
-    ( (cli-sources (l (a) (string-split a #\,)))
+    ( (cli-sources (l (a) (string-split a #\.)))
       (command-line-interface
         (cli-create #:description program-description
           #:options
@@ -145,7 +145,7 @@
             (list-files #:description "list files that would be included in the backup")
             (show-config #:description "display contents a configuration file")
             (combine #:description
-              "combine all files corresponding to given configuration names and create one backup file")
+              "combine dot separated configuration names and create one backup file")
             (encrypt #:names #\e) ((sources destinations ...) #:required? #f #:value-required? #t)))))
     (thunk
       (let

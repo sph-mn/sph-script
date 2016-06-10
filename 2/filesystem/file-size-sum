@@ -6,7 +6,7 @@
 (import (sph) (sph stream) (srfi srfi-41))
 
 (display
-  (stream-fold (l (r e) (catch #t (l () (+ (* 8 (stat:size (stat e))) r)) (l exc r))) 0
+  (stream-fold (l (r e) (catch #t (thunk (+ (* 8 (stat:size (stat e))) r)) (const r))) 0
     (port->line-stream (current-input-port))))
 
 (newline)
