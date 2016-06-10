@@ -2,4 +2,4 @@
 # searchl :: search-string ...
 # search for string inside files under the current working directory and list matching lines
 clear
-grep --recursive --ignore-case --line-number --fixed-strings "$@" *
+grep --dereference-recursive --ignore-case --line-number --fixed-strings "$@" *

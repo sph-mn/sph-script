@@ -1,8 +1,8 @@
 #!/usr/bin/guile
 !#
 
-;displays the sum of the number of bits of content of files, from a call to stat, displayed as a newline separated string on standard-input.
-;the number of bits should be the actual number of bits and not the space usage in the file-systet (for example not rounded to the next higher block-size)
+;displays the sum of the number of bits of content of files, from a call to stat. input is a newline separated list of files read from standard input.
+;the number of bits is supposed to be for the actual content and not the space usage in the file system, for example it is not rounded to the block size
 (import (sph) (sph stream) (srfi srfi-41))
 
 (display
