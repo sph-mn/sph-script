@@ -1,2 +1,26 @@
-#!/bin/sh
-ruby -e '$stdin.each_line{|e| e =~ / function/ ? puts("\n" + e) : puts(e) }'
+#!/usr/bin/guile
+!#
+
+(import (sph common) (ice-9 regex))
+(define (add-function-spacing a) (if (string-match "^\\s*function" a) (string-append "\n" a) a))
+(define (add-prefix-semicolon a) (if (string-match "^\\(" a) (string-append ";" a) a))
+(define (remove-triple-newlines a) (regexp-replace a "\n\n\n+" "\n\n"))
+
+(define result
+  (call-with-output-string
+    (l (output)
+      (port-lines-fold
+        (l a
+          (apply
+            (l (a line-number previous-line)
+              (display-line
+                (add-prefix-semicolon
+                  ( (if (and (> line-number 1) (not (string-contains previous-line "function")))
+                      add-function-spacing identity)
+                    a))
+                output)
+              (list (+ 1 line-number) previous-line))
+            (first a) (second a)))
+        (list 1 "")))))
+
+(display (remove-triple-newlines result))
