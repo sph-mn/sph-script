@@ -31,7 +31,7 @@
 (define default-destination (getcwd))
 
 (define (source-names->destination-file-name a)
-  (string-append (if (string? a) a (string-join a "-")) "." (current-datetime-string)))
+  (string-append (if (string? a) a (string-join a "-")) "." (time-current-iso8601-ks-string)))
 
 (define (create-full-destination-path source-names destination-path use-default-destination)
   (if destination-path

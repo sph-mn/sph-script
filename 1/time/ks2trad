@@ -11,4 +11,4 @@
 (let (ks (string->number (first (tail (program-arguments)))))
   (apply simple-format #t
     "~A:~A:~A\n"
-    (map (compose pad-zeros-2 number->string) (seconds->hours-minutes-seconds (* 1000 ks)))))
+    (map (compose pad-zeros-2 number->string) (time->hms (* 1000 ks)))))
