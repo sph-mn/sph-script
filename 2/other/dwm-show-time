@@ -1,7 +1,6 @@
 #!/bin/dash
-week_count=$(year-week-count)
 set_title() {
-  xsetroot -name "et:$(uptime-duration-ks) $(t) w:$(date +%V)/$week_count"
+  xsetroot -name "et:$(uptime-duration-ks) $(t)"
 }
 
 if [ $# -ne 0 ]
