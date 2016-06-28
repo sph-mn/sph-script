@@ -2,4 +2,4 @@
 !#
 
 (import (sph common))
-(display-line (seconds->day-seconds-string (current-time)))
+(display-line (time-elapsed-day-string (time-current)))
