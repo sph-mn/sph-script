@@ -1,6 +1,6 @@
 #!/bin/dash
 set_title() {
-  xsetroot -name "et:$(uptime-duration-ks) $(t)"
+  xsetroot -name "$(t)"
 }
 
 if [ $# -ne 0 ]
