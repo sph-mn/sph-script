@@ -2,11 +2,11 @@
 !#
 
 ; collect-file :: source-path ...
-
 (import (sph common))
 
 (define destination
-  (string-append (getenv "HOME") "/temp/collections/collected." (current-local-iso-date-string) "/"))
+  (string-append (getenv "HOME") "/temp/collections/collected."
+    (time->iso8601-ymd (time-current)) "/"))
 
 (define description
   (string-append
@@ -15,7 +15,6 @@
 
 ; one use case is browsing files and using right click actions to collect files.
 ; does not use symlinks because copying symlinks copies only symlinks and also does not create copies and one may want to use the collected files in various ways
-
 (define command-line-interface (cli-create #:description description (ql (path ...))))
 
 (define (collect-path a)
