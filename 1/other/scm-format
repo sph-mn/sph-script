@@ -3,16 +3,16 @@
 
 (import (sph common) (sph lang scm-format))
 
-(define (scm-suffix-file-path arg)
-  (if (string-suffix? ".scm" arg) arg
-    (if (file-exists? arg) arg
-      (let (arg-with-suffix (string-append arg ".scm"))
-        (if (file-exists? arg-with-suffix) arg-with-suffix arg)))))
+(define (scm-suffix-file-path a)
+  (if (string-suffix? ".scm" a) a
+    (if (file-exists? a) a
+      (let (a-with-suffix (string-append a ".scm"))
+        (if (file-exists? a-with-suffix) a-with-suffix a)))))
 
 (define parse-program-arguments
   (cli-create #:options
     (q
-      ( (in-place #:names #\i)
+      ( (output #:value-required? #t) (in-place #:names #\i)
         (format #:value-required? #t #:description "a scheme list for scm-format format options")
         (transform #:value-required? #t) ((source-path ...))))))
 
@@ -23,7 +23,7 @@
     (append (if format (list (q format) (parse-scm-arg-hashtable format)) (list))
       (if transform (list (q transform) (parse-scm-arg-hashtable transform)) (list)))))
 
-(define (scm-format-file-path file-path in-place config)
+(define (scm-format-file-path file-path in-place output config)
   (let (file-path (scm-suffix-file-path file-path))
     ( (if in-place
         (l (r)
@@ -32,13 +32,16 @@
               (copy-file file-path
                 (get-unique-target-path (string-append "/tmp/" (basename file-path))))
               (call-with-output-file file-path (l (file) (display r file))))))
-        display)
+        (if output (l (r) (call-with-output-file output (l (a) (display r a)))) display))
       (call-with-input-file file-path (l (a) (scm-format-port a config))))))
 
 (define (scm-format-cli)
-  (alist-bind (parse-program-arguments) (source-path format transform in-place)
+  (alist-bind (parse-program-arguments) (source-path format transform in-place output)
     (let (config (create-config format transform))
-      (if source-path (each (l (a) (scm-format-file-path a in-place config)) source-path)
-        (display (scm-format-port (current-input-port) config))))))
+      (if source-path (each (l (a) (scm-format-file-path a in-place output config)) source-path)
+        (if output
+          (call-with-output-file output
+            (l (port-output) (display (scm-format-port (current-input-port) config) port-output)))
+          (display (scm-format-port (current-input-port) config)))))))
 
 (scm-format-cli)
