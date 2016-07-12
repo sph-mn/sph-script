@@ -2,4 +2,4 @@
 # reads from standard input and converts from xml to sxml
 # depends on guile
 
-guile -c '(import (sph) (sxml simple)) (display (xml->sxml))'
+exec guile -c '(import (sph) (sxml simple)) (display (xml->sxml))'
