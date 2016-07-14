@@ -1,0 +1,9 @@
+{
+  "name": "json-xml-converter",
+  "version": "0.0.1",
+	"dependencies": {
+		"xml2js": "*",
+		"coffee-script": "*",
+		"commander": "*"
+	}
+}
