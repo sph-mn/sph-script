@@ -1,0 +1,4 @@
+#!/bin/sh
+# --ignore-ssl-errors=yes allows us to use self-signed certificates
+# usage: url filename dimensions zoom
+exec node_modules/phantomjs-prebuilt/bin/phantomjs --ignore-ssl-errors=yes exe/rasterize.js $*
