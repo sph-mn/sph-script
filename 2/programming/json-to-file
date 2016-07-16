@@ -1,0 +1,13 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common) (sph cli))
+
+(let
+  (arguments
+    ( (cli-create #:options
+        (ql ((output input) #:required? #t) (json-options #:value-required? #t) (dry-run)))))
+  (alist-bind arguments (output input json-options dry-run)
+    ( (if dry-run display-line shell-eval)
+      (string-append "json " (if json-options (string-append json-options " ") "")
+        "-f " (string-quote input) " > " (string-quote output)))))

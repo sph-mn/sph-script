@@ -1,0 +1,14 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common) (sph cli))
+
+(let
+  (arguments
+    ( (cli-create #:options
+        (ql ((input output) #:required? #t) (astyle-options #:value-required? #t) (dry-run)))))
+  (alist-bind arguments (output input astyle-options dry-run)
+    ( (if dry-run display-line shell-eval)
+      (string-append "astyle --style=gnu --indent=spaces=2 "
+        (if astyle-options (string-append astyle-options " ") "") " < "
+        (string-quote input) " > " (string-quote output)))))
