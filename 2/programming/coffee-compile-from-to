@@ -1,0 +1,2 @@
+#!/bin/sh
+cat "$1" | coffee --stdio --compile --bare --join > "$2"
