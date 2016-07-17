@@ -80,8 +80,8 @@
                           dry-run encrypt size))
                       (process-chain-finished-successfully?
                         (process-create-chain-with-pipes #f #f
-                          (tail source)
-                          (pack-process-proc (first source) destination-path dry-run encrypt size)))))
+                            (tail source)
+                            (pack-process-proc (first source) destination-path dry-run encrypt size)))))
                   destination-paths)))
             sources))))))
 
