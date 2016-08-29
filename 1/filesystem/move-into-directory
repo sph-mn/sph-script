@@ -1,0 +1,17 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common))
+
+(define command-line-interface
+  (cli-create #:options (ql ((path-directory path-file ...) #:value-required? #t #:required? #t))
+    #:description "ensures that a directory exists and moves all specified files into it"))
+
+(define (move-into-directory path-directory path-file) (ensure-directory-structure path-directory)
+  (let (path-file (delete path-directory path-file))
+    (if (null? path-file) #t
+      (apply execute "mv" (cli-option "target-directory" path-directory) path-file))))
+
+(let (arguments (command-line-interface))
+  (if (null? arguments) (command-line-interface (list "--help"))
+    (move-into-directory (alist-q-ref arguments path-directory) (alist-q-ref arguments path-file))))

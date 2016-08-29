@@ -15,6 +15,7 @@ see [sph-script](http://sph.mn/content/1467).
 │   ├── mount-home
 │   ├── mount-sshfs-home
 │   ├── move-and-link
+│   ├── move-into-directory
 │   ├── path-directories
 │   ├── path-permissions
 │   ├── rename-lowercase
@@ -23,14 +24,6 @@ see [sph-script](http://sph.mn/content/1467).
 │   ├── set-permissions
 │   ├── splice
 │   └── tidyfiles
-├── name
-│   ├── gui-move
-│   ├── gui-name-add
-│   ├── gui-name-del
-│   ├── name-add
-│   ├── name-del
-│   ├── name-move
-│   └── name-sort
 ├── other
 │   ├── backup
 │   ├── g
@@ -44,11 +37,14 @@ see [sph-script](http://sph.mn/content/1467).
 │   ├── comma-to-newline
 │   ├── compress-whitespace-columns
 │   ├── itpn
+│   ├── lines-filter
+│   ├── lines-reject
 │   ├── lowercase
 │   ├── newline-to-comma
 │   ├── newline-to-space
 │   ├── remove-double-newlines
 │   ├── remove-hash-comment-lines
+│   ├── space-to-newline
 │   └── tabular-select
 └── time
     ├── d
@@ -73,8 +69,11 @@ see [sph-script](http://sph.mn/content/1467).
 │   ├── display-relative-path-up
 │   ├── file-size-sum
 │   ├── format-encrypt
+│   ├── gui-move-into-directory
+│   ├── hardlink-to-copy
 │   ├── lf
 │   ├── mkdir-wrap
+│   ├── name
 │   ├── name-add-date
 │   └── prepend-to-filename
 ├── other
@@ -85,6 +84,8 @@ see [sph-script](http://sph.mn/content/1467).
 │   ├── dwm-show-time
 │   ├── e
 │   ├── get-audio-disc-files
+│   ├── git-create-stable-branch
+│   ├── git-merge-stable-master
 │   ├── git-push
 │   ├── git-stati
 │   ├── gui-emacs
@@ -94,6 +95,8 @@ see [sph-script](http://sph.mn/content/1467).
 │   ├── ldd-list-not-found
 │   ├── mariadb-create-user-database
 │   ├── posixtime
+│   ├── repeated-screenshots
+│   ├── repeated-screenshots-video
 │   ├── sakura-start
 │   ├── scale
 │   ├── screenshot
@@ -101,20 +104,23 @@ see [sph-script](http://sph.mn/content/1467).
 │   ├── show-process-memory-usage-top
 │   ├── split-flac-cue
 │   ├── ssh-install-key
+│   ├── take-website-screenshot
 │   ├── times2ks
-│   ├── tracking-screenshots
-│   ├── tracking-screenshots-video
 │   └── trad2s
 ├── programming
+│   ├── astyle-to-file
 │   ├── coffee-compile
+│   ├── coffee-compile-from-to
 │   ├── compress-js
 │   ├── javascript-format
 │   ├── javascript-format-add-function-spacing
 │   ├── javascript-remove-semicolons
+│   ├── json-to-file
 │   ├── lines-to-scheme-data
 │   ├── scm-doc
 │   ├── sql-format
-│   └── xml-format
+│   ├── xml-format
+│   └── xml-json-converter
 ├── text
 │   ├── alternate-text-direction
 │   ├── camelcase-to-dashes
@@ -128,4 +134,9 @@ see [sph-script](http://sph.mn/content/1467).
 │   └── string-bits
 └── time-display
     └── dt
+```
+
+you might use the following to symlink the scripts to a path that is listed in the $PATH environment variable:
+```
+cp -st $HOME/.exe /home/nonroot/p/pp/sph-script/*/*/*
 ```

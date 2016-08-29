@@ -1,0 +1,9 @@
+#!/bin/sh
+# hardlink-to-copy :: filename
+# copies the file specified by path to a temporary location and then renames the temporary path to the old one, which makes hardlinks to be copies
+
+filename="$1"
+dir=$(dirname -- "$filename")
+tmp=$(TMPDIR=$dir mktemp)
+cp -p -- "$filename" "$tmp"
+mv -f -- "$tmp" "$filename"

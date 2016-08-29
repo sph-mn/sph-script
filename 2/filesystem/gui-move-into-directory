@@ -1,0 +1,10 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common))
+;usage: path-file-to-move ...
+;asks for a target path
+
+(let (path-directory (string-trim-right (shell-eval->string "zenity --entry")))
+  (if (> (string-length path-directory) 0)
+    (apply execute "move-into-directory" path-directory (tail (program-arguments)))))
