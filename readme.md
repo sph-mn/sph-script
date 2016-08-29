@@ -138,5 +138,5 @@ see [sph-script](http://sph.mn/content/1467).
 
 you might use the following to symlink the scripts to a path that is listed in the $PATH environment variable:
 ```
-cp -st $HOME/.exe /home/nonroot/p/pp/sph-script/*/*/*
+cp -st $HOME/.exe sph-script/*/*/*
 ```
