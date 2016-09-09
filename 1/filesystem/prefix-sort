@@ -1,0 +1,60 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common) (ice-9 pretty-print))
+(define default-delimiter #\.)
+
+(define (prefix-sort dry-run? delimiter . paths)
+  (each
+    (l (path-parent)
+      (let
+        (action-data
+          (let*
+            ( (file-data
+                (let*
+                  ( (file-names (directory-list path-parent))
+                    (prefixes (map (l (a) (first (string-split a delimiter))) file-names)))
+                  (filter-map
+                    (l (prefix file-name)
+                      (let (prefix-count (count (l (a) (string-prefix-ci? prefix a)) prefixes))
+                        (and (> prefix-count 1)
+                          (pair prefix (string-append path-parent "/" file-name)))))
+                    prefixes file-names)))
+              (groups (index-with-accessor first file-data)))
+            (append-map
+              (l (a)
+                (apply
+                  (l (prefix . file-data)
+                    (pair (list (q mkdir) (string-append path-parent "/" prefix))
+                      (map
+                        (l (path-file)
+                          (list (q rename-file) path-file
+                            (string-append path-parent "/" prefix "/" (basename path-file))))
+                        (map tail file-data))))
+                  a))
+              groups)))
+        (if dry-run? (pretty-print action-data)
+          (every
+            (l (a)
+              (catch #t
+                (thunk
+                  (apply (case (first a) ((rename-file) rename-file) ((mkdir) mkdir)) (tail a)))
+                (l a #t)))
+            action-data))))
+    (map path->full-path paths)))
+
+(define (prefix-sort-cli)
+  (let*
+    ( (cli
+        (cli-create #:options
+          (q ((delimiter #:names #\d #:value-required? #t) (dry-run) ((path-directory ...))))
+          #:description
+          "search for multiple files that share a prefix (by default delimited with a dot) and move them into a directory with the name of the prefix"))
+      (arguments (cli))
+      (delimiter
+        (let (a (alist-q-ref arguments delimiter))
+          (if (and (string? a) (= 1 (string-length a))) (string-ref a 0) default-delimiter))))
+    (apply prefix-sort (alist-q-ref arguments dry-run)
+      delimiter (any->list (alist-q-ref arguments path-directory)))))
+
+(prefix-sort-cli)
