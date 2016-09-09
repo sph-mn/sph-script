@@ -1,0 +1,2 @@
+#!/bin/sh
+tree 1 2 -L 2

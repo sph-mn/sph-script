@@ -18,6 +18,7 @@ see [sph-script](http://sph.mn/content/1467).
 │   ├── move-into-directory
 │   ├── path-directories
 │   ├── path-permissions
+│   ├── prefix-sort
 │   ├── rename-lowercase
 │   ├── search
 │   ├── searchl
@@ -68,6 +69,7 @@ see [sph-script](http://sph.mn/content/1467).
 │   ├── delete-duplicate-files
 │   ├── display-relative-path-up
 │   ├── file-size-sum
+│   ├── find-leaf-directories
 │   ├── format-encrypt
 │   ├── gui-move-into-directory
 │   ├── hardlink-to-copy
@@ -132,8 +134,9 @@ see [sph-script](http://sph.mn/content/1467).
 │   ├── randomise-lines
 │   ├── remove-iso-date-prefix-zeros
 │   └── string-bits
-└── time-display
-    └── dt
+└── time
+    ├── dt
+    └── utc-seconds-to-date
 ```
 
 you might use the following to symlink the scripts to a path that is listed in the $PATH environment variable:
