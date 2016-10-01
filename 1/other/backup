@@ -11,8 +11,7 @@
         (call-with-output-file path-filelist
           (l (port-output)
             (process-chain-finished-successfully?
-              (process-create-chain-with-pipes #f port-output
-                (tail source) (thunk (port-copy-all (current-input-port) (current-output-port)))))))
+              (process-create-chain-with-pipes #f port-output (tail source)))))
         ( (if dry-run display-process-arguments execute) "tarsnap" "-cf"
           (source-names->destination-file-name (first source)) "-T" path-filelist)
         (delete-file path-filelist)))
@@ -80,8 +79,8 @@
                           dry-run encrypt size))
                       (process-chain-finished-successfully?
                         (process-create-chain-with-pipes #f #f
-                            (tail source)
-                            (pack-process-proc (first source) destination-path dry-run encrypt size)))))
+                          (tail source)
+                          (pack-process-proc (first source) destination-path dry-run encrypt size)))))
                   destination-paths)))
             sources))))))
 
