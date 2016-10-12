@@ -2,20 +2,6 @@
 !#
 
 (import (sph common) (only (ice-9 ftw) scandir))
-(define (display-process-arguments . a) (display-line (string-join a " ")))
-
-(define (create-result-backup-tarsnap sources dry-run)
-  (every
-    (l (source)
-      (let (path-filelist (tmpnam))
-        (call-with-output-file path-filelist
-          (l (port-output)
-            (process-chain-finished-successfully?
-              (process-create-chain-with-pipes #f port-output (tail source)))))
-        ( (if dry-run display-process-arguments execute) "tarsnap" "-cf"
-          (source-names->destination-file-name (first source)) "-T" path-filelist)
-        (delete-file path-filelist)))
-    sources))
 
 (define program-description
   (string-join
@@ -28,6 +14,18 @@
 (define max-bits-for-compression (expt 2 31))
 (define path-config (string-append (getenv "HOME") "/.config/backup/"))
 (define default-destination (getcwd))
+(define (display-process-arguments . a) (display-line (string-join a " ")))
+
+(define (create-result-backup-tarsnap sources dry-run)
+  (every
+    (l (source)
+      (let (path-filelist (tmpnam))
+        (call-with-output-file path-filelist
+          (l (port) (process-finished-successfully? (process-create (tail source) #f port))))
+        ( (if dry-run display-process-arguments execute) "tarsnap" "-cf"
+          (source-names->destination-file-name (first source)) "-T" path-filelist)
+        (delete-file path-filelist)))
+    sources))
 
 (define (source-names->destination-file-name a)
   (string-append (if (string? a) a (string-join a "-")) "." (time-current-iso8601-ks-string)))
@@ -109,8 +107,11 @@
   (if combine
     (list
       (pair sources
-        (thunk (each (l (a) (execute->port (current-output-port) (name->source-path a))) sources))))
-    (map (l (a) (pair a (thunk (execute->port (current-output-port) (name->source-path a)))))
+        (thunk (each (l (a) (execute->port (current-output-port) (name->source-path a))) sources)
+          (force-output))))
+    (map
+      (l (a)
+        (pair a (thunk (execute->port (current-output-port) (name->source-path a)) (force-output))))
       sources)))
 
 (define create-result-backup

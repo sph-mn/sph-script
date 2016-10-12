@@ -6,9 +6,9 @@
 ;example: ks2trad 53.4 -> 14:50:00
 
 (import (sph common) (sph time utc))
-(define (pad-zeros-2 a) (pad-with-zeros a 2))
+(define (fill-zeros a) (string-fill-left a 2 #\0))
 
 (let (ks (string->number (first (tail (program-arguments)))))
   (apply simple-format #t
     "~A:~A:~A\n"
-    (map (compose pad-zeros-2 number->string) (utc-duration->hms (* 1000 ks)))))
+    (map (compose fill-zeros number->string) (utc-duration->hms (* 1000 ks)))))
