@@ -114,7 +114,7 @@
 (define (display-error-and-exit error)
   (display-line
     (prefix-tree->indent-tree-string
-      (list (any->string (error-name error)) (format-error-data (error-data error))))
+      (list (any->string (error-id error)) (format-error-data (error-data error))))
     (current-error-port))
   (exit 1))
 
@@ -154,18 +154,21 @@
           (l (type create-result)
             (if paths
               (let (inaccessible-path (find (negate file-exists?) paths))
-                (if inaccessible-path (error-create (q inaccessible-path) inaccessible-path)
-                  (error-pass-if-not
-                    (file-system-fold* (l (path stat r) (not (error? r)))
-                      (l (path stat r)
-                        (if (error? r) r
-                          (let
-                            (r-one
-                              (process-one (get-all-itpn-from-file-path path) path create-result))
-                            (if (error? r-one) r-one (pair r-one r)))))
-                      file-system-fold-identity file-system-fold-identity
-                      file-system-fold-identity file-system-fold-error (list) paths)
-                    (l (r) (pair type r)))))
+                (if inaccessible-path
+                  (error-create (q inaccessible-path) (q itpn)
+                    (list (pair "path" inaccessible-path)))
+                  (error-let*
+                    (r
+                      (file-system-fold* (l (path stat r) (not (error? r)))
+                        (l (path stat r)
+                          (if (error? r) r
+                            (let
+                              (r-one
+                                (process-one (get-all-itpn-from-file-path path) path create-result))
+                              (if (error? r-one) r-one (pair r-one r)))))
+                        file-system-fold-identity file-system-fold-identity
+                        file-system-fold-identity file-system-fold-error (list) paths))
+                    (pair type r))))
               (list type
                 (process-one (get-all-itpn-from-standard-input) "standard-input" create-result)))))))))
 
@@ -283,11 +286,11 @@
   (if (error? a) a
     (if (null? a) (exit 0)
       (case (first a) ((syntax-check) (exit (if (every identity (tail (tail a))) 0 1)))
-        ((parsed-itpn partition) (error-pass-if-not (process-after a) output-handler))))))
+        ((parsed-itpn partition) (error-return (process-after a) output-handler))))))
 
 (define (itpn-filter-cli)
   (let* ((arguments (command-line-interface)))
-    (error-pass-if
+    (error-pass
       (result-handler arguments
         ( (input-handler-proc arguments) (alist-q-ref arguments file-paths)
           (process-one-proc arguments))

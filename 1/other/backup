@@ -12,7 +12,19 @@
 
 (define program-dependencies (q ("pack")))
 (define max-bits-for-compression (expt 2 31))
-(define path-config (string-append (getenv "HOME") "/.config/backup/"))
+(define path-config-home (string-append (getenv "HOME") "/.config/backup/"))
+(define path-config-etc (string-append "/etc/backup/"))
+
+(define* (error-log-and-exit a #:optional (exit-code -1))
+  "error integer ->
+  write a representation of error to standard output and exit with \"exit-code\", which is -1 by default"
+  (debug-log a) (exit exit-code))
+
+(define (get-path-config)
+  (if (file-exists? path-config-home) path-config-home
+    (if (file-exists? path-config-etc) path-config-etc
+      (error-create (q no-accessible-configuration-path) (list path-config-home path-config-etc)))))
+
 (define default-destination (getcwd))
 (define (display-process-arguments . a) (display-line (string-join a " ")))
 
@@ -28,7 +40,8 @@
     sources))
 
 (define (source-names->destination-file-name a)
-  (string-append (if (string? a) a (string-join a "-")) "." (time-current-iso8601-ks-string)))
+  (string-append (if (string? a) a (string-join a "-")) "."
+    (time-current-iso8601-date-and-day-s-string)))
 
 (define (create-full-destination-path source-names destination-path use-default-destination)
   (if destination-path
@@ -64,27 +77,28 @@
       (let
         ( (destination-paths
             (map ensure-trailing-slash
-              (if destinations (map path->full-path destinations) (list (getcwd))))))
-        (error-identity-if (validate-destination-paths destination-paths)
-          (every
-            (l (source)
-              (let (size (source->file-size-sum source))
-                (every
-                  (l (destination-path)
-                    (if dry-run
-                      (apply display-process-arguments
-                        (pack-process-arguments (first source) destination-path
-                          dry-run encrypt size))
-                      (process-chain-finished-successfully?
-                        (process-create-chain-with-pipes #f #f
-                          (tail source)
-                          (pack-process-proc (first source) destination-path dry-run encrypt size)))))
-                  destination-paths)))
-            sources))))))
+              (if destinations (map path->full-path destinations) (list default-destination)))))
+        (error-return (validate-destination-paths destination-paths)
+          (l (valid?)
+            (every
+              (l (source)
+                (let (size (source->file-size-sum source))
+                  (every
+                    (l (destination-path)
+                      (if dry-run
+                        (apply display-process-arguments
+                          (pack-process-arguments (first source) destination-path
+                            dry-run encrypt size))
+                        (process-chain-finished-successfully?
+                          (process-create-chain-with-pipes #f #f
+                            (tail source)
+                            (pack-process-proc (first source) destination-path dry-run encrypt size)))))
+                    destination-paths)))
+              sources)))))))
 
-(define (name->source-path a) "string -> string" (string-append path-config a))
+(define (name->source-path a path-config) "string -> string" (string-append path-config a))
 
-(define (get-source-names) "-> (string ...)/false"
+(define (get-source-names path-config) "-> (string ...)/false"
   (false-if-exception
     (filter
       (l (e)
@@ -94,45 +108,52 @@
               (not (= 0 (logand 73 (stat:perms stat-info))))))))
       (scandir path-config))))
 
-(define (create-result-list-configs)
-  (display-line (string-join (list-sort string<? (get-source-names)) " ")) #f)
+(define (create-result-list-configs path-config)
+  (display-line (string-join (list-sort string<? (get-source-names path-config)) " ")) #f)
 
-(define (create-result-show-config source-names)
-  (each (l (a) (display (file->string (name->source-path a)))) source-names) #f)
+(define (create-result-show-config source-names path-config)
+  (each (l (a) (display (file->string (name->source-path a path-config)))) source-names) #f)
 
-(define (create-result-list-files source-names)
-  (each (l (a) (execute (name->source-path a))) source-names) #f)
+(define (create-result-list-files source-names path-config)
+  (each (l (a) (execute (name->source-path a path-config))) source-names) #f)
 
-(define (source-names->sources sources combine) "-> (list:proc-conf ...)"
+(define (source-names->sources sources combine path-config) "-> (list:proc-conf ...)"
   (if combine
     (list
       (pair sources
-        (thunk (each (l (a) (execute->port (current-output-port) (name->source-path a))) sources)
+        (thunk
+          (each (l (a) (execute->port (current-output-port) (name->source-path a path-config)))
+            sources)
           (force-output))))
     (map
       (l (a)
-        (pair a (thunk (execute->port (current-output-port) (name->source-path a)) (force-output))))
+        (pair a
+          (thunk (execute->port (current-output-port) (name->source-path a path-config))
+            (force-output))))
       sources)))
 
 (define create-result-backup
   (let
     (validate-source-names
-      (l (a)
-        (let (missing-source-names (complement a (get-source-names)))
+      (l (a path-config)
+        (let (missing-source-names (complement a (get-source-names path-config)))
           (if (null? missing-source-names) #t
             (error-create (q missing-source-names) missing-source-names)))))
-    (l (combine destinations dry-run encrypt source-names tarsnap)
-      (error-identity-if (validate-source-names source-names)
-        (let (sources (source-names->sources source-names combine))
-          (if tarsnap (create-result-backup-tarsnap sources dry-run)
-            (create-result-backup-files sources destinations encrypt dry-run)))))))
+    (l (combine destinations dry-run encrypt source-names tarsnap path-config)
+      (error-return (validate-source-names source-names path-config)
+        (l (valid?)
+          (let (sources (source-names->sources source-names combine path-config))
+            (if tarsnap (create-result-backup-tarsnap sources dry-run)
+              (create-result-backup-files sources destinations encrypt dry-run))))))))
 
 (define*
   (backup #:key combine destinations dry-run encrypt list-configs list-files show-config sources
     tarsnap)
-  (cond (list-files (create-result-list-files sources)) (list-configs (create-result-list-configs))
-    (show-config (create-result-show-config sources))
-    (else (create-result-backup combine destinations dry-run encrypt sources tarsnap))))
+  (let (path-config (get-path-config)) (chdir path-config)
+    (cond (list-files (create-result-list-files sources path-config))
+      (list-configs (create-result-list-configs path-config))
+      (show-config (create-result-show-config sources path-config))
+      (else (create-result-backup combine destinations dry-run encrypt sources tarsnap path-config)))))
 
 (define backup-cli
   (let
@@ -155,6 +176,6 @@
               (let ((key (first a)) (value (tail a)))
                 (list (symbol->keyword key) (case key ((sources) (cli-sources value)) (else value)))))
             (command-line-interface)))
-        (error-pass-if (apply backup keyword-arguments) error-log-and-exit)))))
+        (error-pass (apply backup keyword-arguments) error-log-and-exit)))))
 
 (backup-cli)
