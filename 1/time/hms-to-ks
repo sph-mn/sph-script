@@ -7,7 +7,7 @@
 (define hms-description
   (list
     "converts all hh:[mm:[ss]] time values read from standard input or given as arguments to kiloseconds."
-    "appends ks values in brackets to the hms values by default. for example \"23:59 (86.34)\""))
+    "when reading from standard input it appends ks values in brackets to the hms values by default. for example \"23:59 (86.34)\""))
 
 (define (hms-to-ks-stream replace? port-input)
   (port-lines-map->port
@@ -26,11 +26,11 @@
     (arguments
       ( (cli-create #:options
           (ql
-            (replace #:names #\c
+            (replace #:names #\r
               #:description
               "no ks values in brackets, times are replaced. default for string arguments")
-            (no-replace #:description
-              "opposite of \"--replace\". default when reading from standard input")
+            (no-replace #:names #\n
+              #:description "opposite of \"--replace\". default when reading from standard input")
             ((string-argument ...)))
           #:description (string-join hms-description "\n  "))))
     (alist-bind arguments (replace no-replace string-argument)
