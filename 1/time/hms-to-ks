@@ -1,0 +1,43 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common) (ice-9 regex))
+(define regexp-hms (make-regexp "([01]?[0-9]|2[0-3]):([0-5]?[0-9])(:[0-5]?[0-9])?"))
+
+(define hms-description
+  (list
+    "converts all hh:[mm:[ss]] time values read from standard input or given as arguments to kiloseconds."
+    "appends ks values in brackets to the hms values by default. for example \"23:59 (86.34)\""))
+
+(define (hms-to-ks-stream replace? port-input)
+  (port-lines-map->port
+    (let
+      (replacer
+        (if replace?
+          (l (match) (time-elapsed-day-string (time-from-hms-string (match:substring match)) 3 2))
+          (l (match)
+            (let (hms (match:substring match))
+              (string-append hms " (" (time-elapsed-day-string (time-from-hms-string hms) 3 2) ")")))))
+      (l (line) (regexp-replace line regexp-hms replacer)))
+    port-input))
+
+(define (hms-to-ks-cli)
+  (let
+    (arguments
+      ( (cli-create #:options
+          (ql
+            (replace #:names #\c
+              #:description
+              "no ks values in brackets, times are replaced. default for string arguments")
+            (no-replace #:description
+              "opposite of \"--replace\". default when reading from standard input")
+            ((string-argument ...)))
+          #:description (string-join hms-description "\n  "))))
+    (alist-bind arguments (replace no-replace string-argument)
+      (if string-argument
+        (begin
+          (hms-to-ks-stream (not no-replace) (open-input-string (string-join string-argument " ")))
+          (newline))
+        (hms-to-ks-stream replace (current-input-port))))))
+
+(hms-to-ks-cli)
