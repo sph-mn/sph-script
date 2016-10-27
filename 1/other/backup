@@ -115,20 +115,28 @@
   (each (l (a) (display (file->string (name->source-path a path-config)))) source-names) #f)
 
 (define (create-result-list-files source-names path-config)
-  (each (l (a) (execute (name->source-path a path-config))) source-names) #f)
+  (each
+    (l (a)
+      (call-with-working-directory path-config (thunk (execute (name->source-path a path-config)))))
+    source-names)
+  #f)
 
 (define (source-names->sources sources combine path-config) "-> (list:proc-conf ...)"
   (if combine
     (list
       (pair sources
         (thunk
-          (each (l (a) (execute->port (current-output-port) (name->source-path a path-config)))
-            sources)
+          (call-with-working-directory path-config
+            (thunk
+              (each (l (a) (execute->port (current-output-port) (name->source-path a path-config)))
+                sources)))
           (force-output))))
     (map
       (l (a)
         (pair a
-          (thunk (execute->port (current-output-port) (name->source-path a path-config))
+          (thunk
+            (call-with-working-directory path-config
+              (thunk (execute->port (current-output-port) (name->source-path a path-config))))
             (force-output))))
       sources)))
 
@@ -149,7 +157,7 @@
 (define*
   (backup #:key combine destinations dry-run encrypt list-configs list-files show-config sources
     tarsnap)
-  (let (path-config (get-path-config)) (chdir path-config)
+  (let (path-config (get-path-config))
     (cond (list-files (create-result-list-files sources path-config))
       (list-configs (create-result-list-configs path-config))
       (show-config (create-result-show-config sources path-config))
