@@ -2,7 +2,7 @@
 !#
 
 (import (ice-9 ftw) (sph common)
-  (sph lang itpn) (sph two) (sph lang indent-syntax) (sph replacement-table))
+  (sph lang itpn) (sph two) (ice-9 match) (sph lang indent-syntax) (sph replacement-table))
 
 (define program-description "indent packet notation filter and transformer")
 
@@ -13,7 +13,8 @@
       (search-suffix #:value-required? #t) (search-all #:names #\a #:value-required? #t)
       (sort-facets)
       (replace-facet #:value-required? #t
-        #:description "value format: \"facet[.facet] facet[.facet]\"")
+        #:description
+        "value format: \"facets-to-replace replacements\" \"facet[.facet] facet[.facet]\"")
       (replace-facets-from-file #:value-required? #t
         #:description
         "takes a path to a file that contains lines in the format \"facet replacement ...\"")
@@ -25,7 +26,8 @@
       (output-file-1 #:value-required? #t #:description "path for a file to write matches to")
       (output-file-2 #:value-required? #t #:description "path for a file to write non-matches to")
       (format #:value-required? #t
-        #:description "prefix/suffix/file. comma-separated list of names of parts to display")
+        #:description
+        "prefix/suffix/filename. comma-separated names of block parts to display. default: prefix,suffix")
       (exclude #:names #\e) (syntax-check #:names #\c) (list-unique-facets) (sort-packets))))
 
 (define (cli-parse-replace-facet a) "string:\"facet[.facet ...] facet[.facet ...]\" -> list"
@@ -177,7 +179,7 @@
   (let (format (alist-q-ref arguments format))
     (if format
       (let (format (string-split format #\,))
-        (apply c (map (l (a) (contains? format a)) (list "file" "prefix" "suffix"))))
+        (apply c (map (l (a) (contains? format a)) (list "filename" "prefix" "suffix"))))
       (c #f #t #t))))
 
 (define (process-one-proc arguments)
@@ -188,7 +190,10 @@
     (check-for-parse-errors& parsed-itpn path (thunk (pair path (create-result parsed-itpn path))))))
 
 (define (result-map-data proc a) "procedure list -> list"
-  (apply (l (type path . data) (pairs type path (proc data))) a))
+  (pair (first a) (map-apply (l (filename . data) (pair filename (proc data))) (tail a))))
+
+(define (result? a) (match a (((? symbol? type) ((? string? path) data ...) ...) #t) (_ #f)))
+(define (result->data a) (apply append (map (l (a) (tail a)) (tail a))))
 
 (define (process-after-proc arguments)
   (let
@@ -197,8 +202,8 @@
     (l (result) "list -> list"
       (let (type (first result))
         (cond
-          ( (eqv? (q unique-facets) type)
-            (result-map-data (l (a) (list-sort string<? (delete-duplicates a))) result))
+          ( (eq? (q unique-facets) type)
+            (pair type (list-sort string<? (delete-duplicates (result->data result)))))
           (sort-packets?
             (case type
               ((parsed-itpn) (result-map-data (l (a) (itpn-packets-sort a string<?)) result))
@@ -279,14 +284,15 @@
                           packets-matching show-file? show-prefix? show-suffix?)
                         (display-parsed-itpn-one port-non-matches path
                           packets-not-matching show-file? show-prefix? show-suffix?))))
-                  (else (display-line result))))
+                  ((unique-facets) (each display-line data)) (else (display-line result))))
               result)))))))
 
 (define (result-handler arguments a process-after output-handler) "list list -> [list]"
-  (if (error? a) a
-    (if (null? a) (exit 0)
+  (cond ((error? a) a) ((null? a) (exit 0))
+    ( (result? a)
       (case (first a) ((syntax-check) (exit (if (every identity (tail (tail a))) 0 1)))
-        ((parsed-itpn partition) (error-return (process-after a) output-handler))))))
+        ((parsed-itpn partition unique-facets) (error-return (process-after a) output-handler))))
+    (else (error-create (q invalid-internal-result-format)))))
 
 (define (itpn-filter-cli)
   (let* ((arguments (command-line-interface)))
