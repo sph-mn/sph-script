@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# usage: with-warning-and-delay command ...
+
+read -p "are you sure? [y/N]" -r reply
+if [ "$reply" = "y" ]
+then
+  echo waiting 5 seconds...
+  sleep 5
+  echo running
+  $*
+fi
