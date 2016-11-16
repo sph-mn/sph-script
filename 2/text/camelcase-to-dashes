@@ -1,6 +1,0 @@
-#!/usr/bin/guile
-!#
-
-(import (sph common))
-
-(port-lines-map->port string-camelcase->dashes)
