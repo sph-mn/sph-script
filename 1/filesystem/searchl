@@ -1,5 +1,15 @@
-#!/bin/sh
-# searchl :: search-string ...
-# search for string inside files under the current working directory and list matching lines
-clear
-grep --dereference-recursive --ignore-case --line-number --fixed-strings "$@" *
+#!/usr/bin/guile
+!#
+
+; searchl :: search-string ...
+; search for string inside files under the current working directory and list matching lines
+(import (sph common))
+
+(define (searchl-cli to-search . to-filter) (execute "clear")
+  (process-chain-finished-successfully?
+    (process-create-chain-with-pipes #f (current-output-port)
+      (list "grep" "--dereference-recursive"
+        "--ignore-case" "--line-number" "--fixed-strings" to-search)
+      (pair "lines-filter" to-filter))))
+
+(apply searchl-cli (tail (program-arguments)))

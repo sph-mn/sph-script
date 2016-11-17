@@ -70,7 +70,7 @@
     (validate-destination-paths
       (l (a)
         (let
-          (non-directories (filter (l (a) (catch #t (thunk (not (is-directory? a))) (const #t))) a))
+          (non-directories (filter (l (a) (catch #t (thunk (not (file-path-directory? a))) (const #t))) a))
           (if (null? non-directories) #t
             (error-create (q non-directory-destination-paths) non-directories)))))
     (l (sources destinations encrypt dry-run)
