@@ -1,1 +1,15 @@
-git log --decorate --format=format:'%ae %ad %s %h' --name-status --date=short --reverse -n 16 $* |ruby -e '$stdin.each_line {|line| puts line.sub("@intera.de", "").sub(/\[[A-Z]+\] /, "") }'
+#!/bin/sh
+# usage: git-log [git-options ...]
+# "git log" that lists the changed files and the most important commit information.
+# does not need "less" to see the newest entry on the terminal because entries are sorted from oldest to newest.
+# example format:
+#---
+# user@host.eu 2016-10-31 commit message text 3d928e6
+# M	1/text/itpn
+#
+# user@host.eu 2016-11-16 commit message text 720416c
+# A	2/text/camelcase-to-dash
+# D	2/text/camelcase-to-dashes
+# A	2/text/camelcase-to-underscore
+
+git --no-pager log --decorate --format=format:'%ae %ad %s %h' --name-status --date=short --reverse --max-count=16 $*
