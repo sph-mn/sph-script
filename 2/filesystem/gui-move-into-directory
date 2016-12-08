@@ -32,7 +32,7 @@
             (shell-eval->string (string-append "zenity --entry" entry-text-option)))))
       (if (> (string-length path-directory) 0)
         (begin
-          (if (not (string-equal? last-used path-directory))
+          (if (and last-used (not (string-equal? last-used path-directory)))
             (set-last-used-directory path-directory))
           (apply execute "move-into-directory" path-directory paths))))))
 
