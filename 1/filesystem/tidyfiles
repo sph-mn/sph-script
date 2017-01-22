@@ -19,7 +19,7 @@
 (define-syntax-rule (filename-extension-case path cond ...)
   (let (t (filename-extension path)) (string-case (or t "") cond ...)))
 
-(define ignored-filenames (q ("personal" "download")))
+(define ignored-filenames (q ("personal" "download" "collections" "backup" "screenshots")))
 
 (define mime-type->path
   ;#(mime-type-regexp target-directory [relative-target-directory/relative-target-directory-proc])
