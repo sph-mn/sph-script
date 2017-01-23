@@ -5,7 +5,7 @@
 ;removes unwanted characters from file names
 ;deletes empty directories
 
-(import (srfi srfi-1) (guile)
+(import (except (srfi srfi-1) map) (guile)
   (ice-9 regex) (sph)
   (sph one) (sph process) (sph list) (sph string) (sph stream) (sph filesystem) (sph tree))
 

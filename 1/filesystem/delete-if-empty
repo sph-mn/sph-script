@@ -7,7 +7,11 @@
 (import (sph common))
 
 (define (get-sorted-paths e)
-  (append (map tail (list-sort-with-accessor > first (map (l (e) (pair (string-count e #\/) e)) (directory-tree-paths e)))) (list e)))
+  (let (with-path-lengths (map (l (e) (pair (string-count e #\/) e)) (directory-tree-paths e)))
+    (append (map tail (list-sort-with-accessor > first with-path-lengths))
+      (list e))
+    )
+ )
 
 (define (delete-if-empty . path)
   (each
