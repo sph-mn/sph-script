@@ -1,4 +1,4 @@
-see [sph-script](http://sph.mn/content/1467).
+for further information see [sph-script](http://sph.mn/content/1467).
 
 ```
 1
@@ -7,10 +7,11 @@ see [sph-script](http://sph.mn/content/1467).
 │   ├── delete-broken-links
 │   ├── delete-if-empty
 │   ├── fig
+│   ├── find-leaf-directories
 │   ├── full-path
 │   ├── get-unique-path
 │   ├── late-write
-│   ├── ls-broken-symlinks
+│   ├── list-broken-symlinks
 │   ├── merge-files
 │   ├── mount-home
 │   ├── mount-sshfs-home
@@ -22,18 +23,20 @@ see [sph-script](http://sph.mn/content/1467).
 │   ├── rename-lowercase
 │   ├── search
 │   ├── searchl
-│   ├── set-permissions
 │   ├── splice
 │   └── tidyfiles
 ├── other
 │   ├── backup
-│   ├── g
 │   ├── git-log
 │   ├── golden-ratio
 │   ├── http-status
+│   ├── nargs
+│   ├── nargsp
+│   ├── restart-on-end
 │   ├── scm-format
 │   ├── uptime-start-ks
-│   └── video-extract-audio
+│   ├── video-extract-audio
+│   └── with-dialog-and-delay
 ├── text
 │   ├── comma-to-newline
 │   ├── compress-whitespace-columns
@@ -48,19 +51,22 @@ see [sph-script](http://sph.mn/content/1467).
 │   ├── space-to-newline
 │   └── tabular-select
 └── time
-    ├── d
-    ├── day-ks
-    ├── iso-date-week-number
-    ├── ks2trad
-    ├── trad2ks
-    ├── tt
+    ├── hms-time
+    ├── hms-to-ks
+    ├── iso-date
+    ├── iso-week-number
+    ├── ks-time
+    ├── ks-to-hms
+    ├── posixtime
+    ├── posixtime-to-date
     ├── tzdate
     ├── uptime-duration-ks
-    ├── uptime-start-ks
     └── year-week-count
 2
 ├── convert
+│   ├── binary
 │   ├── freemind2indent
+│   ├── hex
 │   ├── indent2freemind
 │   ├── sxml2xml
 │   └── xml2sxml
@@ -69,22 +75,22 @@ see [sph-script](http://sph.mn/content/1467).
 │   ├── delete-duplicate-files
 │   ├── display-relative-path-up
 │   ├── file-size-sum
-│   ├── find-leaf-directories
 │   ├── format-encrypt
 │   ├── gui-move-into-directory
 │   ├── hardlink-to-copy
 │   ├── lf
+│   ├── list-file-size
 │   ├── mkdir-wrap
 │   ├── name
 │   ├── name-add-date
 │   └── prepend-to-filename
 ├── other
-│   ├── binary
 │   ├── cpioc
 │   ├── cpioe
-│   ├── create-presentation
-│   ├── dwm-show-time
+│   ├── create-remarkjs-presentation
+│   ├── create-video-from-png-images
 │   ├── e
+│   ├── g
 │   ├── get-audio-disc-files
 │   ├── git-create-stable-branch
 │   ├── git-merge-stable-master
@@ -93,24 +99,20 @@ see [sph-script](http://sph.mn/content/1467).
 │   ├── gui-emacs
 │   ├── gui-md5sum
 │   ├── guile-all
-│   ├── hex
 │   ├── ldd-list-not-found
-│   ├── mariadb-create-user-database
-│   ├── posixtime
-│   ├── repeated-screenshots
-│   ├── repeated-screenshots-video
+│   ├── mariadb-create-user-database-sql
 │   ├── sakura-start
-│   ├── scale
-│   ├── screenshot
-│   ├── screenshot-full
+│   ├── scale-images
 │   ├── show-process-memory-usage-top
 │   ├── split-flac-cue
 │   ├── ssh-install-key
-│   ├── take-website-screenshot
-│   ├── times2ks
-│   └── trad2s
+│   ├── take-screenshot
+│   ├── take-screenshot-window
+│   ├── take-screenshots-in-intervalls
+│   └── take-website-screenshot
 ├── programming
 │   ├── astyle-to-file
+│   ├── c-format
 │   ├── coffee-compile
 │   ├── coffee-compile-from-to
 │   ├── compress-js
@@ -118,28 +120,32 @@ see [sph-script](http://sph.mn/content/1467).
 │   ├── javascript-format-add-function-spacing
 │   ├── javascript-remove-semicolons
 │   ├── json-to-file
+│   ├── lines-to-quoted-comma-lines
 │   ├── lines-to-scheme-data
 │   ├── scm-doc
 │   ├── sql-format
 │   ├── xml-format
 │   └── xml-json-converter
-├── text
-│   ├── alternate-text-direction
-│   ├── camelcase-to-dashes
-│   ├── decapitalise
-│   ├── file-lines-intersection
-│   ├── ls-file-size
-│   ├── nargs
-│   ├── nl-list2comma-string-list
-│   ├── randomise-lines
-│   ├── remove-iso-date-prefix-zeros
-│   └── string-bits
-└── time
-    ├── dt
-    └── utc-seconds-to-date
+└── text
+    ├── alternate-text-direction
+    ├── camelcase-to-dash
+    ├── camelcase-to-underscore
+    ├── decapitalise
+    ├── file-lines-intersection
+    ├── randomise-lines
+    ├── remove-iso-date-prefix-zeros
+    └── string-bits
+
+12 directories, 120 files
 ```
 
-you might use the following to symlink the scripts to a path that is listed in the $PATH environment variable:
+you could use the following to symlink all scripts to a path that is listed in the $PATH environment variable:
 ```
-cp -st $HOME/.exe sph-script/*/*/*
+cd sph-script
+cp -st $HOME/.exe $PWD/{1,2}/*/*
+```
+
+"$HOME/.exe" is not in $PATH by default, but you can add it for example to a file named "/etc/profile" like this:
+```
+export PATH="$PATH:$HOME/.exe"
 ```
