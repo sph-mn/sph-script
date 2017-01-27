@@ -7,6 +7,6 @@ if [ "$reply" = "y" ]
 then
   echo waiting 5 seconds...
   sleep 5
-  echo running
+  echo command execution started
   $*
 fi

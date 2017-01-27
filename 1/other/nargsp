@@ -1,0 +1,7 @@
+#!/bin/sh
+#!/bin/sh
+# like nargs, but parallelises execution to (number-of-available-cores - 1) cores.
+# dependencies: shell, xargs, nproc
+# find |nargsp echo
+pcount=$(nproc --ignore=1)
+xargs --max-args=1 --delimiter=\\n --max-procs="$pcount" "$@"

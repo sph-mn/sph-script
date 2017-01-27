@@ -1,2 +1,2 @@
 #!/bin/sh
-lines-filter --negate --or $*
+lines-filter --negate --or "$@"

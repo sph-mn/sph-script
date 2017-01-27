@@ -1,0 +1,5 @@
+#!/bin/sh
+# xargs, but delimited by newline, calling the command with one argument each per default.
+# simpler alternative to "parallel" with its pesky citation begging.
+# find |nargs echo
+xargs -n 1 -d \\n "$@"

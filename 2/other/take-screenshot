@@ -1,0 +1,7 @@
+#!/bin/sh
+# automatically chooses and creates the target directory.
+# _ :: scrot-arguments
+# dependencies: scrot
+
+destination=$HOME/temp/screenshots/
+mkdir -p $destination && scrot $destination/%s.png "$@"

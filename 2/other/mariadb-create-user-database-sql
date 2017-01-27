@@ -1,5 +1,5 @@
-#!/bin/sh
-# mariadb-create-user-database :: database [username password]
+#!/bin/bash
+# _ :: database [username password]
 # create the sql to create a database in mariadb and a user that has all privileges on the database.
 # username and password are optional. if username is ommited it is set to the database name.
 # if password is ommitted it is set to the username.

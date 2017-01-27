@@ -1,2 +1,2 @@
 #!/bin/sh
-name-add $(d) $*
+name-add $(iso-date) "$@"

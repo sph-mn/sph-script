@@ -1,0 +1,5 @@
+#!/bin/sh
+# formats c code in a common style.
+# dependencies: astyle
+
+astyle --indent=spaces=4 --align-pointer=type --pad-oper --style=otbs "$@"

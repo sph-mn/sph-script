@@ -1,10 +1,10 @@
 #!/bin/sh
 # takes a screenshot every n seconds
-# depends on "scrot"
+# dependencies: scrot
 
 # config
 interval=24
-destination=$HOME/temp/other/repeated-screenhots/$(d)
+destination=$HOME/temp/other/repeated-screenhots/$(iso-date)
 
 mkdir -p $destination
 while true; do

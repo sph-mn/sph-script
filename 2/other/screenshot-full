@@ -1,8 +1,0 @@
-#!/bin/sh
-# screenshot-full :: scrot arguments
-# depends on "scrot"
-
-destination=$HOME/temp/screenshots/
-
-mkdir -p $destination
-scrot $destination/%s.png $*

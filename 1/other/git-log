@@ -12,4 +12,4 @@
 # D	2/text/camelcase-to-dashes
 # A	2/text/camelcase-to-underscore
 
-git --no-pager log --decorate --format=format:'%ae %ad %s %h' --name-status --date=short --reverse --max-count=16 $*
+git --no-pager log --decorate --format=format:'%ae %ad %s %h' --name-status --date=short --reverse --max-count=16 "$@"

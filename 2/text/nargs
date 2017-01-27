@@ -1,4 +1,0 @@
-#!/bin/sh
-#xargs, but working on newline delimited lines by default
-#find |nargs echo
-xargs -n 1 -d \\n $*

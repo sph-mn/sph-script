@@ -1,5 +1,5 @@
 #!/bin/sh
-# repeated-screenshots-video :: path-directory [skip-resize?]
+# _ :: path-directory [skip-resize?]
 # creates a video from a directory filled with png files.
 # if skip-resize? is "true", then it is assumed that the resize-pass has already run and resized pictures are available in the $source/edit directory.
 #   this speeds up the compilation process significantly
