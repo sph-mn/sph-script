@@ -145,7 +145,7 @@ cd sph-script
 cp -st $HOME/.exe $PWD/{1,2}/*/*
 ```
 
-"$HOME/.exe" is not in $PATH by default, but you can add it for example to a file named "/etc/profile" like this:
+"$HOME/.exe" is not in $PATH by default, but you can add it for example in a file named "/etc/profile" like this:
 ```
 export PATH="$PATH:$HOME/.exe"
 ```

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# usage: with-warning-and-delay command ...
+# usage: with-dialog-and-delay command ...
 
 read -p "are you sure? [y/N]" -r reply
 if [ "$reply" = "y" ]
