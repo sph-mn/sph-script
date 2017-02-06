@@ -1,4 +1,8 @@
 #!/bin/sh
-# usage: "fig search-string ..."
-# list paths under the current working directory matching strings
-find |lines-filter $*
+# list all paths under the current working directory that contain all (default) of the given search strings
+# signature: fig :: [lines-filter-options ...] search-string ...
+# examples:
+#   fig test
+#   fig --regexp "t[a-z]st"
+
+find | lines-filter "$@"
