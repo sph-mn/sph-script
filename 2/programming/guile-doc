@@ -1,0 +1,18 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common) (sph cli) (sph conditional) (sph documentation) (only (sph one) string->datum))
+
+(let*
+  ( (arguments
+      ( (cli-create #:about "depends on guile and sph-lib"
+          #:description
+          "display documentation extracted from scheme module code. module name is without parentheses, for example \"rnrs hashtables\""
+          #:options (quote (((module-name ...)) (format #:names #\f #:value-required? #t))))))
+    (module-names
+      (map (l (a) (map string->symbol (string-split a #\space)))
+        (alist-q-ref arguments module-name)))
+    (format
+      (if-pass (alist-q-ref arguments format)
+        (l (format) (string->symbol (assoc-ref program-arguments (quote format)))) (quote default))))
+  (display (format-module-documentation module-names format)))
