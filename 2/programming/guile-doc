@@ -1,7 +1,10 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (sph cli) (sph conditional) (sph documentation) (only (sph one) string->datum))
+(import (sph common) (sph cli)
+  (sph conditional) (sph documentation)
+  (sph documentation display-format-itpn) (sph documentation display-format-plist)
+  (sph documentation display-format-signature) (only (sph one) string->datum))
 
 (let*
   ( (arguments
@@ -13,6 +16,5 @@
       (map (l (a) (map string->symbol (string-split a #\space)))
         (alist-q-ref arguments module-name)))
     (format
-      (if-pass (alist-q-ref arguments format)
-        (l (format) (string->symbol (assoc-ref program-arguments (quote format)))) (quote default))))
+      (if-pass (alist-q-ref arguments format) (l (format) (string->symbol format)) (quote default))))
   (display (format-module-documentation module-names format)))
