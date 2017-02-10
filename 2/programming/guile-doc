@@ -16,5 +16,6 @@
       (map (l (a) (map string->symbol (string-split a #\space)))
         (alist-q-ref arguments module-name)))
     (format
-      (if-pass (alist-q-ref arguments format) (l (format) (string->symbol format)) (quote default))))
+      (if-pass (alist-q-ref arguments format) (l (format) (string->symbol format))
+        (quote signature))))
   (display (format-module-documentation module-names format)))
