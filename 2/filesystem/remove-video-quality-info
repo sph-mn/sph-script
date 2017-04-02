@@ -1,0 +1,11 @@
+#!/usr/bin/env guile
+!#
+
+(import (sph common) (sph media-info))
+
+(let (paths (map path->full-path (tail (program-arguments))))
+  (each
+    (l (a)
+      (let (new-name (regexp-replace (basename a) "(br|fr|kbr|res)[x0-9]+\\." ""))
+        (rename-file a (string-append (dirname a) "/" new-name))))
+    paths))

@@ -1,0 +1,14 @@
+#!/usr/bin/env guile
+!#
+
+(import (sph common) (json parser) (srfi srfi-69))
+
+(let*
+  ( (paths (tail (program-arguments)))
+    (bitrates
+      (string-split (string-trim-right (apply execute->string "media-bitrate" paths)) #\newline)))
+  (each
+    (l (path bitrate)
+      (if (string->number bitrate)
+        (rename-file path (string-append (dirname path) "/br" bitrate "." (basename path)))))
+    paths bitrates))

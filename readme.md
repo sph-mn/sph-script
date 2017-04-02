@@ -83,7 +83,9 @@ for further information see [sph-script](http://sph.mn/content/1467).
 │   ├── mkdir-wrap
 │   ├── name
 │   ├── name-add-date
-│   └── prepend-to-filename
+│   ├── prepend-media-bitrate
+│   ├── prepend-to-filename
+│   └── remove-video-quality-info
 ├── other
 │   ├── cpioc
 │   ├── cpioe
@@ -116,13 +118,13 @@ for further information see [sph-script](http://sph.mn/content/1467).
 │   ├── coffee-compile
 │   ├── coffee-compile-from-to
 │   ├── compress-js
+│   ├── guile-doc
 │   ├── javascript-format
 │   ├── javascript-format-add-function-spacing
 │   ├── javascript-remove-semicolons
 │   ├── json-to-file
 │   ├── lines-to-quoted-comma-lines
 │   ├── lines-to-scheme-data
-│   ├── scm-doc
 │   ├── sql-format
 │   ├── xml-format
 │   └── xml-json-converter
@@ -136,10 +138,11 @@ for further information see [sph-script](http://sph.mn/content/1467).
     ├── remove-iso-date-prefix-zeros
     └── string-bits
 
-12 directories, 120 files
+12 directories, 122 files
 ```
 
-you could use the following to symlink all scripts to a path that is listed in the $PATH environment variable:
+# installation
+you can use the following to symlink all scripts to a path that is listed in the $PATH environment variable:
 ```
 cd sph-script
 cp -st $HOME/.exe $PWD/{1,2}/*/*
@@ -149,3 +152,6 @@ cp -st $HOME/.exe $PWD/{1,2}/*/*
 ```
 export PATH="$PATH:$HOME/.exe"
 ```
+
+a few programs depend on guile, sph-lib and guile modules found in sph-script/guile-modules.
+the content of sph-script/guile-modules needs to be symlinked or copied into a directory that is in $GUILE_LOAD_PATH.
