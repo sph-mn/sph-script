@@ -19,7 +19,7 @@
 
 (define (display-line-string . a) (display (string-join a " ")) (newline))
 
-(define (mount-home use-sudo? dry-run? mount-options . paths) "boolean boolean (string ...)"
+(define (mount-home use-sudo? dry-run? mount-arguments . paths) "boolean boolean (string ...)"
   (map
     (l (path)
       (let
@@ -29,7 +29,7 @@
           (shell-eval+check-result
             (string-append (if use-sudo? "sudo " "") "mount "
               (string-quote path) " "
-              (string-quote target) (if mount-options (string-append " " mount-options) ""))))))
+              (string-quote target) (if mount-arguments (string-append " " mount-arguments) ""))))))
     paths))
 
 (define (test-create-target-path) "test the target path creation"
@@ -70,9 +70,9 @@
             #:about (prefix-tree->indent-tree-string about)
             #:options
             (ql (user #:names #\u #:value-required? #t) (dry-run #:names #\d)
-              (sudo #:names #\s) (mount-options #:names #\o #:value-required? #t) ((source-path ...)))))))
+              (sudo #:names #\s) (mount-arguments #:names #\o #:value-required? #t) ((source-path ...)))))))
     (apply mount-home (alist-ref options (q sudo))
-      (alist-ref options (q dry-run)) (alist-ref options (q mount-options))
+      (alist-ref options (q dry-run)) (alist-ref options (q mount-arguments))
       (alist-ref options (q source-path) (list)))
     (remove-empty-mount-directories)))
 
