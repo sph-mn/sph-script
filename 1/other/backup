@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (only (ice-9 ftw) scandir))
+(import (sph common) (only (ice-9 ftw) scandir) (sph error))
 
 (define program-description
   (string-join
