@@ -1,0 +1,10 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common) (sph filesystem tag) (sph cli))
+
+(define (tag-add-cli)
+  (let (arguments ((cli-create #:options (ql ((tags path ...) #:required? #t)))))
+    (alist-bind arguments (tags path) (tag-add (string-split tags #\.) path))))
+
+(tag-add-cli)

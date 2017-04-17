@@ -1,0 +1,10 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common) (sph filesystem tag) (sph cli))
+
+(define (tag-sort-cli)
+  (let (arguments ((cli-create #:options (ql ((path ...) #:required? #t)))))
+    (alist-bind arguments (path) (tag-sort path))))
+
+(tag-sort-cli)
