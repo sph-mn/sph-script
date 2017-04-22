@@ -49,7 +49,7 @@
         (cli-create #:options
           (q ((delimiter #:names #\d #:value-required? #t) (dry-run) ((path-directory ...))))
           #:description
-          "search for multiple files that share a prefix (by default delimited with a dot) and move them into a directory with the name of the prefix"))
+          "in the specified directories, group files with the same (by default dot separated) prefix into a directory"))
       (arguments (cli))
       (delimiter
         (let (a (alist-q-ref arguments delimiter))
