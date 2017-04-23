@@ -1,14 +1,9 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (zenity))
-;usage: path-file-to-move ...
-;asks for a target path
-
-#;(define (string-numbers-multiply-zenity)
-  (let (entry-result (zenity-entry "enter new text:"))
-    (if entry-result
-      (begin (zenity-info (string-numbers-multiply entry-result)) (string-numbers-multiply-zenity)))))
+(import (sph common) (zenity) (sph one))
+;parameters: path-of-file-to-move ...
+;asks for a target path and moves paths given as arguments into the provided target path. (grouping of files)
 
 (define path-config-temp "/tmp/gui-move-into-directory-config")
 
@@ -25,14 +20,17 @@
   (if (not (null? paths))
     (let*
       ( (last-used (get-last-used-directory))
-        (entry-text-option
-          (if last-used (string-append " " (cli-option "entry-text" last-used)) ""))
+        (entry-text-option (if last-used (list "entry-text" last-used) null))
         (path-directory
           (string-trim-right
-            (shell-eval->string (string-append "zenity --entry" entry-text-option)))))
+            (shell-eval->string
+              (string-append "zenity "
+                (cli-option-join
+                  (list "--entry" (list "text" (string-quote "enter group name:"))
+                    entry-text-option)))))))
       (if (> (string-length path-directory) 0)
         (begin
-          (if (and last-used (not (string-equal? last-used path-directory)))
+          (if (or (not last-used) (not (string-equal? last-used path-directory)))
             (set-last-used-directory path-directory))
           (apply execute "move-into-directory" path-directory paths))))))
 
