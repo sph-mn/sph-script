@@ -1,0 +1,31 @@
+#!/usr/bin/guile
+!#
+
+(import (sph common) (sph read-write))
+
+(define cli-parser
+  (cli-create #:options
+    (q
+      ( (union #:names #\u) (intersection #:names #\i) (difference #:names #\d)
+        (complement #:names #\c) ((file-path ...))))
+    #:description
+    "applies set operations on the lines of multiple files and writes the result to standard output"))
+
+(define (file-lines-set-operations-cli)
+  (let*
+    ( (a (cli-parser))
+      (set-op
+        (cond ((alist-q-ref a union) union) ((alist-q-ref a intersection) intersection)
+          ((alist-q-ref a difference) difference) ((alist-q-ref a complement) complement) (else #f))))
+    (if set-op
+      (let
+        (r
+          (apply call-with-input-files
+            (l files
+              (fold (l (file r) (set-op (port->lines file) r)) (port->lines (first files))
+                (tail files)))
+            (alist-q-ref a file-path)))
+        (each display-line r))
+      (display-line "no set operation selected"))))
+
+(file-lines-set-operations-cli)

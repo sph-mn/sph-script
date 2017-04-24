@@ -1,8 +1,8 @@
 #!/usr/bin/guile
 !#
 
-(import (sph) (sph cli) (sph read-write) (rnrs io ports))
+(import (sph) (sph cli) (sph read-write) (rnrs io ports) (sph string))
 
 (let (options ((cli-create #:help "prints input data in hexadecimal representation")))
-  (rw-port->port get-u8 (l (e port) (display (number->string e 16) port) (display " " port))
+  (rw-port->port get-u8 (l (e port) (display (string-fill-left (number->string e 16) 2 #\0) port) (display " " port))
     (current-input-port) (current-output-port)))
