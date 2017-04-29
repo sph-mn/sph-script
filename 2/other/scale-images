@@ -1,10 +1,26 @@
-#!/bin/sh
-# scales all png or jpg images in a directory using graphicsmagick. a new directory "edit" is created where result images are put
-# scale :: width
+#!/usr/bin/env guile
+!#
 
-d=scaled
-mkdir -p "$d"
-for k in *.png *.jpg
-do
-  gm convert -size $1\>x "$k" -resize $1\>x +profile "*" "$d/$k".jpg
-done
+(import (sph common))
+
+(define (scale-image width path-source path-dest)
+  (execute "gm" "convert"
+    "-size" (string-append width ">x")
+    path-source "-resize" (string-append width ">x") "+profile" "*" path-dest))
+
+(define (scale-images-cli)
+  (let*
+    ( (d "scaled")
+      (cli
+        (cli-create #:options (ql ((width path ...)))
+          #:description
+          (string-append "scales images given by paths using graphicsmagick. a new directory "
+            (string-quote d) " is created in the current directory where result images are put")))
+      (arguments (cli)))
+    (alist-bind arguments (width path)
+      (if (and width path)
+        (begin (ensure-directory-structure d)
+          (each (l (a) (scale-image width a (string-append d "/" (basename a)))) path))
+        (cli (list "--help"))))))
+
+(scale-images-cli)
