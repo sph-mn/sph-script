@@ -43,7 +43,7 @@
             (l (tags-old extensions)
               (let
                 (name-new
-                  (tag-create-name (list-set-union tags-old tags-new) extensions #:config config))
+                  (tag-create-name (union tags-old tags-new) extensions #:config config))
                 (if (not (string-equal? name-old name-new))
                   (rename-file path
                     (get-unique-target-path (string-append (dirname path) "/" name-new)))))))))))
@@ -76,7 +76,7 @@
               (let
                 (name-new
                   (tag-create-name
-                    (list-set-union (complement tags-old tags-replace) tags-replacement) extensions
+                    (union (complement tags-old tags-replace) tags-replacement) extensions
                     #:config config))
                 (if (not (string-equal? name-old name-new))
                   (rename-file path
