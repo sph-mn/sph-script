@@ -3,11 +3,14 @@
 # dependencies: scrot
 
 # config
-interval=24
-destination=$HOME/temp/other/repeated-screenhots/$(iso-date)
+interval=200
+destination=$HOME/temp/other/intervall-screenhots/$(iso-date)
+
+echo destination: $destination, interval: $interval "s"
 
 mkdir -p $destination
 while true; do
-  scrot --focused $destination/%s.png
+  name="$(day-seconds)"
+  scrot --focused "$destination/$name.png"
   sleep $interval
 done

@@ -5,15 +5,15 @@
 #   this speeds up the compilation process significantly
 
 # config
-size=320x240
-speed=10/1
+size=640x480
+speed=4/1
 
 # program-arguments
 source=$1
 skip_resize=$2
 
 # prepare target directory
-target=$HOME/temp/repeated-screenshots.$(basename $source)
+target=$HOME/temp/intervall-screenshots.$(basename $source)
 if [ -e $target ]
 then
   echo file exists
@@ -29,8 +29,8 @@ then
 else
   echo resizing
   delete-duplicate-files $PWD
-  find -name "*.png" |parallel mogrify -resize $size -background black -gravity center -extent $size -define png:color-type=2 -path edit
+  find -name "*.png" |nargsp mogrify -resize $size -background black -gravity center -extent $size -define png:color-type=2 -path edit
 fi
 
 # create video
-ffmpeg -framerate $speed -pattern_type glob -i "edit/*.png" -c:v libx264 -r 30 -pix_fmt yuv420p $target.mp4
+ffmpeg -framerate $speed -pattern_type glob -i "edit/*.png" -c:v libx264 -r 30 -pix_fmt yuv420p $target.mp4 && rm -r edit
