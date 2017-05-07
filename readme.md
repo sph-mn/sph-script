@@ -34,7 +34,6 @@ for further information see [sph-script](http://sph.mn/content/1467).
 │   ├── nargsp
 │   ├── restart-on-end
 │   ├── scm-format
-│   ├── uptime-start-ks
 │   ├── video-extract-audio
 │   └── with-dialog-and-delay
 ├── text
@@ -63,6 +62,7 @@ for further information see [sph-script](http://sph.mn/content/1467).
     ├── posixtime-to-date
     ├── tzdate
     ├── uptime-duration-ks
+    ├── uptime-start-ks
     └── year-week-count
 2
 ├── convert
@@ -115,8 +115,7 @@ for further information see [sph-script](http://sph.mn/content/1467).
 │   ├── ssh-install-key
 │   ├── take-screenshot
 │   ├── take-screenshot-window
-│   ├── take-screenshots-in-intervalls
-│   └── take-website-screenshot
+│   └── take-screenshots-in-intervalls
 ├── programming
 │   ├── astyle-to-file
 │   ├── c-format
@@ -142,7 +141,7 @@ for further information see [sph-script](http://sph.mn/content/1467).
     ├── remove-iso-date-prefix-zeros
     └── string-bits
 
-13 directories, 125 files
+12 directories, 125 files
 ```
 
 # installation
