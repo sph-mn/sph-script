@@ -40,6 +40,7 @@ for further information see [sph-script](http://sph.mn/content/1467).
 ├── text
 │   ├── comma-to-newline
 │   ├── compress-whitespace-columns
+│   ├── file-lines-set-operations
 │   ├── itpn
 │   ├── lines-filter
 │   ├── lines-reject
@@ -51,6 +52,7 @@ for further information see [sph-script](http://sph.mn/content/1467).
 │   ├── space-to-newline
 │   └── tabular-select
 └── time
+    ├── day-seconds
     ├── hms-time
     ├── hms-to-ks
     ├── iso-date
@@ -81,11 +83,11 @@ for further information see [sph-script](http://sph.mn/content/1467).
 │   ├── lf
 │   ├── list-file-size
 │   ├── mkdir-wrap
-│   ├── name
 │   ├── name-add-date
 │   ├── prepend-media-bitrate
 │   ├── prepend-to-filename
-│   └── remove-video-quality-info
+│   ├── remove-video-quality-info
+│   └── tag
 ├── other
 │   ├── cpioc
 │   ├── cpioe
@@ -100,11 +102,14 @@ for further information see [sph-script](http://sph.mn/content/1467).
 │   ├── git-stati
 │   ├── gui-emacs
 │   ├── gui-md5sum
+│   ├── gui-scale-images
 │   ├── guile-all
 │   ├── ldd-list-not-found
 │   ├── mariadb-create-user-database-sql
 │   ├── sakura-start
 │   ├── scale-images
+│   ├── scale-images-directory
+│   ├── scaled
 │   ├── show-process-memory-usage-top
 │   ├── split-flac-cue
 │   ├── ssh-install-key
@@ -133,12 +138,11 @@ for further information see [sph-script](http://sph.mn/content/1467).
     ├── camelcase-to-dash
     ├── camelcase-to-underscore
     ├── decapitalise
-    ├── file-lines-intersection
     ├── randomise-lines
     ├── remove-iso-date-prefix-zeros
     └── string-bits
 
-12 directories, 122 files
+13 directories, 125 files
 ```
 
 # installation

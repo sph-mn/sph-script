@@ -24,7 +24,7 @@
   (let*
     ( (dependencies (list "cryptsetup" "dd" "grep" "mkfs.ext4" "mount" "/dev/urandom"))
       (description
-        (list "encrypt and format a block device or file with cryptsetup and luks."
+        (list "encrypt and format a block device or a container file with cryptsetup and luks."
           "all previously existing data on the device or in the file will be deleted."
           "uses luksFormat default options."
           "no modifications are made unless the --run option has been specified"))
