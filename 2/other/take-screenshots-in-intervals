@@ -4,7 +4,7 @@
 
 # config
 interval=200
-destination=$HOME/temp/other/intervall-screenhots/$(iso-date)
+destination=$HOME/temp/other/interval-screenhots/$(iso-date)
 
 echo destination: $destination, interval: $interval "s"
 

@@ -1,0 +1,2 @@
+dest="$1"
+cp -rst "$dest" $PWD/1/*/* $PWD/2/*/*
