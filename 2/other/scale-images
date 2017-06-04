@@ -6,7 +6,7 @@
 (define (scale-image width path-source path-dest)
   (execute "gm" "convert"
     "-size" (string-append width ">x")
-    path-source "-resize" (string-append width ">x") "+profile" "*" path-dest))
+    path-source "-resize" (string-append width ">x") "+profile" "*" (string-append path-dest ".jpg")))
 
 (define (scale-images-cli)
   (let*

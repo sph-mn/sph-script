@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph) (sph read-write) (rnrs io ports))
+(import (sph) (sph io) (rnrs io ports))
 
-(rw-port->port (l (port) (get-string-n port 5000)) (l (e port) (display (string-downcase e) port))
+(rw-port->port (l (port) (get-string-n port 5000)) (l (a port) (display (string-downcase a) port))
   (current-input-port) (current-output-port))

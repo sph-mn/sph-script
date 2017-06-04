@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph) (sph read-write) (sph alist) (sph string) (sph cli))
+(import (sph) (sph io) (sph alist) (sph string) (sph cli))
 
 (define lines-filter-cli
   (let
@@ -9,11 +9,11 @@
       (cli-create #:description
         "read from standard input and filter lines case-insensitively by given strings or regular expressions"
         #:options
-        (ql (negate) (or #:description "matching lines must contain any of the strings")
-          (regexp #:names #\r
-            #:description "interpret strings as posix extended regular expressions")
-          (case-sensitive #:names #\c)
-          (and #:description "matching lines must contain all strings. the default") ((strings ...)))))
+        (q ((negate) (or #:description "matching lines must contain any of the strings")
+            (regexp #:names #\r
+              #:description "interpret strings as posix extended regular expressions")
+            (case-sensitive #:names #\c)
+            (and #:description "matching lines must contain all strings. the default") ((strings ...))))))
     (thunk
       (let*
         ( (arguments (cli)) (regexp? (alist-q-ref arguments regexp))

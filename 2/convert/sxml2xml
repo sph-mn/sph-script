@@ -2,4 +2,4 @@
 # reads from standard input and converts from sxml to xml
 # depends on sph-lib
 
-exec guile -c '(import (sph) (sxml simple) (sph read-write)) (sxml->xml (rw-port->list read (current-input-port)))'
+exec guile -c '(import (sph) (sxml simple) (sph io)) (sxml->xml (rw-port->list read (current-input-port)))'
