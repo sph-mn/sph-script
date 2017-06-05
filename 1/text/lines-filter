@@ -14,7 +14,7 @@
               #:description "interpret strings as posix extended regular expressions")
             (case-sensitive #:names #\c)
             (and #:description "matching lines must contain all strings. the default") ((strings ...))))))
-    (thunk
+    (nullary
       (let*
         ( (arguments (cli)) (regexp? (alist-q-ref arguments regexp))
           (case-sensitive? (alist-q-ref arguments case-sensitive))

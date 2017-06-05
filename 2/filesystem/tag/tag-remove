@@ -1,10 +1,10 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (sph filesystem tag) (sph cli))
+(import (sph) (sph list) (sph filesystem tag) (sph cli))
 
 (define (tag-remove-cli)
-  (let (arguments ((cli-create #:options (ql ((tags path ...) #:required? #t)))))
+  (let (arguments ((cli-create #:options (list-q ((tags path ...) #:required? #t)))))
     (alist-bind arguments (tags path) (tag-remove (string-split tags #\.) path))))
 
 (tag-remove-cli)

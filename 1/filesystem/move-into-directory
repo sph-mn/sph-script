@@ -4,7 +4,7 @@
 (import (sph common))
 
 (define command-line-interface
-  (cli-create #:options (ql ((path-directory path-file ...) #:value-required? #t #:required? #t))
+  (cli-create #:options (list-q ((path-directory path-file ...) #:value-required? #t #:required? #t))
     #:description "ensures that a directory exists and moves all specified files into it"))
 
 (define (move-into-directory path-directory path-file) (ensure-directory-structure path-directory)

@@ -37,7 +37,7 @@
           (every
             (l (a)
               (catch #t
-                (thunk
+                (nullary
                   (apply (case (first a) ((rename-file) rename-file) ((mkdir) mkdir)) (tail a)))
                 (l a #t)))
             action-data))))

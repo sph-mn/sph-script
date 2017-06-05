@@ -9,8 +9,16 @@
     tag-replace
     tag-sort)
   (import
-    (sph common)
-    (sph two))
+    (guile)
+    (rnrs sorting)
+    (sph)
+    (sph alist)
+    (sph filesystem)
+    (sph io)
+    (sph list)
+    (sph string)
+    (sph two)
+    (only (srfi srfi-1) remove))
 
   ;add-to-tag-group-from-search
   ;add-to-tag-group-from-list-of-files
@@ -42,8 +50,7 @@
           (tag-name->tags-and-extensions& name-old
             (l (tags-old extensions)
               (let
-                (name-new
-                  (tag-create-name (union tags-old tags-new) extensions #:config config))
+                (name-new (tag-create-name (union tags-old tags-new) extensions #:config config))
                 (if (not (string-equal? name-old name-new))
                   (rename-file path
                     (get-unique-target-path (string-append (dirname path) "/" name-new)))))))))))
@@ -75,9 +82,8 @@
             (l (tags-old extensions)
               (let
                 (name-new
-                  (tag-create-name
-                    (union (complement tags-old tags-replace) tags-replacement) extensions
-                    #:config config))
+                  (tag-create-name (union (complement tags-old tags-replace) tags-replacement)
+                    extensions #:config config))
                 (if (not (string-equal? name-old name-new))
                   (rename-file path
                     (get-unique-target-path (string-append (dirname path) "/" name-new)))))))))))

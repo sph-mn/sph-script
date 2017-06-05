@@ -9,7 +9,7 @@
 (define command-line-interface
   (cli-create #:help program-description
     #:options
-    (ql ((file-paths ...)) (search #:names #\s #:value-required? #t)
+    (list-q ((file-paths ...)) (search #:names #\s #:value-required? #t)
       (search-suffix #:value-required? #t) (search-all #:names #\a #:value-required? #t)
       (sort-facets)
       (replace-facet #:value-required? #t
@@ -187,7 +187,7 @@
   creates a result for one list of parsed-itpn packets (for example read from the contents of a file or standard-input)"
   (l (parsed-itpn path create-result)
     "list string/symbol -> (symbol:mode-prefix string/symbol:path result-data ...)"
-    (check-for-parse-errors& parsed-itpn path (thunk (pair path (create-result parsed-itpn path))))))
+    (check-for-parse-errors& parsed-itpn path (nullary (pair path (create-result parsed-itpn path))))))
 
 (define (result-map-data proc a) "procedure list -> list"
   (pair (first a) (map-apply (l (filename . data) (pair filename (proc data))) (tail a))))
@@ -236,7 +236,7 @@
       ( (call-with-output-port
           (l (file indirect? c)
             (if indirect?
-              (if file (rw-with-temporary-file-port->file c file) (c (current-output-port)))
+              (if file (rw-with-temp-file-port->file c file) (c (current-output-port)))
               (if file (call-with-output-file file c) (c (current-output-port))))))
         (call-with-output-ports
           (l (data proc)

@@ -14,7 +14,7 @@
     (string-quote destination)))
 
 ; one use case is browsing files and using right click actions to collect files.
-(define command-line-interface (cli-create #:description description (ql (path ...))))
+(define command-line-interface (cli-create #:description description (list-q (path ...))))
 
 (define (collect-path a)
   (let (path-destination (string-append destination (basename a)))

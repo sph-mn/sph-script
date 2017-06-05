@@ -5,7 +5,7 @@
   (import
     (guile)
     (json parser)
-    (sph common))
+    (sph))
 
   (define (media-info path)
     (hash-map->list pair

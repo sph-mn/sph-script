@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (ice-9 regex))
+(import (sph) (sph io) (ice-9 regex))
 (define (add-function-spacing a) (if (string-match "^\\s*function" a) (string-append "\n" a) a))
 (define (add-prefix-semicolon a) (if (string-match "^\\(" a) (string-append ";" a) a))
 (define (remove-triple-newlines a) (regexp-replace a "\n\n\n+" "\n\n"))

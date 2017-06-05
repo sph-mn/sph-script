@@ -13,7 +13,7 @@
   (sph ice-9-stream))
 
 (define config.exec ((cli-create
-      #:options (ql (dry-run)))))
+      #:options (list-q (dry-run)))))
 
 (define dry-run (assoc-ref config.exec (q dry-run)))
 

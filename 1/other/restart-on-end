@@ -9,7 +9,7 @@
 
 (define command-line-interface
   (cli-create #:options
-    (ql ((command ...) #:required? #t)
+    (list-q ((command ...) #:required? #t)
       (max-restart-times #:names #\n #:value-required? #t #:value-optional? #t #:type integer #:description "default: infinite")
       (delay #:names #\d #:value-required? #t #:value-optional? #t #:type integer #:description "in seconds. default: 1"))
     #:description description))

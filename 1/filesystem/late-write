@@ -8,11 +8,11 @@
   "write to output file only after all data from standard input has been read. allows to overwrite source files when using shell output redirection")
 
 (define command-line-interface
-  (cli-create #:options (ql ((output-file) #:required? #t)) #:description description))
+  (cli-create #:options (list-q ((output-file) #:required? #t)) #:description description))
 
 (define (late-write-cli)
   (alist-bind (command-line-interface) (output-file)
-    (rw-with-temporary-file-port->file
+    (rw-with-temp-file-port->file
       (l (port-output) (port-copy-all (current-input-port) port-output)) output-file)))
 
 (late-write-cli)

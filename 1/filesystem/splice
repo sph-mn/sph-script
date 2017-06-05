@@ -41,6 +41,6 @@
     (if path (each (l (e) (splice-one e dry-run)) (map path->full-path path)))))
 
 (let*
-  ( (cli (cli-create #:about program-description #:options (ql (dry-run) ((path ...)))))
+  ( (cli (cli-create #:about program-description #:options (list-q (dry-run) ((path ...)))))
     (options (cli)))
   (if (null? options) (cli (list "--help")) (splice options)))

@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (only (ice-9 ftw) scandir) (sph error))
+(import (sph) (guile) (sph process) (rnrs sorting) (sph string) (sph filesystem) (sph list) (sph cli) (sph time string) (sph io) (only (srfi srfi-1) append-map) (only (ice-9 ftw) scandir) (sph error))
 
 (define program-description
   (string-join
@@ -51,7 +51,7 @@
     (string-append (if use-default-destination default-destination "")
       (source-names->destination-file-name source-names))))
 
-(define (source->file-size-sum source) "procedure:thunk:writes-paths-to-standard-output -> integer"
+(define (source->file-size-sum source) "procedure:nullary:writes-paths-to-standard-output -> integer"
   (string->number
     (string-trim-right (process-chain->string #f (tail source) "file-size-sum"))))
 
@@ -63,14 +63,14 @@
         (and (<= size max-bits-for-compression) "--compression") (and dry-run "--dry-run")
         (and encrypt "--encryption")))))
 
-(define (pack-process-proc . a) (thunk (apply process-replace (apply pack-process-arguments a))))
+(define (pack-process-proc . a) (nullary (apply process-replace (apply pack-process-arguments a))))
 
 (define create-result-backup-files
   (let
     (validate-destination-paths
       (l (a)
         (let
-          (non-directories (filter (l (a) (catch #t (thunk (not (file-path-directory? a))) (const #t))) a))
+          (non-directories (filter (l (a) (catch #t (nullary (not (file-path-directory? a))) (const #t))) a))
           (if (null? non-directories) #t
             (error-create (q non-directory-destination-paths) non-directories)))))
     (l (sources destinations encrypt dry-run)
@@ -90,6 +90,7 @@
                           (pack-process-arguments (first source) destination-path
                             dry-run encrypt size))
                         (process-chain-finish-success?
+                          ; todo: procedures as content generators dont work like this with the new (process create)
                           (process-chain #f #f
                             (tail source)
                             (pack-process-proc (first source) destination-path dry-run encrypt size)))))
@@ -117,7 +118,7 @@
 (define (create-result-list-files source-names path-config)
   (each
     (l (a)
-      (call-with-working-directory path-config (thunk (execute (name->source-path a path-config)))))
+      (call-with-working-directory path-config (nullary (execute (name->source-path a path-config)))))
     source-names)
   #f)
 
@@ -125,18 +126,18 @@
   (if combine
     (list
       (pair sources
-        (thunk
+        (nullary
           (call-with-working-directory path-config
-            (thunk
+            (nullary
               (each (l (a) (execute->port (current-output-port) (name->source-path a path-config)))
                 sources)))
           (force-output))))
     (map
       (l (a)
         (pair a
-          (thunk
+          (nullary
             (call-with-working-directory path-config
-              (thunk (execute->port (current-output-port) (name->source-path a path-config))))
+              (nullary (execute->port (current-output-port) (name->source-path a path-config))))
             (force-output))))
       sources)))
 
@@ -169,14 +170,14 @@
       (command-line-interface
         (cli-create #:description program-description
           #:options
-          (ql (dry-run) (tarsnap #:names #\t)
+          (list-q (dry-run) (tarsnap #:names #\t)
             (list-configs #:names #\l #:description "lists the recognised backup configurations")
             (list-files #:description "list files that would be included in the backup")
             (show-config #:description "display contents a configuration file")
             (combine #:description
               "combine dot separated configuration names and create one backup file")
             (encrypt #:names #\e) ((sources destinations ...) #:required? #f #:value-required? #t)))))
-    (thunk
+    (nullary
       (let
         (keyword-arguments
           (append-map
