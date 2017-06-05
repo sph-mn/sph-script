@@ -33,7 +33,7 @@
     (l (source)
       (let (path-filelist (tmpnam))
         (call-with-output-file path-filelist
-          (l (port) (process-finished-successfully? (process-create (tail source) #f port))))
+          (l (port) (process-finish-success? (process-create (tail source) #f port))))
         ( (if dry-run display-process-arguments execute) "tarsnap" "-cf"
           (source-names->destination-file-name (first source)) "-T" path-filelist)
         (delete-file path-filelist)))
@@ -53,7 +53,7 @@
 
 (define (source->file-size-sum source) "procedure:thunk:writes-paths-to-standard-output -> integer"
   (string->number
-    (string-trim-right (process-create-chain-with-pipes->string #f (tail source) "file-size-sum"))))
+    (string-trim-right (process-chain->string #f (tail source) "file-size-sum"))))
 
 (define (pack-process-arguments source-name path dry-run encrypt size)
   (pairs "pack" "--read-paths=--"
@@ -89,8 +89,8 @@
                         (apply display-process-arguments
                           (pack-process-arguments (first source) destination-path
                             dry-run encrypt size))
-                        (process-chain-finished-successfully?
-                          (process-create-chain-with-pipes #f #f
+                        (process-chain-finish-success?
+                          (process-chain #f #f
                             (tail source)
                             (pack-process-proc (first source) destination-path dry-run encrypt size)))))
                     destination-paths)))
