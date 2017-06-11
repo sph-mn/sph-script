@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (sph lang indent-syntax) (sph cli) (json parser))
+(import (sph base) (sph lang indent-syntax) (sph cli) (json parser))
 
 (define (guile-hash-table->alist a)
   (hash-map->list

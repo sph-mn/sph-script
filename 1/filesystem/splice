@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (only (guile) dirname rmdir string-suffix?) (sph stream) (srfi srfi-41))
+(import (sph base) (sph cli) (only (guile) dirname rmdir string-suffix?) (sph stream) (srfi srfi-41))
 ;empty directories
 ;child files with the same name as parent
 ;child files occuring in parents parent

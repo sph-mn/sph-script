@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (ice-9 regex))
+(import (sph base) (ice-9 regex))
 
 (define (iso-date-remove-prefix-zeros a)
   (string-join

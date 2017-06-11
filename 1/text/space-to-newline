@@ -3,7 +3,7 @@
 ; reads from standard input
 ; depends on: sph-lib
 
-(import (sph common) (sph io) (srfi srfi-41) (sph stream))
+(import (sph base) (sph io) (srfi srfi-41) (sph stream))
 
 (stream-each (l (e) (display e) (display "\n"))
   (port->delimited-stream " " (current-input-port)))

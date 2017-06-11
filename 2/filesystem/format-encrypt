@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (sph lang indent-syntax))
+(import (sph base) (sph lang indent-syntax))
 
 (define (format-encrypt target-device-path run?)
   (let (device-mapper-path (string-replace-char target-device-path #\/ #\_))

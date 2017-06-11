@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common))
+(import (sph base))
 
 (define program-description
   "mkdir-wrap works similar to mkdir.

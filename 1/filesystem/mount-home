@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (ice-9 ftw) (sph common)
+(import (ice-9 ftw) (sph base)
   (sph cli) (sph process) (sph lang indent-syntax) (except (srfi srfi-1) map))
 
 (define mount-directory (string-append (getenv "HOME") "/mnt/"))

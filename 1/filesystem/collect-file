@@ -2,7 +2,7 @@
 !#
 
 ; collect-file :: source-path ...
-(import (sph common))
+(import (sph base))
 
 (define destination
   (string-append (getenv "HOME") "/temp/collections/collected."

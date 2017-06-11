@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (ice-9 ftw) (sph common) (sph error)
+(import (ice-9 ftw) (sph base) (sph error)
   (sph lang itpn) (sph two) (ice-9 match) (sph lang indent-syntax) (sph replacement-table))
 
 (define program-description "indent packet notation filter and transformer")

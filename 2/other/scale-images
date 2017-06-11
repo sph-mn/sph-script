@@ -1,7 +1,7 @@
 #!/usr/bin/env guile
 !#
 
-(import (sph common))
+(import (sph base))
 
 (define (scale-image width path-source path-dest)
   (execute "gm" "convert"

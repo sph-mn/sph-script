@@ -4,7 +4,7 @@
 ;displays given day kiloseconds converted to hh:mm:ss time notation
 ;ks2trad :: number
 ;example: ks2trad 53.4 -> 14:50:00
-(import (sph common) (sph time utc))
+(import (sph base) (sph time utc))
 (define (fill-zeros a) (string-fill-left a 2 #\0))
 
 (let (ks (string->number (first (tail (program-arguments)))))

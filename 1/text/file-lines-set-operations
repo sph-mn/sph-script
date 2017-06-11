@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (sph io))
+(import (sph base) (sph io))
 
 (define cli-parser
   (cli-create #:options

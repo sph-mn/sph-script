@@ -1,7 +1,8 @@
 #!/usr/bin/guile
 !#
 
-(import (sph) (guile) (sph process) (rnrs sorting) (sph string) (sph filesystem) (sph list) (sph cli) (sph time string) (sph io) (only (srfi srfi-1) append-map) (only (ice-9 ftw) scandir) (sph error))
+(import (sph base) (guile)
+  (sph process) (sph process create) (sph cli) (sph time string) (only (ice-9 ftw) scandir))
 
 (define program-description
   (string-join
@@ -15,15 +16,10 @@
 (define path-config-home (string-append (getenv "HOME") "/.config/backup/"))
 (define path-config-etc (string-append "/etc/backup/"))
 
-(define* (error-log-and-exit a #:optional (exit-code -1))
-  "error integer ->
-  write a representation of error to standard output and exit with \"exit-code\", which is -1 by default"
-  (debug-log a) (exit exit-code))
-
 (define (get-path-config)
   (if (file-exists? path-config-home) path-config-home
     (if (file-exists? path-config-etc) path-config-etc
-      (error-create (q no-accessible-configuration-path) (list path-config-home path-config-etc)))))
+      (raise (pair (q no-accessible-configuration-path) (list path-config-home path-config-etc))))))
 
 (define default-destination (getcwd))
 (define (display-process-arguments . a) (display-line (string-join a " ")))
@@ -31,9 +27,7 @@
 (define (create-result-backup-tarsnap sources dry-run)
   (every
     (l (source)
-      (let (path-filelist (tmpnam))
-        (call-with-output-file path-filelist
-          (l (port) (process-finish-success? (process-create (tail source) #f port))))
+      (let (path-filelist (tmpnam)) (call-with-output-file path-filelist (tail source))
         ( (if dry-run display-process-arguments execute) "tarsnap" "-cf"
           (source-names->destination-file-name (first source)) "-T" path-filelist)
         (delete-file path-filelist)))
@@ -51,9 +45,15 @@
     (string-append (if use-default-destination default-destination "")
       (source-names->destination-file-name source-names))))
 
-(define (source->file-size-sum source) "procedure:nullary:writes-paths-to-standard-output -> integer"
-  (string->number
-    (string-trim-right (process-chain->string #f (tail source) "file-size-sum"))))
+(define (source->file-size-sum source)
+  "(string:name . procedure:nullary:writes-paths-to-standard-output) -> integer"
+  (call-with-pipes 2
+    (l (in-a out-a in-b out-b)
+      (let (pid (process-create "file-size-sum" (list) in-a out-b #:search-path? #t))
+        (close-port in-a) (close-port out-b)
+        ((tail source) out-a) (close-port out-a)
+        (begin-first (string->number (string-trim-right (port->string in-b))) (close-port in-b)
+          (process-finish pid))))))
 
 (define (pack-process-arguments source-name path dry-run encrypt size)
   (pairs "pack" "--read-paths=--"
@@ -63,39 +63,40 @@
         (and (<= size max-bits-for-compression) "--compression") (and dry-run "--dry-run")
         (and encrypt "--encryption")))))
 
-(define (pack-process-proc . a) (nullary (apply process-replace (apply pack-process-arguments a))))
-
 (define create-result-backup-files
   (let
     (validate-destination-paths
       (l (a)
         (let
-          (non-directories (filter (l (a) (catch #t (nullary (not (file-path-directory? a))) (const #t))) a))
+          (non-directories
+            (filter (l (a) (catch #t (nullary (not (file-path-directory? a))) (const #t))) a))
           (if (null? non-directories) #t
-            (error-create (q non-directory-destination-paths) non-directories)))))
+            (raise (pair (q non-directory-destination-paths) non-directories))))))
     (l (sources destinations encrypt dry-run)
       (let
         ( (destination-paths
             (map ensure-trailing-slash
-              (if destinations (map path->full-path destinations) (list default-destination)))))
-        (error-return (validate-destination-paths destination-paths)
-          (l (valid?)
-            (every
-              (l (source)
-                (let (size (source->file-size-sum source))
-                  (every
-                    (l (destination-path)
-                      (if dry-run
-                        (apply display-process-arguments
-                          (pack-process-arguments (first source) destination-path
-                            dry-run encrypt size))
-                        (process-chain-finish-success?
-                          ; todo: procedures as content generators dont work like this with the new (process create)
-                          (process-chain #f #f
-                            (tail source)
-                            (pack-process-proc (first source) destination-path dry-run encrypt size)))))
-                    destination-paths)))
-              sources)))))))
+              (if destinations (map realpath* destinations) (list default-destination)))))
+        (validate-destination-paths destination-paths)
+        (every
+          (l (source)
+            (let (size (source->file-size-sum source))
+              (every
+                (l (destination-path)
+                  (if dry-run
+                    (apply display-process-arguments
+                      (pack-process-arguments (first source) destination-path dry-run encrypt size))
+                    (call-with-pipe
+                      (l (in out)
+                        (and-let*
+                          ( (a
+                              (pack-process-arguments (first source) destination-path
+                                dry-run encrypt size))
+                            (pid (process-create (first a) (tail a) in #:search-path? #t)))
+                          (close-port in) ((tail source) out)
+                          (close-port out) (process-finish-success? pid))))))
+                destination-paths)))
+          sources)))))
 
 (define (name->source-path a path-config) "string -> string" (string-append path-config a))
 
@@ -118,26 +119,27 @@
 (define (create-result-list-files source-names path-config)
   (each
     (l (a)
-      (call-with-working-directory path-config (nullary (execute (name->source-path a path-config)))))
+      (call-with-working-directory path-config
+        (nullary (execute (name->source-path a path-config)))))
     source-names)
   #f)
 
-(define (source-names->sources sources combine path-config) "-> (list:proc-conf ...)"
-  (if combine
+(define (source-names->sources sources combine? path-config)
+  "(string ...) boolean string -> ((string/list:name . procedure:generator) ...)
+  creates generator procedures that list input files"
+  (if combine?
     (list
       (pair sources
-        (nullary
+        (l (out)
           (call-with-working-directory path-config
-            (nullary
-              (each (l (a) (execute->port (current-output-port) (name->source-path a path-config)))
-                sources)))
+            (nullary (each (l (a) (execute->port out (name->source-path a path-config))) sources)))
           (force-output))))
     (map
       (l (a)
         (pair a
-          (nullary
+          (l (out)
             (call-with-working-directory path-config
-              (nullary (execute->port (current-output-port) (name->source-path a path-config))))
+              (nullary (execute->port out (name->source-path a path-config))))
             (force-output))))
       sources)))
 
@@ -147,13 +149,12 @@
       (l (a path-config)
         (let (missing-source-names (complement a (get-source-names path-config)))
           (if (null? missing-source-names) #t
-            (error-create (q missing-source-names) missing-source-names)))))
+            (raise (pair (q missing-source-names) missing-source-names))))))
     (l (combine destinations dry-run encrypt source-names tarsnap path-config)
-      (error-return (validate-source-names source-names path-config)
-        (l (valid?)
-          (let (sources (source-names->sources source-names combine path-config))
-            (if tarsnap (create-result-backup-tarsnap sources dry-run)
-              (create-result-backup-files sources destinations encrypt dry-run))))))))
+      (validate-source-names source-names path-config)
+      (let (sources (source-names->sources source-names combine path-config))
+        (if tarsnap (create-result-backup-tarsnap sources dry-run)
+          (create-result-backup-files sources destinations encrypt dry-run))))))
 
 (define*
   (backup #:key combine destinations dry-run encrypt list-configs list-files show-config sources
@@ -185,6 +186,6 @@
               (let ((key (first a)) (value (tail a)))
                 (list (symbol->keyword key) (case key ((sources) (cli-sources value)) (else value)))))
             (command-line-interface)))
-        (error-pass (apply backup keyword-arguments) error-log-and-exit)))))
+        (apply backup keyword-arguments)))))
 
 (backup-cli)

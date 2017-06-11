@@ -1,7 +1,7 @@
 #!/usr/bin/env guile
 !#
 
-(import (sph common) (sph media-info))
+(import (sph base) (sph media-info))
 
 (let (paths (map path->full-path (tail (program-arguments))))
   (each

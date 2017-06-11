@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (sph cli) (sph two) (rnrs io ports))
+(import (sph base) (sph cli) (sph two) (rnrs io ports))
 
 (define command-line-interface
   (cli-create #:options

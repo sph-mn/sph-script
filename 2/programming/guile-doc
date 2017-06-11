@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (sph cli)
+(import (sph base) (sph cli)
   (sph conditional) (sph documentation)
   (sph documentation display-format-itpn) (sph documentation display-format-plist)
   (sph documentation display-format-signature) (only (sph one) string->datum))
