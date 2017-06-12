@@ -1,66 +1,33 @@
 #!/usr/bin/guile
 !#
+
 ;expects newline separated file paths on standard input and renames file names
-
-(import
-  (sph)
-  (sph one)
-  (sph cli)
-  (sph string)
-  (sph filesystem)
-  (ice-9 rdelim)
-  (ice-9 streams)
-  (sph ice-9-stream))
-
-(define config.exec ((cli-create
-      #:options (list-q (dry-run)))))
-
-(define dry-run (assoc-ref config.exec (q dry-run)))
+(import (sph base) (sph cli) (ice-9 rdelim) (ice-9 streams) (sph ice-9-stream))
+(define arguments ((cli-create #:options (list-q (dry-run)))))
+(define dry-run (alist-q-ref arguments dry-run))
 
 (define default-clean-filename-config
-  (map (l (ele) (cons (make-regexp (first ele)) (tail ele)))
+  (map (l (a) (pair (make-regexp (first a)) (tail a)))
     (q
-      (
-        ("--" . ".")
-        ("\\(invalid encoding\\)" . "")
-        (" *& *" . "+")
-        ("\\(" . ".")
-        ("\\)" . ".")
-        ("[^-+.öäüa-zA-Z0-9]" . " ")
-        ("\\.htm$" . ".html")
-        ("\\.jpeg$" . ".jpg")
-        (" - " . ".")
-        ("  +" . " ")
-        ("^\\W+" . "")
-        ("\\W+$" . "")
-        (" *\\. *" . ".")
-        ("\\.-" . ".")
-        ("-\\." . ".")
-        ("\\.$" . "")
-        ("^\\." . "")
-        ("\\.\\.+" . ".")
-        ))))
+      ( ("--" . ".") ("\\(invalid encoding\\)" . "") (" *& *" . "+")
+        ("\\(" . ".") ("\\)" . ".")
+        ("[^-+.öäüa-zA-Z0-9]" . " ") ("\\.htm$" . ".html")
+        ("\\.jpeg$" . ".jpg") (" - " . ".")
+        ("  +" . " ") ("^\\W+" . "")
+        ("\\W+$" . "") (" *\\. *" . ".")
+        ("\\.-" . ".") ("-\\." . ".") ("\\.$" . "") ("^\\." . "") ("\\.\\.+" . ".")))))
 
-(define (clean-filename arg)
-  (fold
-    (l (ele prev)
-      (regexp-replace prev (first ele) (tail ele)))
-    (string-downcase arg)
+(define (clean-filename a)
+  (fold (l (b r) (regexp-replace r (first b) (tail b))) (string-downcase a)
     default-clean-filename-config))
 
-(define (rename-clean-path arg)
+(define (rename-clean-path a)
   (let*
-    ( (full-path (path->full-path arg))
-      (new-path
-        (string-append (dirname full-path) "/"
-          (clean-filename (basename full-path)))))
-    (if (not (string-equal? new-path full-path))
+    ((a (realpath* a)) (new-path (string-append (dirname a) "/" (clean-filename (basename a)))))
+    (if (not (string-equal? new-path a))
       (begin
         (display
-          (string-append
-            (basename full-path) " -> "
-            (basename new-path) "\n"))
-        (if (not dry-run) (rename-file full-path new-path))))))
+          (string-append (string-quote (basename a)) " -> " (string-quote (basename new-path)) "\n"))
+        (if (not dry-run) (rename-file a new-path))))))
 
-(stream-each rename-clean-path
-  (port->stream (current-input-port) read-line))
+(stream-each rename-clean-path (port->stream (current-input-port) read-line))
