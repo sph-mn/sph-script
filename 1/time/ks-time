@@ -1,5 +1,5 @@
 #!/usr/bin/guile
 !#
 
-(import (sph base))
+(import (sph base) (sph time) (sph time string))
 (display-line (time-elapsed-day-string (time-current)))

@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph base) (ice-9 regex))
+(import (sph base) (sph cli) (sph time string) (ice-9 regex))
 (define regexp-hms (make-regexp "([01]?[0-9]|2[0-3]):([0-5]?[0-9])(:[0-5]?[0-9])?"))
 
 (define hms-description
@@ -25,7 +25,7 @@
   (let
     (arguments
       ( (cli-create #:options
-          (ql
+          (list-q
             (replace #:names #\r
               #:description
               "no ks values in brackets, times are replaced. default for string arguments")
