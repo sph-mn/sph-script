@@ -82,4 +82,4 @@
       (list test-cli-help test-compress-whitespace-columns
         test-iso-week-number test-uptime-start-ks
         test-day-seconds test-uptime-duration-ks test-ks-time test-lowercase)))
-  (exit (boolean->integer result)))
+  (exit (boolean->integer (not result))))
