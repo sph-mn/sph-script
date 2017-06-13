@@ -1,15 +1,18 @@
 #!/usr/bin/guile
 !#
 
-(import (sph base) (sph process create))
+(import (sph base) (sph process create) (sph two))
 
 (define (execute->error-and-status executable-path arguments)
-  (execute-with-pipes (l (error) (port->string error)) executable-path arguments #f #f #t))
+  (execute-with-pipes (l (error) (begin-first (port->string error) (close-port error)))
+    executable-path arguments #f #f #t))
 
 (define (test-error-output executable-path . arguments)
   "execute a program and display a success message, or a failure message and its error output"
   (let-values (((a exit-status) (execute->error-and-status executable-path arguments)))
-    (if (and (zero? exit-status) (string-null? a))
+    (if
+      (and (zero? exit-status)
+        (or (string-null? a) (not (string-contains-any? a (list "warning:" "backtrace")))))
       (begin (display-line (string-append executable-path " success")) #t)
       (begin (display-line (string-append executable-path " failure")) (display a) #f))))
 
@@ -27,8 +30,56 @@
       "2/filesystem/clean-filenames" "2/filesystem/tag/tag-remove"
       "2/filesystem/tag/tag-sort" "2/filesystem/tag/tag-add" "2/convert/hex" "2/convert/binary")))
 
-(test-cli-help)
+(define (test-compress-whitespace-columns)
+  (execute-with-pipes
+    (l (input output error)
+      (display
+        (string-append (string-multiply " " 3) "ab"
+          (string-multiply " " 4) "c" (string-multiply " " 5))
+        input)
+      (close-port input) (begin-first (equal? " ab c " (port->string output)) (close-port output)))
+    "1/text/compress-whitespace-columns" (list) #t #t #t))
 
-#;(define (test-iso-week-number)
-  (execute->string "iso-week-number")
-  )
+(define (test-lowercase)
+  (execute-with-pipes
+    (l (input output error) (display "tEsT" input)
+      (close-port input) (begin-first (equal? "test" (port->string output)) (close-port output)))
+    "1/text/lowercase" (list) #t #t #t))
+
+(define (execute->number path . arguments)
+  (string->number (string-trim-right (apply execute->string path arguments))))
+
+(define (test-iso-week-number) (integer? (execute->number "1/time/iso-week-number")))
+(define (test-day-seconds) (integer? (execute->number "1/time/day-seconds")))
+(define (test-uptime-start-ks) (number? (execute->number "1/time/uptime-start-ks")))
+(define (test-uptime-duration-ks) (number? (execute->number "1/time/uptime-start-ks")))
+(define (test-ks-time) (number? (execute->number "1/time/ks-time")))
+;; time/ks-to-hms
+;; filesystem/path-directories
+;; filesystem/delete-if-empty
+;; filesystem/prefix-sort
+;; filesystem/searchl
+;; filesystem/move-into-directory
+;; filesystem/get-unique-path
+;; filesystem/rename-lowercase
+;; filesystem/search
+;; text/file-lines-set-operations
+;; text/newline-to-space
+;; text/space-to-newline
+;; text/comma-to-newline
+;; text/remove-double-newlines
+;; text/lowercase
+;; text/newline-to-comma
+;; other/golden-ratio
+
+(let
+  (result
+    (every
+      (l (a)
+        (let (name (symbol->string (procedure-name a)))
+          (if (a) (begin (display-line (string-append name " success")) #t)
+            (begin (display-line (string-append name " failure")) #f))))
+      (list test-cli-help test-compress-whitespace-columns
+        test-iso-week-number test-uptime-start-ks
+        test-day-seconds test-uptime-duration-ks test-ks-time test-lowercase)))
+  (exit (boolean->integer result)))
