@@ -1,8 +1,7 @@
 #!/usr/bin/guile
 !#
 
-; collect-file :: source-path ...
-(import (sph base))
+(import (sph base) (sph cli) (sph time) (sph time string))
 
 (define destination
   (string-append (getenv "HOME") "/temp/collections/collected."

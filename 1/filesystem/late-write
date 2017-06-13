@@ -2,7 +2,7 @@
 !#
 
 ;depends on sph-lib
-(import (sph base))
+(import (sph base) (sph io read-write) (sph cli))
 
 (define description
   "write to output file only after all data from standard input has been read. allows to overwrite source files when using shell output redirection")
@@ -12,7 +12,7 @@
 
 (define (late-write-cli)
   (alist-bind (command-line-interface) (output-file)
-    (rw-with-temp-file-port->file
-      (l (port-output) (port-copy-all (current-input-port) port-output)) output-file)))
+    (temp-file-port->file (l (port-output) (port-copy-all (current-input-port) port-output))
+      output-file)))
 
 (late-write-cli)

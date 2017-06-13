@@ -2,7 +2,7 @@
 !#
 
 (import (ice-9 ftw) (sph base)
-  (sph cli) (sph process) (sph lang indent-syntax) (except (srfi srfi-1) map))
+  (sph cli) (sph process) (sph lang indent-syntax))
 
 (define mount-directory (string-append (getenv "HOME") "/mnt/"))
 (define (mountpoint? path) (exit-value-zero? (execute "mountpoint" "--quiet" path)))

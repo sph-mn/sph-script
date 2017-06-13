@@ -1,25 +1,16 @@
 #!/usr/bin/guile
 !#
+
 #;(split at column-splitting character, default being spaces, and select by index.
 indices starting at one
 ignores the tab character)
 
 (import
-  (string transform)
-  (sph)
-  (sph cli-old)
-  (ice-9 rdelim)
-  (only (ice-9 streams) port->stream)
-  (sph ice-9-stream)
-  (only (sph list) length-eq-one? list-select))
+  ; from guile-lib
+  (string transform) (sph base)
+  (sph cli) (ice-9 rdelim) (only (ice-9 streams) port->stream) (sph ice-9-stream))
 
 (define default-delimiter #\space)
-(define config.cli
-  (cli-init
-    #:usage "tabular-select [options] index ..."
-    #:option-spec
-    (quote
-      ( (delimiter (single-char #\d) (value #t))))))
 
 (define (tabular-select column-delimiter indices text-port)
   (let
@@ -27,27 +18,34 @@ ignores the tab character)
       (indices-count (length indices)))
     (stream-each
       (l (line)
-	(let*
-	  ( (parts
-	      (filter! (l (ele)
-		  (not (string-null? ele)))
-		(string-split (expand-tabs line 2) column-delimiter)))
-	    (selected-columns
-	      (let ((parts-last-index (- (length parts) 1)))
-		(map (l (ele) (if (> ele parts-last-index) #f
-		      (if (= ele parts-last-index)
-			;drop the newline character of the line
-			(string-drop-right (list-ref parts ele) 1)
-			(list-ref parts ele))))
-		  indices))))
-	  (if (length-eq-one? indices)
-	    (display (let ((part (first selected-columns))) (if part part "")))
-	    (write selected-columns)))
-	(newline))
+        (let*
+          ( (parts
+              (filter! (l (ele) (not (string-null? ele)))
+                (string-split (expand-tabs line 2) column-delimiter)))
+            (selected-columns
+              (let ((parts-last-index (- (length parts) 1)))
+                (map
+                  (l (ele)
+                    (if (> ele parts-last-index) #f
+                      (if (= ele parts-last-index)
+                        ;drop the newline character of the line
+                        (string-drop-right (list-ref parts ele) 1) (list-ref parts ele))))
+                  indices))))
+          (if (length-eq-one? indices)
+            (display (let ((part (first selected-columns))) (if part part "")))
+            (write selected-columns)))
+        (newline))
       line-stream)))
 
-(let
-  ( (indices (assoc-ref config.cli (quote ())))
-    (delimiter (assoc-ref config.cli (quote delimiter))))
-  (if (not (null? indices))
-    (tabular-select (if delimiter (if (string? delimiter) (string-ref delimiter 0) delimiter) default-delimiter) (map (l (ele) (- (string->number ele) 1)) indices) (current-input-port))))
+(define (tabular-select-cli)
+  (let*
+    ( (arguments
+        ( (cli-create #:usage "tabular-select [options] index ..."
+            #:options (list-q (delimiter #:names (#\d)) ((index ...))))))
+      (indices (alist-ref arguments (q index))) (delimiter (alist-ref arguments (q delimiter))))
+    (if (not (null? indices))
+      (tabular-select
+        (if delimiter (if (string? delimiter) (string-ref delimiter 0) delimiter) default-delimiter)
+        (map (l (ele) (- (string->number ele) 1)) indices) (current-input-port)))))
+
+(tabular-select-cli)

@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph) (sph list) (sph filesystem tag) (sph cli))
+(import (sph base) (sph filesystem tag) (sph cli))
 
 (define (tag-remove-cli)
   (let (arguments ((cli-create #:options (list-q ((tags path ...) #:required? #t)))))

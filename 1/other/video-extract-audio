@@ -1,7 +1,8 @@
 #!/usr/bin/guile
 !#
 
-(import (sph base) (sph lang indent-syntax) (sph cli) (json parser))
+; depends on https://github.com/aconchillo/guile-json
+(import (sph base) (sph lang indent-syntax) (sph cli) (json))
 
 (define (guile-hash-table->alist a)
   (hash-map->list
@@ -31,8 +32,8 @@
   (and-let*
     ( (audio-codec (or format (codec-name->extension (ffprobe-audio-codec path-source))))
       (path-destination (string-append path-source "." audio-codec)))
-    (apply execute "ffmpeg" "-i"
-      path-source "-map" "0:a" path-destination (if format (list) (list "-c" "copy")))))
+    (apply execute "ffmpeg"
+      "-i" path-source "-map" "0:a" path-destination (if format (list) (list "-c" "copy")))))
 
 (define (run)
   (let*
@@ -48,7 +49,7 @@
         ( (cli-create #:description description
             #:about (prefix-tree->indent-tree-string about)
             #:options
-            (ql
+            (list-q
               (format #:value-required? #t #:description "filename extension of the output format")
               ((source-path ...))))))
       (format (alist-ref options (q format))))

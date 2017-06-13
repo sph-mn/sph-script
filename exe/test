@@ -1,0 +1,34 @@
+#!/usr/bin/guile
+!#
+
+(import (sph base) (sph process create))
+
+(define (execute->error-and-status executable-path arguments)
+  (execute-with-pipes (l (error) (port->string error)) executable-path arguments #f #f #t))
+
+(define (test-error-output executable-path . arguments)
+  "execute a program and display a success message, or a failure message and its error output"
+  (let-values (((a exit-status) (execute->error-and-status executable-path arguments)))
+    (if (and (zero? exit-status) (string-null? a))
+      (begin (display-line (string-append executable-path " success")) #t)
+      (begin (display-line (string-append executable-path " failure")) (display a) #f))))
+
+(define (test-cli-help)
+  "these tests show missing variable references and other compile errors.
+  unfortunately, guile writes its auto-compile info to standard error"
+  (every (l (a) (test-error-output a "--help"))
+    (list "1/filesystem/collect-file" "1/filesystem/late-write"
+      "1/filesystem/mount-home" "1/filesystem/mount-sshfs-home"
+      "1/text/lines-filter" "1/text/tabular-select"
+      "1/filesystem/splice" "1/filesystem/move-and-link"
+      "1/filesystem/merge-files" "1/other/scm-format"
+      "1/other/video-extract-audio" "1/other/backup"
+      "1/other/restart-on-end" "1/time/hms-to-ks"
+      "2/filesystem/clean-filenames" "2/filesystem/tag/tag-remove"
+      "2/filesystem/tag/tag-sort" "2/filesystem/tag/tag-add" "2/convert/hex" "2/convert/binary")))
+
+(test-cli-help)
+
+#;(define (test-iso-week-number)
+  (execute->string "iso-week-number")
+  )
