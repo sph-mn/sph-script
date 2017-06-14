@@ -4,13 +4,13 @@
 (import (sph base) (sph cli)
   (sph conditional) (sph documentation)
   (sph documentation display-format-itpn) (sph documentation display-format-plist)
-  (sph documentation display-format-signature) (only (sph one) string->datum))
+  (sph documentation display-format-signature))
 
 (let*
   ( (arguments
       ( (cli-create #:about "depends on guile and sph-lib"
           #:description
-          "display documentation extracted from scheme module code. module name is without parentheses, for example \"rnrs hashtables\""
+          "display documentation extracted from scheme module code. module name is without round brackets, for example \"rnrs hashtables\""
           #:options (quote (((module-name ...)) (format #:names #\f #:value-required? #t))))))
     (module-names
       (map (l (a) (map string->symbol (string-split a #\space)))
