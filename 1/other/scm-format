@@ -1,8 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph) (sph cli)
-  (sph io) (sph hashtable) (sph filesystem) (sph lang scm-format) (sph alist) (sph two))
+(import (sph base) (sph cli) (sph lang scm-format))
 
 (define (scm-suffix-file-path a)
   (if (string-suffix? ".scm" a) a
@@ -17,7 +16,7 @@
         (format #:value-required? #t #:description "a scheme list for scm-format format options")
         (transform #:value-required? #t) ((source-path ...))))))
 
-(define (parse-scm-arg-hashtable a) (list->hashtable (string->datum a)))
+(define (parse-scm-arg-hashtable a) (list->hashtable (string->datums a)))
 
 (define (create-config format transform)
   (list->hashtable
