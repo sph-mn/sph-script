@@ -1,7 +1,9 @@
 #!/usr/bin/guile
 !#
 
-(import (sph base) (sph cli) (only (guile) dirname rmdir string-suffix?) (sph stream) (srfi srfi-41))
+(import (sph base) (sph cli)
+  (only (guile) dirname rmdir string-suffix?) (sph stream) (sph filesystem stream) (srfi srfi-41))
+
 ;empty directories
 ;child files with the same name as parent
 ;child files occuring in parents parent
@@ -15,7 +17,7 @@
 
 (define (splice-one path dry-run)
   "string boolean ->
-  works only on directories"
+   works only on directories"
   (if (file-path-directory? path)
     (let
       ( (path (ensure-trailing-slash path)) (path-dirname (dirname path))
