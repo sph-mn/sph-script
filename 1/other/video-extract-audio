@@ -13,8 +13,8 @@
           ((vector? value) (vector-map guile-hash-table->alist value)) (else value))))
     a))
 
-(define-as codec-name->extension-ht hashtable "vorbis" "ogg")
-(define (codec-name->extension a) (hashtable-ref codec-name->extension-ht a a))
+(define-as codec-name->extension-ht ht-create "vorbis" "ogg")
+(define (codec-name->extension a) (ht-ref codec-name->extension-ht a a))
 
 (define (ffprobe-audio-codec path)
   (false-if-exception

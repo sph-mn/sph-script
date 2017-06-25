@@ -16,10 +16,10 @@
         (format #:value-required? #t #:description "a scheme list for scm-format format options")
         (transform #:value-required? #t) ((source-path ...))))))
 
-(define (parse-scm-arg-hashtable a) (list->hashtable (string->datums a)))
+(define (parse-scm-arg-hashtable a) (ht-from-list (string->datums a)))
 
 (define (create-config format transform)
-  (list->hashtable
+  (ht-from-list
     (append (if format (list (q format) (parse-scm-arg-hashtable format)) (list))
       (if transform (list (q transform) (parse-scm-arg-hashtable transform)) (list)))))
 

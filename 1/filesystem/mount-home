@@ -1,16 +1,14 @@
 #!/usr/bin/guile
 !#
 
-(import (ice-9 ftw) (sph base)
-  (sph cli) (sph process) (sph lang indent-syntax))
-
+(import (ice-9 ftw) (sph base) (sph cli) (sph process) (sph lang indent-syntax))
 (define mount-directory (string-append (getenv "HOME") "/mnt/"))
 (define (mountpoint? path) (exit-value-zero? (execute "mountpoint" "--quiet" path)))
 (define (file-system-fold-ignore path stat result) result)
 
 (define (create-target-path source-path)
   "string -> string
-  {first-part/last-second-part.last-part/}"
+   {first-part/last-second-part.last-part/}"
   (let* ((source-path (delete "" (path->list source-path))) (suffix (tail source-path)))
     (string-append mount-directory
       (string-downcase
@@ -24,9 +22,10 @@
     (l (path)
       (let
         ( (target (create-target-path path))
-          (shell-eval+check-result (if dry-run? display-line-string shell-eval+check-result)))
-        (and (shell-eval+check-result (string-append "mkdir -p " (string-quote target)))
-          (shell-eval+check-result
+          (shell-eval-and-check-result
+            (if dry-run? display-line-string shell-eval-and-check-result)))
+        (and (shell-eval-and-check-result (string-append "mkdir -p " (string-quote target)))
+          (shell-eval-and-check-result
             (string-append (if use-sudo? "sudo " "") "mount "
               (string-quote path) " "
               (string-quote target) (if mount-arguments (string-append " " mount-arguments) ""))))))
@@ -70,7 +69,8 @@
             #:about (prefix-tree->indent-tree-string about)
             #:options
             (list-q (user #:names #\u #:value-required? #t) (dry-run #:names #\d)
-              (sudo #:names #\s) (mount-arguments #:names #\o #:value-required? #t) ((source-path ...)))))))
+              (sudo #:names #\s) (mount-arguments #:names #\o #:value-required? #t)
+              ((source-path ...)))))))
     (apply mount-home (alist-ref options (q sudo))
       (alist-ref options (q dry-run)) (alist-ref options (q mount-arguments))
       (alist-ref options (q source-path) (list)))

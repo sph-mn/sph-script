@@ -20,14 +20,16 @@
 
 (define (mount-sshfs-home hostname path user . sshfs-arguments)
   (let (target (create-target-argument hostname))
-    (and (execute+check-result "mkdir" "-p" target)
-      (execute+check-result "sshfs" (create-source-argument user hostname path) target))))
+    (and (execute-and-check-result "mkdir" "-p" target)
+      (execute-and-check-result "sshfs" (create-source-argument user hostname path) target))))
 
 (let
   (options
     ( (cli-create #:description program-description
         #:about (prefix-tree->indent-tree-string about)
-        #:options (list-q (path #:names #\p #:value-required? #t) (user #:names #\u #:value-required? #t) ((hostname sshfs-argument ...))))))
+        #:options
+        (list-q (path #:names #\p #:value-required? #t) (user #:names #\u #:value-required? #t)
+          ((hostname sshfs-argument ...))))))
   (apply mount-sshfs-home (alist-ref options (q hostname))
     (alist-ref options (q path)) (alist-ref options (q user))
     (or (alist-ref options (q sshfs-argument)) (list))))
