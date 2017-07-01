@@ -52,9 +52,9 @@
           "in the specified directories, group files with the same (by default dot separated) prefix into a directory"))
       (arguments (cli))
       (delimiter
-        (let (a (alist-q-ref arguments delimiter))
+        (let (a (alist-ref-q arguments delimiter))
           (if (and (string? a) (= 1 (string-length a))) (string-ref a 0) default-delimiter))))
-    (apply prefix-sort (alist-q-ref arguments dry-run)
-      delimiter (any->list (alist-q-ref arguments path-directory)))))
+    (apply prefix-sort (alist-ref-q arguments dry-run)
+      delimiter (any->list (alist-ref-q arguments path-directory)))))
 
 (prefix-sort-cli)

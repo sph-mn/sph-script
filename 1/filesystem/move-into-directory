@@ -14,4 +14,4 @@
 
 (let (arguments (command-line-interface))
   (if (null? arguments) (command-line-interface (list "--help"))
-    (move-into-directory (alist-q-ref arguments path-directory) (alist-q-ref arguments path-file))))
+    (move-into-directory (alist-ref-q arguments path-directory) (alist-ref-q arguments path-file))))

@@ -1,13 +1,13 @@
 #!/usr/bin/guile
 !#
 
-;moves files into directories by using regular expressions on mime-types
-;removes unwanted characters from file names
-;deletes empty directories
+; moves files into directories by using regular expressions on mime-types
+; removes unwanted characters from file names
+; deletes empty directories
 
-(import (except (srfi srfi-1) map) (guile)
-  (ice-9 regex) (sph)
-  (sph one) (sph process) (sph list) (sph string) (sph stream) (sph filesystem) (sph tree))
+(import (guile) (ice-9 regex)
+  (sph base) (sph cli)
+  (rnrs exceptions) (sph process) (sph stream) (sph filesystem stream) (sph tree))
 
 (define trim-char-set (list->char-set (quote (#\newline #\space))))
 
@@ -19,62 +19,51 @@
 (define-syntax-rule (filename-extension-case path cond ...)
   (let (t (filename-extension path)) (string-case (or t "") cond ...)))
 
-(define ignored-filenames (q ("personal" "download" "collections" "backup" "screenshots")))
+(define-as ignored-filenames list-q "personal" "download" "collections" "backup" "screenshots")
 
-(define mime-type->path
-  ;#(mime-type-regexp target-directory [relative-target-directory/relative-target-directory-proc])
-  ;#(string/(string ...) string [string/procedure])
-  (qq
-    (
-      #("image/.*" "picture")
-      #(("text/.*" "application/xml") "text"
-        (unquote
-          (l (path)
-            (filename-extension-case path
-              ("scm" "programming/scm")
-              ("sh" "programming/bash")
-              ("rb" "programming/ruby")
-              ("js" "programming/javascript")
-              ("sql" "programming/sql")
-              ("pd" "programming/puredata")
-              (("html" "rhtml") "programming/html")
-              (("css" "less" "scss") "programming/stylesheet")
-              (("c" "sc") "programming/c")
-              (("yml") "programming/other")
-              ("text" "plain")
-              ("csv" "machine-readable-data")
-              "other"))))
-      #("video/.*" "video") #("audio/.*" "audio")
-      #(("application/pdf") "documents" "uneditable")
-      #(("application/postscript") "documents" "uneditable")
-      #(("application/vnd.oasis.opendocument") "documents" "editable")
-      #(("application/vnd.open.*") "documents" "editable")
-      #(("application/x-gzip" "application/x-rar" "application/x-xz" "application/x-7z-compressed" "application/zip") "other" "compressed")
-      #("inode/x-empty" "other" "empty")
-      #(".*" "other" "other"))))
+(define-as mime-type->path list-qq
+  ; (mime-type-regexp target-directory [relative-target-directory/relative-target-directory-proc])
+  ; (string/(string ...) string [string/procedure])
+  ("image/.*" "picture")
+  ( ("text/.*" "application/xml") "text"
+    (unquote
+      (l (path)
+        (filename-extension-case path ("scm" "programming/scm")
+          ("sh" "programming/bash") ("rb" "programming/ruby")
+          ("js" "programming/javascript") ("sql" "programming/sql")
+          ("pd" "programming/puredata") (("html" "rhtml") "programming/html")
+          (("css" "less" "scss") "programming/stylesheet") (("c" "sc") "programming/c")
+          (("yml") "programming/other") ("text" "plain") ("csv" "machine-readable-data") "other"))))
+  ("video/.*" "video") ("audio/.*" "audio")
+  (("application/pdf") "documents" "uneditable")
+  (("application/postscript") "documents" "uneditable")
+  (("application/vnd.oasis.opendocument") "documents" "editable")
+  (("application/vnd.open.*") "documents" "editable")
+  ( ("application/x-gzip" "application/x-rar" "application/x-xz"
+      "application/x-7z-compressed" "application/zip")
+    "other" "compressed")
+  ("inode/x-empty" "other" "empty") (".*" "other" "other"))
 
 (define default-file-rename-config
-  (map (l (ele) (pair (make-regexp (first ele)) (tail ele)))
-    (q
-      ( ("[^-.öäüa-zA-Z0-9]" . " ") ("\\.htm$" . ".html")
-        (" - " . ".") (" +" . " ")))))
+  (map (l (a) (pair (make-regexp (first a)) (tail a)))
+    (q (("[^-.öäüa-zA-Z0-9]" . " ") ("\\.htm$" . ".html") (" - " . ".") (" +" . " ")))))
 
-(define (default-file-rename arg)
-  (fold (l (ele prev) (regexp-replace prev (first ele) (tail ele))) (string-downcase arg)
+(define (default-file-rename a)
+  (fold (l (a r) (regexp-replace r (first a) (tail a))) (string-downcase a)
     default-file-rename-config))
 
-(define (prepare-mime-type->path! arg)
-  (map!
-    (l (ele)
-      (vector-set! ele 0
-        (let (regexpr (vector-ref ele 0))
-          (make-regexp
-            (if (list? regexpr) (string-append "(" (string-join regexpr ")|(") ")") regexpr))))
-      ele)
-    arg))
+(define (prepare-mime-type->path a)
+  (map
+    (l (a)
+      (list->vector
+        (pair
+          (let (regexp (first a))
+            (make-regexp
+              (if (list? regexp) (string-append "(" (string-join regexp ")|(") ")") regexp)))
+          (tail a))))
+    a))
 
-(define target-toplevel-directories
-  (delete-duplicates (map (l (ele) (vector-ref ele 1)) mime-type->path)))
+(define target-toplevel-directories (delete-duplicates (map second mime-type->path)))
 
 (define (source-path->target-path source-path mime-type->path)
   (let (mime-type (path->mime-type source-path))
@@ -82,30 +71,30 @@
       (or (contains? target-toplevel-directories (basename source-path))
         (contains? ignored-filenames (basename source-path)))
       #f
-      (let (config (find (l (ele) (regexp-exec (vector-ref ele 0) mime-type)) mime-type->path))
+      (let (config (find (l (a) (regexp-exec (vector-ref a 0) mime-type)) mime-type->path))
         (path-append (vector-ref config 1)
           (if (> (vector-length config) 2)
             (let (relative-path (vector-ref config 2))
               (if (procedure? relative-path) (relative-path source-path) relative-path))
             ""))))))
 
-(define (tidy-files path mime-type->path)
-  ;each directory entry, then delete empty toplevel directories
+(define (tidyfiles path config) "each directory entry, then delete empty toplevel directories"
   (stream-each
     (l (name)
-      (let*
-        ((source-path name) (target-dir (source-path->target-path source-path mime-type->path)))
+      (let* ((source-path name) (target-dir (source-path->target-path source-path config)))
         (if target-dir
           (let
             (target-path
               (get-unique-target-path (path-append target-dir (default-file-rename name))))
-            (catch #t
-              (l () (ensure-directory-structure target-dir) (rename-file source-path target-path))
-              (l args (string-append "ignored file \"" name "\"") (quote ignored))))
-          (quote ignored))))
-    (directory-stream path (l (name) (not (dotfile? name)))))
+            (guard (obj (#t (string-append "ignored file \"" name "\"")))
+              (ensure-directory-structure target-dir) (rename-file source-path target-path))))))
+    (directory-stream path (negate dotfile?)))
   (system* "delete-if-empty" path))
 
-(let (arguments (tail (program-arguments)))
-  (if (null? arguments) (display "1 argument missing - the path to operate on\n")
-    (tidy-files (first arguments) (prepare-mime-type->path! mime-type->path))))
+(define (tidyfiles-cli)
+  (let
+    (options
+      ((cli-create #:description "move files into directories by mime type" (list-q (path)))))
+    (tidyfiles (alist-ref-q options path) (prepare-mime-type->path mime-type->path))))
+
+(tidyfiles-cli)

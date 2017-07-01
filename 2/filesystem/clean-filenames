@@ -4,7 +4,7 @@
 ;expects newline separated file paths on standard input and renames file names
 (import (sph base) (sph cli) (ice-9 rdelim) (ice-9 streams) (sph ice-9-stream))
 (define arguments ((cli-create #:options (list-q (dry-run)))))
-(define dry-run (alist-q-ref arguments dry-run))
+(define dry-run (alist-ref-q arguments dry-run))
 
 (define default-clean-filename-config
   (map (l (a) (pair (make-regexp (first a)) (tail a)))

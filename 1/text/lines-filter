@@ -16,15 +16,15 @@
             (and #:description "matching lines must contain all strings. the default") ((strings ...))))))
     (nullary
       (let*
-        ( (arguments (cli)) (regexp? (alist-q-ref arguments regexp))
-          (case-sensitive? (alist-q-ref arguments case-sensitive))
+        ( (arguments (cli)) (regexp? (alist-ref-q arguments regexp))
+          (case-sensitive? (alist-ref-q arguments case-sensitive))
           (patterns
             (map
               (if regexp? (if case-sensitive? make-regexp (l (a) (make-regexp a regexp/icase)))
                 (if case-sensitive? identity string-downcase))
-              (alist-q-ref arguments strings (list))))
-          (negate? (alist-q-ref arguments negate)) (or? (alist-q-ref arguments or))
-          (and? (alist-q-ref arguments and)))
+              (alist-ref-q arguments strings (list))))
+          (negate? (alist-ref-q arguments negate)) (or? (alist-ref-q arguments or))
+          (and? (alist-ref-q arguments and)))
         (if (null? patterns) (port-copy-all (current-input-port) (current-output-port))
           (let*
             ( (match?

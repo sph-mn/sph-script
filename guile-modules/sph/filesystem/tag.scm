@@ -29,13 +29,13 @@
 
   (define* (tag-name->tags-and-extensions& a c #:key (config tag-default-config))
     (let
-      ( (extensions (alist-q-ref config extensions))
-        (words (string-split a (alist-q-ref config delimiter))))
+      ( (extensions (alist-ref-q config extensions))
+        (words (string-split a (alist-ref-q config delimiter))))
       (consecutive& (l (a) (contains? extensions a)) (reverse words)
         (l (extensions tags) (c (reverse tags) (reverse extensions))))))
 
   (define* (tag-create-name tags extensions #:key (config tag-default-config))
-    (string-append (string-join tags (string (alist-q-ref config delimiter)))
+    (string-append (string-join tags (string (alist-ref-q config delimiter)))
       (string-join extensions "." (q prefix))))
 
   (define (prepare-tags& a c) (let (a (remove string-null? a)) (if (not (null? a)) (c a))))

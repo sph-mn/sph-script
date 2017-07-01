@@ -176,7 +176,7 @@
 
 (define (arguments->formats& arguments c)
   "list {show-file? show-prefix? show-suffix? -> any} -> any"
-  (let (format (alist-q-ref arguments format))
+  (let (format (alist-ref-q arguments format))
     (if format
       (let (format (string-split format #\,))
         (apply c (map (l (a) (contains? format a)) (list "filename" "prefix" "suffix"))))
@@ -197,8 +197,8 @@
 
 (define (process-after-proc arguments)
   (let
-    ( (list-unique-facets? (alist-q-ref arguments list-unique-facets))
-      (sort-packets? (alist-q-ref arguments sort-packets)))
+    ( (list-unique-facets? (alist-ref-q arguments list-unique-facets))
+      (sort-packets? (alist-ref-q arguments sort-packets)))
     (l (result) "list -> list"
       (let (type (first result))
         (cond
@@ -298,7 +298,7 @@
   (let* ((arguments (command-line-interface)))
     (error-pass
       (result-handler arguments
-        ( (input-handler-proc arguments) (alist-q-ref arguments file-paths)
+        ( (input-handler-proc arguments) (alist-ref-q arguments file-paths)
           (process-one-proc arguments))
         (process-after-proc arguments) (output-handler-proc arguments))
       display-error-and-exit)))

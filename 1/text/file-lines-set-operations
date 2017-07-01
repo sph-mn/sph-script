@@ -15,8 +15,8 @@
   (let*
     ( (a (cli-parser))
       (set-op
-        (cond ((alist-q-ref a union) union) ((alist-q-ref a intersection) intersection)
-          ((alist-q-ref a difference) difference) ((alist-q-ref a complement) complement) (else #f))))
+        (cond ((alist-ref-q a union) union) ((alist-ref-q a intersection) intersection)
+          ((alist-ref-q a difference) difference) ((alist-ref-q a complement) complement) (else #f))))
     (if set-op
       (let
         (r
@@ -24,7 +24,7 @@
             (l files
               (fold (l (file r) (set-op (port->lines file) r)) (port->lines (first files))
                 (tail files)))
-            (alist-q-ref a file-path)))
+            (alist-ref-q a file-path)))
         (each display-line r))
       (display-line "no set operation selected"))))
 
