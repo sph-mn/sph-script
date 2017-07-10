@@ -18,10 +18,13 @@
 (define (create-source-argument user hostname path)
   (string-append (or (and user (string-append user "@")) "") hostname ":" (or path "/")))
 
-(define (mount-sshfs-home hostname path user . sshfs-arguments)
-  (let (target (create-target-argument hostname))
-    (and (execute-and-check-result "mkdir" "-p" target)
-      (execute-and-check-result "sshfs" (create-source-argument user hostname path) target))))
+(define (mount-sshfs-home hostname path user dry-run? . sshfs-arguments)
+  (let*
+    ( (target (create-target-argument hostname))
+      (source (create-source-argument user hostname path))
+      (commands (list (list "mkdir" "-p" target) (list "sshfs" source target))))
+    (if dry-run? (each (l (a) (display-line (string-join (map any->string a) " "))) commands)
+      (every (l (a) (apply execute-and-check-result a)) commands))))
 
 (let
   (options
@@ -29,7 +32,7 @@
         #:about (prefix-tree->indent-tree-string about)
         #:options
         (list-q (path #:names #\p #:value-required? #t) (user #:names #\u #:value-required? #t)
-          ((hostname sshfs-argument ...))))))
+          (dry-run #:names #\d) ((hostname sshfs-argument ...))))))
   (apply mount-sshfs-home (alist-ref options (q hostname))
     (alist-ref options (q path)) (alist-ref options (q user))
-    (or (alist-ref options (q sshfs-argument)) (list))))
+    (alist-ref options (q dry-run)) (or (alist-ref options (q sshfs-argument)) (list))))
