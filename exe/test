@@ -34,8 +34,8 @@
       "1/filesystem/merge-files" "1/other/scm-format"
       "1/other/video-extract-audio" "1/other/backup"
       "1/other/restart-on-end" "1/time/hms-to-ks"
-      "2/filesystem/clean-filenames" "2/filesystem/tag/tag-remove"
-      "2/filesystem/tag/tag-sort" "2/filesystem/tag/tag-add" "2/convert/hex" "2/convert/binary")))
+      "2/filesystem/clean-filenames" "2/filesystem/tag-remove"
+      "2/filesystem/tag-sort" "2/filesystem/tag-add" "2/convert/hex" "2/convert/binary")))
 
 (define (test-compress-whitespace-columns)
   (execute-with-pipes
