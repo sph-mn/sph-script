@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph base) (sph lang indent-syntax))
+(import (sph base) (sph lang indent-syntax) (sph cli))
 
 (define (format-encrypt target-device-path run?)
   (let (device-mapper-path (string-replace-char target-device-path #\/ #\_))
@@ -9,11 +9,12 @@
       (let
         (commands
           (list
-            (list "dd" "if=/dev/urandom"
+            #;(list "dd" "if=/dev/urandom"
               (string-append "of=" target-device-path) "bs=512" "count=4000")
             (list "cryptsetup" "luksFormat" target-device-path)
             (list "cryptsetup" "luksOpen" target-device-path device-mapper-path)
-            (list "mkfs.ext4" (string-append "/dev/mapper/" device-mapper-path))))
+            (list "mkfs.ext4" (string-append "/dev/mapper/" device-mapper-path))
+            (list "cryptsetup" "luksClose" (string-append "/dev/mapper/" device-mapper-path))))
         (if run? (apply execute-and commands)
           (each (l (e) (display (string-join e " ")) (newline)) commands)))
       (display "target device is mounted. please unmount it first\n"))))
@@ -36,7 +37,7 @@
               ("maintainer and copyright" "sph@posteo.eu | http://sph.mn") ("license" "gpl3+")))))
       (options
         ( (cli-create #:about about
-            #:description (string-join description "\n  ") #:options (list-q ((block-device-path)) (run))))))
-    (format-encrypt (alist-ref-q options block-device-path) (alist-ref-q options run))))
+            #:description (string-join description "\n  ") #:options (list-q ((path)) (run))))))
+    (format-encrypt (alist-ref-q options path) (alist-ref-q options run))))
 
 (run)
