@@ -79,6 +79,8 @@ for further information see [sph-script](http://sph.mn/content/1467).
 │   ├── file-size-sum
 │   ├── format-encrypt
 │   ├── gui-move-into-directory
+│   ├── gui-tag-add
+│   ├── gui-tag-remove
 │   ├── hardlink-to-copy
 │   ├── lf
 │   ├── list-file-size
@@ -87,7 +89,9 @@ for further information see [sph-script](http://sph.mn/content/1467).
 │   ├── prepend-media-bitrate
 │   ├── prepend-to-filename
 │   ├── remove-video-quality-info
-│   └── tag
+│   ├── tag-add
+│   ├── tag-remove
+│   └── tag-sort
 ├── other
 │   ├── cpioc
 │   ├── cpioe
@@ -115,20 +119,22 @@ for further information see [sph-script](http://sph.mn/content/1467).
 │   ├── ssh-install-key
 │   ├── take-screenshot
 │   ├── take-screenshot-window
-│   └── take-screenshots-in-intervalls
+│   └── take-screenshots-in-intervals
 ├── programming
 │   ├── astyle-to-file
 │   ├── c-format
 │   ├── coffee-compile
 │   ├── coffee-compile-from-to
 │   ├── compress-js
-│   ├── guile-doc
+│   ├── guile-module-dependencies
 │   ├── javascript-format
 │   ├── javascript-format-add-function-spacing
 │   ├── javascript-remove-semicolons
 │   ├── json-to-file
 │   ├── lines-to-quoted-comma-lines
 │   ├── lines-to-scheme-data
+│   ├── scm-list-documentation
+│   ├── sph-module-dependencies
 │   ├── sql-format
 │   ├── xml-format
 │   └── xml-json-converter
@@ -141,20 +147,24 @@ for further information see [sph-script](http://sph.mn/content/1467).
     ├── remove-iso-date-prefix-zeros
     └── string-bits
 
-12 directories, 125 files
+11 directories, 132 files
 ```
 
+additionally included are:
+* other/take-website-screenshots
+* other/xml-json-converter
+* other/web-search
+
 # installation
-you can use the following to symlink all scripts to a path that is listed in the $PATH environment variable:
+assuming that "$HOME/.exe" is listed in the $PATH environment variable (which it is not by default), you can use the following to symlink all scripts into the path:
 ```
 cd sph-script
 cp -st $HOME/.exe $PWD/{1,2}/*/*
 ```
 
-"$HOME/.exe" is not in $PATH by default, but you can add it for example in a file named "/etc/profile" like this:
+you can add paths to the $PATH environment variable for example in "/etc/profile" like this:
 ```
 export PATH="$PATH:$HOME/.exe"
 ```
 
-a few programs depend on guile, sph-lib and guile modules found in sph-script/guile-modules.
-the content of sph-script/guile-modules needs to be symlinked or copied into a directory that is in $GUILE_LOAD_PATH.
+a few programs depend on guile, sph-lib and guile modules found in sph-script/guile-modules. for these programs, the content of sph-script/guile-modules needs to be symlinked or copied into a directory that is in $GUILE_LOAD_PATH.

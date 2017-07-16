@@ -32,10 +32,7 @@
 (define (string-trim-round-brackets a) (substring a 1 (- (string-length a) 1)))
 
 (define (prefix-tree->gv-digraph* a) "list -> string"
-  (pairs->gv-digraph
-    (map
-      (l (a) (pair (string-trim-round-brackets (first a)) (string-trim-round-brackets (tail a))))
-      (delete-duplicates (prefix-tree->relations a)))))
+  (pairs->gv-digraph (delete-duplicates (prefix-tree->relations a))))
 
 (define
   (guile-module-dependencies names format only exclude strip-prefix remove-brackets max-depth)
@@ -58,11 +55,13 @@
                       ( (a (module-name a))
                         (a
                           (if strip-prefix
-                            (fold
-                              (l (b a)
-                                (if (and (apply list-prefix? a b) (> (length a) 1))
-                                  (drop a (length b)) a))
-                              a strip-prefix)
+                            (or
+                              (any
+                                (l (b)
+                                  (and (apply list-prefix? a b) (> (length a) 1)
+                                    (drop a (length b))))
+                                strip-prefix)
+                              a)
                             a))
                         (a (any->string a)) (a (if remove-brackets (string-trim-round-brackets a) a)))
                       a))
