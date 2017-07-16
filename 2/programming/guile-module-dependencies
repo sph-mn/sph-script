@@ -1,0 +1,95 @@
+#!/usr/bin/guile
+!#
+
+(import (sph base) (ice-9 pretty-print)
+  (sph module) (sph cli) (ice-9 match) (sph tree) (sph lang indent-syntax))
+
+(define guile-module-dependencies-description
+  "displays all dependencies of a module in various formats. depends on sph-lib")
+
+(define (module-dependencies-tree module match? max-depth)
+  "module procedure:{list:module-name -> boolean} integer -> list
+   get a list of module dependencies and nested dependency dependencies"
+  (let loop ((module module) (parents (list)) (depth 0))
+    (pair module
+      (filter-map
+        (l (a)
+          (and (match? (module-name a))
+            (if (contains? parents a) a
+              (if (>= depth max-depth) a
+                (let (b (loop a (pair a parents) (+ 1 depth))) (if (= 1 (length b)) (first b) b))))))
+        (module-dependencies module)))))
+
+(define (pairs->gv-digraph a) "(pair ...) -> string"
+  (string-append "digraph {"
+    (string-join
+      (list-sort string<?
+        (map (l (a) (string-append (string-quote (first a)) " -> " (string-quote (tail a)) ";")) a))
+      "\n  " (q prefix))
+    "\n}"))
+
+(define (prefix-tree->gv-digraph a) (pairs->gv-digraph (prefix-tree->relations a)))
+(define (string-trim-round-brackets a) (substring a 1 (- (string-length a) 1)))
+
+(define (prefix-tree->gv-digraph* a) "list -> string"
+  (pairs->gv-digraph
+    (map
+      (l (a) (pair (string-trim-round-brackets (first a)) (string-trim-round-brackets (tail a))))
+      (delete-duplicates (prefix-tree->relations a)))))
+
+(define
+  (guile-module-dependencies names format only exclude strip-prefix remove-brackets max-depth)
+  "((symbol ...) ...) symbol false/(string:name-prefix ...) false/(string:name-prefix ...) false/string boolean integer -> unspecified"
+  (let
+    (match?
+      (l (a) "(symbol ...) -> boolean"
+        (let (a (any->string a))
+          (and (or (not only) (any (l (b) (string-prefix? b a)) only))
+            (or (not exclude) (not (any (l (b) (string-prefix? b a)) exclude)))))))
+    (each
+      (l (a)
+        (display-line
+          (let*
+            ( (deps (module-dependencies-tree (resolve-module a) match? max-depth))
+              (deps
+                (tree-map-leafs
+                  (l (a)
+                    (let*
+                      ( (a (module-name a))
+                        (a
+                          (if strip-prefix
+                            (fold
+                              (l (b a)
+                                (if (and (apply list-prefix? a b) (> (length a) 1))
+                                  (drop a (length b)) a))
+                              a strip-prefix)
+                            a))
+                        (a (any->string a)) (a (if remove-brackets (string-trim-round-brackets a) a)))
+                      a))
+                  deps)))
+            (case format ((indent) (prefix-tree->indent-tree-string (list deps)))
+              ((gv) (prefix-tree->gv-digraph* (list deps)))))))
+      names)))
+
+(define (guile-module-dependencies-cli)
+  (let
+    (arguments
+      ( (cli-create #:description guile-module-dependencies-description
+          #:options
+          (list-q ((name)) (format #:value-required? #t)
+            (only #:value-required? #t) (exclude #:value-required? #t)
+            (max-depth #:value-required? #t) (strip-prefix #:value-required? #t) (remove-brackets)))))
+    (alist-bind arguments (name format only exclude strip-prefix remove-brackets max-depth)
+      (let
+        ( (names (list (string->datum name)))
+          (format (if format (string->symbol format) (q indent)))
+          (only (and only (string-split only #\,)))
+          (exclude (and exclude (string-split exclude #\,)))
+          (strip-prefix
+            (and strip-prefix
+              (map (l (a) (map string->symbol (string-split a #\space)))
+                (string-split strip-prefix #\,))))
+          (max-depth (if max-depth (string->number max-depth) (inf))))
+        (guile-module-dependencies names format only exclude strip-prefix remove-brackets max-depth)))))
+
+(guile-module-dependencies-cli)
