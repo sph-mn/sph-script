@@ -21,7 +21,7 @@
 
 (define (freemind->port arg port)
   (display
-    (string-join (map prefix-tree->indent-tree-string (tail (freemind->prefix-tree arg))) "\n") port))
+    (string-join (map prefix-tree->indent-tree (tail (freemind->prefix-tree arg))) "\n") port))
 
 (define (freemind->string arg) (call-with-output-string (l (port) (freemind->port arg port))))
 (freemind->port (current-input-port) (current-output-port))

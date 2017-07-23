@@ -30,7 +30,7 @@
           "uses luksFormat default options."
           "no modifications are made unless the --run option has been specified"))
       (about
-        (prefix-tree->indent-tree-string
+        (prefix-tree->indent-tree
           (qq
             ( ("description" (unquote-splicing description))
               ("depends on" (unquote (string-join dependencies " ")))

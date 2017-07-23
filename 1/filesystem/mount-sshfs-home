@@ -29,7 +29,7 @@
 (let
   (options
     ( (cli-create #:description program-description
-        #:about (prefix-tree->indent-tree-string about)
+        #:about (prefix-tree->indent-tree about)
         #:options
         (list-q (path #:names #\p #:value-required? #t) (user #:names #\u #:value-required? #t)
           (dry-run #:names #\d) ((hostname sshfs-argument ...))))))

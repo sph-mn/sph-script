@@ -23,7 +23,7 @@
 (define (port->nodes-sxml arg)
   (map string->node
     (tree-map-lists (l (ele) (apply string->node (first ele) (map string->node (tail ele))))
-      (denoted-tree->prefix-tree (read-space-indent-tree-string->denoted-tree arg)))))
+      (denoted-tree->prefix-tree (read-indent-tree-string->denoted-tree arg)))))
 
 (define (sort+position-nodes arg)
   (let*

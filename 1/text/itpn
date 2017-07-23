@@ -92,10 +92,10 @@
                   patterns-suffix patterns-anywhere)))))))))
 
 (define (get-all-itpn-from-standard-input)
-  (read-space-indent-tree->prefix-tree (current-input-port)))
+  (read-indent-tree->prefix-tree (current-input-port)))
 
 (define (get-all-itpn-from-file-path path)
-  (call-with-input-file path (l (port) (read-space-indent-tree->prefix-tree port))))
+  (call-with-input-file path (l (port) (read-indent-tree->prefix-tree port))))
 
 (define (itpn-contains-empty-line? parsed-itpn) (contains? parsed-itpn ""))
 (define (itpn-empty-line-first-index parsed-itpn) (list-index-value parsed-itpn ""))
@@ -216,7 +216,7 @@
               (begin (display-line (string-append indent-1 (first packet)) port) (+ 1 indent-level))
               indent-level))
           (if show-suffix?
-            (display-line (prefix-tree->indent-tree-string (tail packet) indent-level) port))))
+            (display-line (prefix-tree->indent-tree (tail packet) indent-level) port))))
       a)))
 
 (define (output-handler-proc arguments) "list list ->"

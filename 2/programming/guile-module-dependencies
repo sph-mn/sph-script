@@ -66,7 +66,7 @@
                         (a (any->string a)) (a (if remove-brackets (string-trim-round-brackets a) a)))
                       a))
                   deps)))
-            (case format ((indent) (prefix-tree->indent-tree-string (list deps)))
+            (case format ((indent) (prefix-tree->indent-tree (list deps)))
               ((gv) (prefix-tree->gv-digraph* (list deps)))))))
       names)))
 

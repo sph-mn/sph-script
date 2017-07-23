@@ -66,7 +66,7 @@
       (options
         ( (cli-create #:version 1
             #:description description
-            #:about (prefix-tree->indent-tree-string about)
+            #:about (prefix-tree->indent-tree about)
             #:options
             (list-q (user #:names #\u #:value-required? #t) (dry-run #:names #\d)
               (sudo #:names #\s) (mount-arguments #:names #\o #:value-required? #t)
