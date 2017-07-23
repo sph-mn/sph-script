@@ -20,7 +20,7 @@
                         (and (> prefix-count 1)
                           (pair prefix (string-append path-parent "/" file-name)))))
                     prefixes file-names)))
-              (groups (index-with-accessor first file-data)))
+              (groups (group file-data first)))
             (append-map
               (l (a)
                 (apply

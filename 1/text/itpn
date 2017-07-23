@@ -1,8 +1,13 @@
 #!/usr/bin/guile
 !#
 
-(import (ice-9 ftw) (sph base) (sph error)
-  (sph lang itpn) (sph two) (ice-9 match) (sph lang indent-syntax) (sph replacement-table))
+(import (ice-9 ftw) (sph cli)
+  (sph list) (sph)
+  (sph alist) (sph string)
+  (sph io) (sph io read-write)
+  (rnrs sorting) (only (srfi srfi-1) find)
+  (sph one) (sph list one)
+  (sph lang itpn) (sph two) (ice-9 match) (sph lang indent-syntax) (sph lang parser key-values-table))
 
 (define program-description "indent packet notation filter and transformer")
 
@@ -11,72 +16,69 @@
     #:options
     (list-q ((file-paths ...)) (search #:names #\s #:value-required? #t)
       (search-suffix #:value-required? #t) (search-all #:names #\a #:value-required? #t)
-      (sort-facets)
-      (replace-facet #:value-required? #t
+      (sort-tags)
+      (replace-tag #:value-required? #t
+        #:description "value format: \"tags-to-replace replacements\" \"tag[.tag] tag[.tag]\"")
+      (replace-tags-from-file #:value-required? #t
         #:description
-        "value format: \"facets-to-replace replacements\" \"facet[.facet] facet[.facet]\"")
-      (replace-facets-from-file #:value-required? #t
-        #:description
-        "takes a path to a file that contains lines in the format \"facet replacement ...\"")
-      (add-file-name-facets)
+        "takes a path to a file that contains lines in the format \"tag replacement ...\"")
+      (add-file-name-tags)
       (partition #:description
         "split into matches and non-matches. output-file-1 receives matches, output-file-2 non-matches, and if any of those is not specified output is written to standard output")
       (output-to-source #:description
-        "overwrite source files for output that has no specified output-file and would be written to standard-output")
+        "overwrite source files when output would otherwise be written to standard-output")
       (output-file-1 #:value-required? #t #:description "path for a file to write matches to")
       (output-file-2 #:value-required? #t #:description "path for a file to write non-matches to")
       (format #:value-required? #t
         #:description
         "prefix/suffix/filename. comma-separated names of block parts to display. default: prefix,suffix")
-      (exclude #:names #\e) (syntax-check #:names #\c) (list-unique-facets) (sort-packets))))
+      (exclude #:names #\e) (syntax-check #:names #\c) (list-unique-tags) (sort-packets))))
 
-(define (cli-parse-replace-facet a) "string:\"facet[.facet ...] facet[.facet ...]\" -> list"
-  (apply (l (facet replacements) (pair facet (string-split replacements #\.)))
-    (string-split a #\space)))
+(define (cli-parse-replace-tag a) "string:\"tag[.tag ...] tag[.tag ...]\" -> list"
+  (apply (l (tag replacements) (pair tag (string-split replacements #\.))) (string-split a #\space)))
 
-(define (itpn-packet-map-facet-list proc packet)
+(define (itpn-packet-map-tag-list proc packet)
   (map-first (l (a) (string-join (proc (string-split a #\space)) " ")) packet))
 
-(define (itpn-packet-map-facets proc packet)
-  (itpn-packet-map-facet-list (l (a) (map proc a)) packet))
+(define (itpn-packet-map-tags proc packet) (itpn-packet-map-tag-list (l (a) (map proc a)) packet))
 
 (define (create-parsed-itpn-processors arguments) "alist -> (procedure ...)"
   (alist-bind arguments
     (search search-all search-suffix
-      sort-facets exclude
-      sort-packets add-file-name-facets replace-facet replace-facets-from-file partition extract)
+      sort-tags exclude
+      sort-packets add-file-name-tags replace-tag replace-tags-from-file partition extract)
     (compact
       (list
-        (and add-file-name-facets
+        (and add-file-name-tags
           (l (a path)
             (if (string? path)
               (let
                 (file-name-prefix (string-join (string-split (basename path) #\.) " " (q suffix)))
                 (map (l (a) (pair (string-append file-name-prefix (first a)) (tail a))) a))
               a)))
-        (and replace-facet
+        (and replace-tag
           (apply
             (l (old . new)
               (l (a path)
                 (map
                   (l (packet)
-                    (itpn-packet-map-facet-list
+                    (itpn-packet-map-tag-list
                       (l (a)
                         (delete-duplicates
                           (flatten (map (l (a) (if (string-equal? old a) new a)) a))))
                       packet))
                   a)))
-            (cli-parse-replace-facet replace-facet)))
-        (and (string? replace-facets-from-file)
-          (let (table (replacement-table-from-file replace-facets-from-file))
+            (cli-parse-replace-tag replace-tag)))
+        (and (string? replace-tags-from-file)
+          (let (table (key-values-table-from-file replace-tags-from-file))
             (l (a path)
               (map
                 (l (packet)
-                  (itpn-packet-map-facet-list
+                  (itpn-packet-map-tag-list
                     (l (a) (delete-duplicates (flatten (list-replace-from-hashtable a table))))
                     packet))
                 a))))
-        (and sort-facets (l (a path) (itfpn-facets-sort a string<?)))
+        (and sort-tags (l (a path) (itfpn-tags-sort a string<?)))
         ;an optimisation could be possible here by evaluating the search before other processors. questions are
         ;if the search should run after replace and what happens when the list is split into matches and non-matches
         (and (or search search-suffix search-all partition)
@@ -90,11 +92,10 @@
                   patterns-suffix patterns-anywhere)))))))))
 
 (define (get-all-itpn-from-standard-input)
-  (string-if-exception (read-space-indent-tree->prefix-tree (current-input-port))))
+  (read-space-indent-tree->prefix-tree (current-input-port)))
 
 (define (get-all-itpn-from-file-path path)
-  (string-if-exception
-    (call-with-input-file path (l (port) (read-space-indent-tree->prefix-tree port)))))
+  (call-with-input-file path (l (port) (read-space-indent-tree->prefix-tree port))))
 
 (define (itpn-contains-empty-line? parsed-itpn) (contains? parsed-itpn ""))
 (define (itpn-empty-line-first-index parsed-itpn) (list-index-value parsed-itpn ""))
@@ -106,19 +107,12 @@
 
 (define (check-for-parse-errors& parsed-itpn path c)
   (if (string? parsed-itpn)
-    (error-create (q syntax-invalid) (create-error-data path #f parsed-itpn))
+    (raise (list (q syntax-invalid) (create-error-data path #f parsed-itpn)))
     (let (empty-line-index (itpn-empty-line-first-index parsed-itpn))
       (if empty-line-index
-        (error-create (q syntax-invalid) (create-error-data path empty-line-index #f)) (c)))))
+        (raise (list (q syntax-invalid) (create-error-data path empty-line-index #f))) (c)))))
 
 (define (format-error-data a) (if (list? a) a (any->string a)))
-
-(define (display-error-and-exit error)
-  (display-line
-    (prefix-tree->indent-tree-string
-      (list (any->string (error-id error)) (format-error-data (error-data error))))
-    (current-error-port))
-  (exit 1))
 
 (define (file-system-fold-error name stat errno result)
   (format (current-error-port) "warning: ~a: ~a~%" name (strerror errno)))
@@ -127,50 +121,44 @@
 
 (define (file-system-fold* enter? leaf down up skip error init paths)
   "procedure procedure procedure procedure procedure procedure any (string ...) -> any
-  maps paths with calls to file-system-fold. stops on error"
+   maps paths with calls to file-system-fold. stops on error"
   (first
     (fold-multiple-with-continue
       (l (path continue r)
-        (let (r-new (file-system-fold enter? leaf down up skip error r path))
-          (if (error? r-new) (list r-new) (continue r-new))))
+        (let (r-new (file-system-fold enter? leaf down up skip error r path)) (continue r-new)))
       paths init)))
 
 (define (input-handler-proc arguments)
-  (alist-bind arguments (list-unique-facets partition syntax-check)
+  (alist-bind arguments (list-unique-tags partition syntax-check)
     (let*
       ( (parsed-itpn-processors (create-parsed-itpn-processors arguments))
         (apply-processors
           (l (parsed-itpn path)
             (fold (l (processor r) (processor r path)) parsed-itpn parsed-itpn-processors)))
-        (with-type-and-create-result
+        (with-type-and-result-creator
           (l (c)
             (cond (syntax-check (c (q syntax-check) (l (parsed-itpn path) (list #t))))
-              (list-unique-facets
-                (c (q unique-facets) (l (parsed-itpn path) (itfpn-facets parsed-itpn))))
+              (list-unique-tags (c (q unique-tags) (l (parsed-itpn path) (itfpn-tags parsed-itpn))))
               (partition (c (q partition) apply-processors))
               (else (c (q parsed-itpn) apply-processors))))))
       (l (paths process-one)
         "(string ...) procedure:{parsed-itpn -> any} -> any
         manages and accesses input resources and processing"
-        (with-type-and-create-result
+        (with-type-and-result-creator
           (l (type create-result)
             (if paths
               (let (inaccessible-path (find (negate file-exists?) paths))
                 (if inaccessible-path
-                  (error-create (q inaccessible-path) (q itpn)
-                    (list (pair "path" inaccessible-path)))
-                  (error-let*
-                    (r
-                      (file-system-fold* (l (path stat r) (not (error? r)))
-                        (l (path stat r)
-                          (if (error? r) r
-                            (let
-                              (r-one
-                                (process-one (get-all-itpn-from-file-path path) path create-result))
-                              (if (error? r-one) r-one (pair r-one r)))))
-                        file-system-fold-identity file-system-fold-identity
-                        file-system-fold-identity file-system-fold-error (list) paths))
-                    (pair type r))))
+                  (raise (list (q inaccessible-path) (q itpn) (pair "path" inaccessible-path)))
+                  (pair type
+                    (file-system-fold* (l (path stat r) #t)
+                      (l (path stat r)
+                        (let
+                          (r-one
+                            (process-one (get-all-itpn-from-file-path path) path create-result))
+                          (pair r-one r)))
+                      file-system-fold-identity file-system-fold-identity
+                      file-system-fold-identity file-system-fold-error (list) paths))))
               (list type
                 (process-one (get-all-itpn-from-standard-input) "standard-input" create-result)))))))))
 
@@ -183,11 +171,12 @@
       (c #f #t #t))))
 
 (define (process-one-proc arguments)
-  "alist -> error/any
-  creates a result for one list of parsed-itpn packets (for example read from the contents of a file or standard-input)"
+  "alist -> any
+   creates a result for one list of parsed-itpn packets (for example read from the contents of a file or standard-input)"
   (l (parsed-itpn path create-result)
     "list string/symbol -> (symbol:mode-prefix string/symbol:path result-data ...)"
-    (check-for-parse-errors& parsed-itpn path (nullary (pair path (create-result parsed-itpn path))))))
+    (check-for-parse-errors& parsed-itpn path
+      (nullary (pair path (create-result parsed-itpn path))))))
 
 (define (result-map-data proc a) "procedure list -> list"
   (pair (first a) (map-apply (l (filename . data) (pair filename (proc data))) (tail a))))
@@ -197,12 +186,12 @@
 
 (define (process-after-proc arguments)
   (let
-    ( (list-unique-facets? (alist-ref-q arguments list-unique-facets))
+    ( (list-unique-tags? (alist-ref-q arguments list-unique-tags))
       (sort-packets? (alist-ref-q arguments sort-packets)))
     (l (result) "list -> list"
       (let (type (first result))
         (cond
-          ( (eq? (q unique-facets) type)
+          ( (eq? (q unique-tags) type)
             (pair type (list-sort string<? (delete-duplicates (result->data result)))))
           (sort-packets?
             (case type
@@ -236,7 +225,7 @@
       ( (call-with-output-port
           (l (file indirect? c)
             (if indirect?
-              (if file (rw-with-temp-file-port->file c file) (c (current-output-port)))
+              (if file (rw-file-indirect->file port->string c file) (c (current-output-port)))
               (if file (call-with-output-file file c) (c (current-output-port))))))
         (call-with-output-ports
           (l (data proc)
@@ -247,7 +236,7 @@
                     (l (path . a)
                       (call-with-output-port path #t
                         (l (port-source)
-                          ;output-file-1 is mapped to take matches, output-file-2 takes non-matches
+                          ; output-file-1 is mapped to take matches, output-file-2 takes non-matches
                           (if output-file-1 (apply proc port-other port-source path a)
                             (apply proc port-source port-other path a)))))
                     data)))
@@ -284,23 +273,21 @@
                           packets-matching show-file? show-prefix? show-suffix?)
                         (display-parsed-itpn-one port-non-matches path
                           packets-not-matching show-file? show-prefix? show-suffix?))))
-                  ((unique-facets) (each display-line data)) (else (display-line result))))
+                  ((unique-tags) (each display-line data)) (else (display-line result))))
               result)))))))
 
 (define (result-handler arguments a process-after output-handler) "list list -> [list]"
-  (cond ((error? a) a) ((null? a) (exit 0))
+  (cond ((null? a) (exit 0))
     ( (result? a)
       (case (first a) ((syntax-check) (exit (if (every identity (tail (tail a))) 0 1)))
-        ((parsed-itpn partition unique-facets) (error-return (process-after a) output-handler))))
-    (else (error-create (q invalid-internal-result-format)))))
+        ((parsed-itpn partition unique-tags) (output-handler (process-after a)))))
+    (else (raise (q invalid-internal-result-format)))))
 
 (define (itpn-filter-cli)
-  (let* ((arguments (command-line-interface)))
-    (error-pass
-      (result-handler arguments
-        ( (input-handler-proc arguments) (alist-ref-q arguments file-paths)
-          (process-one-proc arguments))
-        (process-after-proc arguments) (output-handler-proc arguments))
-      display-error-and-exit)))
+  (let (arguments (command-line-interface))
+    (result-handler arguments
+      ( (input-handler-proc arguments) (alist-ref-q arguments file-paths)
+        (process-one-proc arguments))
+      (process-after-proc arguments) (output-handler-proc arguments))))
 
 (itpn-filter-cli)
