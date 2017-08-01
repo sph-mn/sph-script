@@ -6,7 +6,7 @@
 
 # config
 size=640x480
-speed=4/1
+speed=6/1
 
 # program-arguments
 source=$1
