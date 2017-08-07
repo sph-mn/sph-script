@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph base) (ice-9 pretty-print))
+(import (sph base) (sph cli) (sph list one) (ice-9 pretty-print))
 (define default-delimiter #\.)
 
 (define (prefix-sort dry-run? delimiter . paths)
