@@ -1,0 +1,74 @@
+#!/usr/bin/guile
+!#
+
+(import (sph) (sph one)
+  (sph process create) (sph cli)
+  (sph list) (sph alist) (sph io) (sph string) (prefix (sph number) number-))
+
+(define audio-loudness-description
+  "display the root mean square amplitude of one or multiple audio files. the values are calculated using the \"sox\" program
+   basically a wrapper around \"sox path --null stat\" but parses its output (it writes to standard error for example) and selects from it.
+   the numbers likely come out differently than from sox because they have been parsed with scheme")
+
+(define sox-path (search-env-path-one "sox"))
+
+(define (audio-channel-count audio-file-path)
+  "string -> integer
+   get the count of channels in an audio file.
+   uses the sox program"
+  (execute-with-pipes (l (out) (string->number (string-trim-right (port->string out)))) sox-path
+    (list "--info" "-c" audio-file-path) #f #t #f))
+
+(define* (sox-stat->lines audio-file-path #:optional channel)
+  "string integer -> (string ...)
+   call sox using the stat effect and return the result as a list of string lines which had been written on standard error (default behaviour of sox stat)"
+  (execute-with-pipes (l (out) (port->lines out)) sox-path
+    (list-qq (unquote audio-file-path) "--null"
+      (unquote-splicing (if channel (list "remix" (number->string channel)) (list))) "stat")
+    #f #f #t))
+
+(define* (sox-stat->alist audio-file-path #:optional channel)
+  "string [integer] -> list:((symbol . number) ...)
+   calls \"sox --nuln stat\" for all or specific channels in one file.
+   as the sox documentation notes, the delta values of the result are only good for single-channel audio"
+  (let (a (sox-stat->lines audio-file-path channel))
+    (filter-map
+      (l (a)
+        (let ((a (remove string-null? (string-split a #\space))))
+          (consecutive (l (a) (not (string-suffix? ":" a))) a
+            (l (key value)
+              (false-if-exception
+                (let
+                  ( (key
+                      (string->symbol
+                        (regexp-replace
+                          (regexp-replace
+                            (string-trim-right
+                              (string-downcase (string-join (append key (list (first value))) " "))
+                              #\:)
+                            "[^a-z0-1 ]" "")
+                          "[^a-z0-1]" "-")))
+                    (value (string->number (second value))))
+                  (pair key value)))))))
+      a)))
+
+(define cli-description (first (string-split audio-loudness-description #\newline)))
+
+(define audio-loudness-cli
+  (let
+    ((cli (cli-create #:description cli-description #:options (list-q ((audio-file-path ...))))))
+    (l () "parse program arguments and run the requested features"
+      (if (not sox-path) (begin (display-line "error: \"sox\" not found in $PATH") (exit 1)))
+      (let (options (cli))
+        (alist-bind options (audio-file-path percent)
+          (each
+            (l (a)
+              (let
+                (value
+                  (apply number-average
+                    (map-integers (audio-channel-count a)
+                      (l (channel) (alist-ref-q (sox-stat->alist a (+ 1 channel)) rms-amplitude)))))
+                (display-line value)))
+            audio-file-path))))))
+
+(audio-loudness-cli)
