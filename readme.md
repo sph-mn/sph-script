@@ -26,6 +26,7 @@ for further information see [sph-script](http://sph.mn/content/1467).
 │   ├── splice
 │   └── tidyfiles
 ├── other
+│   ├── audio-loudness
 │   ├── backup
 │   ├── git-log
 │   ├── golden-ratio
@@ -147,7 +148,7 @@ for further information see [sph-script](http://sph.mn/content/1467).
     ├── remove-iso-date-prefix-zeros
     └── string-bits
 
-11 directories, 132 files
+11 directories, 133 files
 ```
 
 additionally included are:
@@ -167,4 +168,7 @@ you can add paths to the $PATH environment variable for example in "/etc/profile
 export PATH="$PATH:$HOME/.exe"
 ```
 
-a few programs depend on guile, sph-lib and guile modules found in sph-script/guile-modules. for these programs, the content of sph-script/guile-modules needs to be symlinked or copied into a directory that is in $GUILE_LOAD_PATH.
+which would mean that you can put scripts under a hidden directory named ".exe" in your home directory and they should be found as commands on the command-line.
+
+some programs depend on guile and sph-lib.
+some programs additionally depend on guile modules found in sph-script/guile-modules. to install these modules, the content of sph-script/guile-modules needs to be copied or symlinked into a directory that is in $GUILE_LOAD_PATH.
