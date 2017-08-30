@@ -5,7 +5,7 @@
 
 (define destination
   (string-append (getenv "HOME") "/temp/collections/collected."
-    (time->iso8601-ymd (time-current)) "/"))
+    (time->ymd (time-current)) "/"))
 
 (define description
   (string-append

@@ -34,8 +34,7 @@
     sources))
 
 (define (source-names->destination-file-name a)
-  (string-append (if (string? a) a (string-join a "-")) "."
-    (time-current-iso8601-date-and-day-s-string)))
+  (string-append (if (string? a) a (string-join a "-")) "." (time-current-ymd-s)))
 
 (define (create-full-destination-path source-names destination-path use-default-destination)
   (if destination-path
@@ -126,7 +125,7 @@
 
 (define (source-names->sources sources combine? path-config)
   "(string ...) boolean string -> ((string/list:name . procedure:generator) ...)
-  creates generator procedures that list input files"
+   creates generator procedures that list input files"
   (if combine?
     (list
       (pair sources
