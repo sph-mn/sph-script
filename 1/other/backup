@@ -34,7 +34,7 @@
     sources))
 
 (define (source-names->destination-file-name a)
-  (string-append (if (string? a) a (string-join a "-")) "." (time-current-ymd-s)))
+  (string-append (if (string? a) a (string-join a "-")) "." (utc-current-ymd-s)))
 
 (define (create-full-destination-path source-names destination-path use-default-destination)
   (if destination-path

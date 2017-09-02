@@ -14,10 +14,10 @@
     (let
       (replacer
         (if replace?
-          (l (match) (time-elapsed-day-string (time-from-hms (match:substring match)) 3 2))
+          (l (match) (utc-elapsed-day-string (seconds-from-hms (match:substring match)) 3 2))
           (l (match)
             (let (hms (match:substring match))
-              (string-append hms " (" (time-elapsed-day-string (time-from-hms hms) 3 2) ")")))))
+              (string-append hms " (" (utc-elapsed-day-string (seconds-from-hms hms) 3 2) ")")))))
       (l (line) (regexp-replace line regexp-hms replacer)))
     port-input))
 

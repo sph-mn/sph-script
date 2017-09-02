@@ -2,4 +2,4 @@
 !#
 
 (import (sph base) (sph time) (sph time string))
-(display-line (time-elapsed-day-string (time-current)))
+(display-line (utc-elapsed-day-string (utc-current)))
