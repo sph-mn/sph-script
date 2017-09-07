@@ -6,9 +6,9 @@
   (sph list) (sph alist) (sph io) (sph string) (prefix (sph number) number-))
 
 (define audio-loudness-description
-  "display the root mean square amplitude of one or multiple audio files. the values are calculated using the \"sox\" program
-   basically a wrapper around \"sox path --null stat\" but parses its output (it writes to standard error for example) and selects from it.
-   the numbers likely come out differently than from sox because they have been parsed with scheme")
+  "display the root mean square amplitude of one or multiple audio files. the values are calculated using the \"sox\" program.
+   basically a wrapper around \"sox path --null stat\" but parses its output (sox writes to standard error for example) and selects from it.
+   the numbers are likely formatted a bit differently than from sox because they have been parsed with scheme")
 
 (define sox-path (search-env-path-one "sox"))
 
