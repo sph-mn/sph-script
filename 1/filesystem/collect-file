@@ -4,8 +4,7 @@
 (import (sph base) (sph cli) (sph time) (sph time string))
 
 (define destination
-  (string-append (getenv "HOME") "/temp/collections/collected."
-    (time->ymd (time-current)) "/"))
+  (string-append (getenv "HOME") "/temp/collections/collected." (utc->ymd (utc-current)) "/"))
 
 (define description
   (string-append
