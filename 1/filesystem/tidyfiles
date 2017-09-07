@@ -33,7 +33,7 @@
           ("js" "programming/javascript") ("sql" "programming/sql")
           ("pd" "programming/puredata") (("html" "rhtml") "programming/html")
           (("css" "less" "scss") "programming/stylesheet") (("c" "sc") "programming/c")
-          (("yml") "programming/other") ("text" "plain") ("csv" "machine-readable-data") "other"))))
+          (("yml") "programming/other") ("text" "plain") ("csv" "machine-readable-data") (else "other")))))
   ("video/.*" "video") ("audio/.*" "audio")
   (("application/pdf") "documents" "uneditable")
   (("application/postscript") "documents" "uneditable")
