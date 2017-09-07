@@ -9,11 +9,13 @@
       (cli-create #:description
         "read from standard input and filter lines case-insensitively by given strings or regular expressions"
         #:options
-        (q ((negate) (or #:description "matching lines must contain any of the strings")
+        (q
+          ( (negate) (or #:description "matching lines must contain at least one of the strings")
             (regexp #:names #\r
               #:description "interpret strings as posix extended regular expressions")
             (case-sensitive #:names #\c)
-            (and #:description "matching lines must contain all strings. the default") ((strings ...))))))
+            (and #:description "matching lines must contain all strings. the default")
+            ((strings ...))))))
     (nullary
       (let*
         ( (arguments (cli)) (regexp? (alist-ref-q arguments regexp))

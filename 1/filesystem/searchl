@@ -2,7 +2,7 @@
 !#
 
 ; searchl :: search-string ...
-; search for string inside files under the current working directory and list matching lines
+; search for strings inside files under the current working directory and list matching lines
 (import (sph) (sph process) (sph process create))
 
 (define (searchl-cli to-search . to-filter) (execute "clear")
@@ -10,7 +10,8 @@
     (process-chain #f (current-output-port)
       (list
         (list "grep" "--dereference-recursive"
-          "--ignore-case" "--line-number" "--fixed-strings" to-search)
-        (pair "lines-filter" to-filter)))))
+          "--fixed-strings" "--ignore-case" "--line-number" to-search)
+        (pair "lines-filter" to-filter))
+      #:search-path? #t)))
 
 (apply searchl-cli (tail (program-arguments)))

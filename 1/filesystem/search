@@ -2,16 +2,15 @@
 !#
 
 ; search :: search-string ...
-; search inside files under the current working directory and list paths of matching files
-
+; search for strings inside files under the current working directory and list paths of matching files
 (import (sph) (sph process) (sph process create))
 
 (define (searchl-cli to-search . to-filter) (execute "clear")
   (process-chain-finish-success?
     (process-chain #f (current-output-port)
       (list
-        (list "grep" "--files-with-matches"
-          "--dereference-recursive" "--ignore-case" "--fixed-strings" to-search)
+        (list "grep" "--dereference-recursive"
+          "--fixed-strings" "--ignore-case" "--files-with-matches" to-search)
         (pair "lines-filter" to-filter))
       #:search-path? #t)))
 

@@ -1,4 +1,4 @@
-for further information see [sph-script](http://sph.mn/content/1467).
+for further information see [sph.mn](http://sph.mn/c/view/du).
 
 ```
 1
