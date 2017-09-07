@@ -26,7 +26,7 @@ for further information see [sph.mn](http://sph.mn/c/view/du).
 │   ├── splice
 │   └── tidyfiles
 ├── other
-│   ├── audio-loudness
+│   ├── audio-file-loudness
 │   ├── backup
 │   ├── git-log
 │   ├── golden-ratio
