@@ -85,7 +85,7 @@
         (if target-dir
           (let
             (target-path
-              (get-unique-target-path (path-append target-dir (default-file-rename name))))
+              (make-path-unique (path-append target-dir (default-file-rename name))))
             (guard (obj (#t (string-append "ignored file \"" name "\"")))
               (ensure-directory-structure target-dir) (rename-file source-path target-path))))))
     (directory-stream path (negate dotfile?)))

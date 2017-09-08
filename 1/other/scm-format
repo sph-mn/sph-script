@@ -30,7 +30,7 @@
           (if (not (string-null? r))
             (begin
               (copy-file file-path
-                (get-unique-target-path (string-append "/tmp/" (basename file-path))))
+                (make-path-unique (string-append "/tmp/" (basename file-path))))
               (call-with-output-file file-path (l (file) (display r file))))))
         (if output (l (r) (call-with-output-file output (l (a) (display r a)))) display))
       (call-with-input-file file-path (l (a) (scm-format-port a config))))))

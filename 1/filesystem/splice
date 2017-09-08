@@ -28,7 +28,7 @@
             (l (r e)
               (let
                 ( (cur-path (string-append path e))
-                  (target-path (get-unique-target-path (path-append path-dirname e))))
+                  (target-path (make-path-unique (path-append path-dirname e))))
                 (if dry-run (simple-format #t "rename-file ~A ~A\n" cur-path target-path)
                   (rename-file cur-path target-path))
                 (if (string-equal? e path-basename) target-path r)))

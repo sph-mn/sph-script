@@ -2,4 +2,4 @@
 !#
 (import (sph base))
 
-(display (apply get-unique-target-path (tail (program-arguments))))
+(display (apply make-path-unique (tail (program-arguments))))

@@ -53,7 +53,7 @@
                 (name-new (tag-create-name (union tags-old tags-new) extensions #:config config))
                 (if (not (string-equal? name-old name-new))
                   (rename-file path
-                    (get-unique-target-path (string-append (dirname path) "/" name-new)))))))))))
+                    (make-path-unique (string-append (dirname path) "/" name-new)))))))))))
 
   (define (not-null? a) (not (null? a)))
 
@@ -70,7 +70,7 @@
                   (let (name-new (tag-create-name tags extensions #:config config))
                     (if (not (string-equal? name-old name-new))
                       (rename-file path
-                        (get-unique-target-path (string-append (dirname path) "/" name-new)))))))))))))
+                        (make-path-unique (string-append (dirname path) "/" name-new)))))))))))))
 
   (define (tag-sort-tags a) (delete-duplicates-sorted (list-sort string< a)))
 
@@ -86,7 +86,7 @@
                     extensions #:config config))
                 (if (not (string-equal? name-old name-new))
                   (rename-file path
-                    (get-unique-target-path (string-append (dirname path) "/" name-new)))))))))))
+                    (make-path-unique (string-append (dirname path) "/" name-new)))))))))))
 
   (define* (tag-sort paths #:key (config tag-default-config))
     (each
@@ -99,5 +99,5 @@
                   (let (name-new (tag-create-name tags-new extensions #:config config))
                     (if (not (string-equal? name-old name-new))
                       (rename-file path
-                        (get-unique-target-path (string-append (dirname path) "/" name-new)))))))))))
+                        (make-path-unique (string-append (dirname path) "/" name-new)))))))))))
       paths)))

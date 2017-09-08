@@ -2,7 +2,7 @@
 !#
 
 (import (rnrs base) (rnrs sorting) (sph) (sph cli) (sph two) (sph filesystem) (sph string))
-(define (get-target-file-name arg) (get-unique-target-path (remove-filename-extension arg)))
+(define (get-target-file-name arg) (make-path-unique (remove-filename-extension arg)))
 
 (define (show-message arg options)
   (if (assoc-ref options (q gui)) (system* "zenity" "--info" "--text" arg)
