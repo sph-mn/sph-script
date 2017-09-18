@@ -31,7 +31,7 @@
           (let*
             ( (match?
                 (if regexp? (if or? string-matches-any-regexp? string-matches-every-regexp?)
-                  (if or? string-contains-any? string-contains-every?)))
+                  (if or? string-contains-some? string-contains-all?)))
               (match-line?
                 (if case-sensitive? (l (line) (match? line patterns))
                   (l (line) (match? (string-downcase line) patterns)))))

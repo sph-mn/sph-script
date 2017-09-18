@@ -18,7 +18,7 @@
   (let-values (((a exit-status) (execute->error-and-status executable-path arguments)))
     (if
       (and (zero? exit-status)
-        (or (string-null? a) (not (string-contains-any? a (list "warning:" "backtrace")))))
+        (or (string-null? a) (not (string-contains-some? a (list "warning:" "backtrace")))))
       (begin (display-line (string-append executable-path " success")) #t)
       (begin (display-line (string-append executable-path " failure")) (display a) #f))))
 
