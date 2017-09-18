@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph base) (sph io))
+(import (sph base) (sph cli) (sph io))
 
 (define cli-parser
   (cli-create #:options
@@ -9,7 +9,7 @@
       ( (union #:names #\u) (intersection #:names #\i) (difference #:names #\d)
         (complement #:names #\c) ((file-path ...))))
     #:description
-    "applies set operations on the lines of multiple files and writes the result to standard output"))
+    "applies set operations to the set of lines of files and writes the result to standard output"))
 
 (define (file-lines-set-operations-cli)
   (let*
