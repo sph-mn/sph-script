@@ -76,7 +76,6 @@ for further information see [sph.mn](http://sph.mn/c/view/du).
 ├── filesystem
 │   ├── clean-filenames
 │   ├── delete-duplicate-files
-│   ├── display-relative-path-up
 │   ├── file-size-sum
 │   ├── format-encrypt
 │   ├── gui-move-into-directory
@@ -87,6 +86,7 @@ for further information see [sph.mn](http://sph.mn/c/view/du).
 │   ├── list-file-size
 │   ├── mkdir-wrap
 │   ├── name-add-date
+│   ├── parent-dir-references
 │   ├── prepend-media-bitrate
 │   ├── prepend-to-filename
 │   ├── remove-video-quality-info
@@ -106,21 +106,20 @@ for further information see [sph.mn](http://sph.mn/c/view/du).
 │   ├── git-push
 │   ├── git-stati
 │   ├── gui-emacs
+│   ├── guile-all
 │   ├── gui-md5sum
 │   ├── gui-scale-images
-│   ├── guile-all
 │   ├── ldd-list-not-found
 │   ├── mariadb-create-user-database-sql
 │   ├── sakura-start
 │   ├── scale-images
 │   ├── scale-images-directory
-│   ├── scaled
 │   ├── show-process-memory-usage-top
 │   ├── split-flac-cue
 │   ├── ssh-install-key
 │   ├── take-screenshot
-│   ├── take-screenshot-window
-│   └── take-screenshots-in-intervals
+│   ├── take-screenshots-in-intervals
+│   └── take-screenshot-window
 ├── programming
 │   ├── astyle-to-file
 │   ├── c-format
@@ -137,8 +136,7 @@ for further information see [sph.mn](http://sph.mn/c/view/du).
 │   ├── scm-list-documentation
 │   ├── sph-module-dependencies
 │   ├── sql-format
-│   ├── xml-format
-│   └── xml-json-converter
+│   └── xml-format
 └── text
     ├── alternate-text-direction
     ├── camelcase-to-dash
@@ -148,7 +146,7 @@ for further information see [sph.mn](http://sph.mn/c/view/du).
     ├── remove-iso-date-prefix-zeros
     └── string-bits
 
-11 directories, 133 files
+9 directories, 133 files
 ```
 
 additionally included are:
