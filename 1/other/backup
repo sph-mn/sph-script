@@ -68,7 +68,7 @@
       (l (a)
         (let
           (non-directories
-            (filter (l (a) (catch #t (nullary (not (is-directory? a))) (const #t))) a))
+            (filter (l (a) (catch #t (nullary (not (directory? a))) (const #t))) a))
           (if (null? non-directories) #t
             (raise (pair (q non-directory-destination-paths) non-directories))))))
     (l (sources destinations encrypt dry-run)

@@ -31,7 +31,7 @@
     (let
       ( (extensions (alist-ref-q config extensions))
         (words (string-split a (alist-ref-q config delimiter))))
-      (consecutive& (l (a) (contains? extensions a)) (reverse words)
+      (consecutive (l (a) (contains? extensions a)) (reverse words)
         (l (extensions tags) (c (reverse tags) (reverse extensions))))))
 
   (define* (tag-create-name tags extensions #:key (config tag-default-config))

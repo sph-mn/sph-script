@@ -18,7 +18,7 @@
 (define (splice-one path dry-run)
   "string boolean ->
    works only on directories"
-  (if (is-directory? path)
+  (if (directory? path)
     (let
       ( (path (ensure-trailing-slash path)) (path-dirname (dirname path))
         (path-basename (basename path)))
