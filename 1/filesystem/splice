@@ -4,9 +4,9 @@
 (import (sph base) (sph cli)
   (only (guile) dirname rmdir string-suffix?) (sph stream) (sph filesystem stream) (srfi srfi-41))
 
-;empty directories
-;child files with the same name as parent
-;child files occuring in parents parent
+; empty directories
+; child files with the same name as parent
+; child files occuring in parents parent
 
 (define program-description
   (string-join
@@ -32,7 +32,7 @@
                 (if dry-run (simple-format #t "rename-file ~A ~A\n" cur-path target-path)
                   (rename-file cur-path target-path))
                 (if (string-equal? e path-basename) target-path r)))
-            #f (directory-stream path)))
+            #f (stream-filter (negate directory-reference?) (directory-stream path))))
         (if dry-run
           (begin (simple-format #t "remove ~A\n" path)
             (if same-name (simple-format #t "rename-file ~A ~A\n" same-name path)))

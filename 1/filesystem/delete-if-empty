@@ -3,21 +3,17 @@
 
 ;delete-if-empty :: path ...
 ;tries to delete all empty directories and empty files found among the given paths and directory trees. deletes deeper files first
-
 (import (sph base))
 
 (define (get-sorted-paths e)
-  (let (with-path-lengths (map (l (e) (pair (string-count e #\/) e)) (directory-tree-paths e)))
-    (append (map tail (list-sort-with-accessor > first with-path-lengths))
-      (list e))
-    )
- )
+  (let (with-path-lengths (map (l (e) (pair (string-count e #\/) e)) (directory-tree e)))
+    (append (map tail (list-sort-with-accessor > first with-path-lengths)) (list e))))
 
 (define (delete-if-empty . path)
   (each
     (l (e)
       (let (stat-info (stat e))
-        (if (eqv? (q regular)(stat:type stat-info))
+        (if (eqv? (q regular) (stat:type stat-info))
           (if (= 0 (stat:size stat-info)) (delete-file e))
           (each
             (l (e)
@@ -25,9 +21,7 @@
                 (case (stat:type stat-info)
                   ((regular) (if (= 0 (stat:size stat-info)) (delete-file e)))
                   ((directory) (false-if-exception (rmdir e))))))
-            (get-sorted-paths e))
-
-          )))
+            (get-sorted-paths e)))))
     path))
 
 (apply delete-if-empty (tail (command-line)))
