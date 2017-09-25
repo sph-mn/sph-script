@@ -55,7 +55,7 @@
           (process-finish pid))))))
 
 (define (pack-process-arguments source-name path dry-run encrypt size)
-  (pairs "pack" "--read-paths=--"
+  (pairs "pack" "--read-paths=-"
     (compact
       (list
         (and path (string-append "--target=" (create-full-destination-path source-name path #t)))
