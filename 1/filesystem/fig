@@ -5,4 +5,4 @@
 #   fig test
 #   fig --regexp "t[a-z]st"
 
-find | lines-filter "$@"
+find | lines-reject /.git/ | lines-filter "$@"
