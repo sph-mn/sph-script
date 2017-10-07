@@ -4,13 +4,13 @@
 
 # config
 interval=200
-destination=$HOME/temp/other/interval-screenhots/$(iso-date)
+destination_root="$HOME/temp/other/interval-screenhots"
 
-echo destination: $destination, interval: $interval "s"
+echo destination: $destination_root, interval: $interval "s"
 
-mkdir -p $destination
 while true; do
-  name="$(day-seconds)"
-  scrot --focused "$destination/$name.png"
+  destination="$destination_root/$(iso-date)"
+  mkdir -p $destination
+  scrot --focused --quality 50 "$destination/$(day-seconds).jpg"
   sleep $interval
 done
