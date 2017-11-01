@@ -1,0 +1,37 @@
+#!/usr/bin/coffee
+program = require "commander"
+fs = require "fs"
+xml2js = require "xml2js"
+#get_stdin = require "get-stdin"
+
+xml2json = (xml) ->
+  xml2js.parseString xml, (err, result) ->
+    json = JSON.stringify(result, null, 2)
+    process.stdout.write json
+
+json2xml = (json) ->
+  builder = new xml2js.Builder
+  xml = builder.buildObject JSON.parse json
+  process.stdout.write xml
+
+convert = (converter) ->
+  input_file = null
+  output_file = null
+  program
+    .arguments("[<input_file> <output_file>]")
+    .action (a, b) ->
+      input_file = a
+      output_file = b
+    .parse process.argv
+  if input_file
+    input = fs.openSync(input_file, "r")
+  else input = process.stdin
+  if output_file
+    output = fs.openSync(input_file, "w")
+  else output = process.stdout
+
+#module.exports = {
+#  convert
+#  json2xml
+#  xml2json
+#}

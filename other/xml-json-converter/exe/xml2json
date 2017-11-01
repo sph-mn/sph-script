@@ -1,0 +1,3 @@
+#!/usr/bin/coffee
+converter = require "../main"
+converter.convert converter.xml2json

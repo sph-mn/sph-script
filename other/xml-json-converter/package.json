@@ -1,9 +1,13 @@
 {
-  "name": "json-xml-converter",
-  "version": "0.0.1",
+	"name": "json-xml-converter",
+	"version": "0.0.2",
 	"dependencies": {
 		"xml2js": "*",
 		"coffee-script": "*",
 		"commander": "*"
+	},
+	"bin": {
+		"xml2json": "exe/xml2json",
+		"json2xml": "exe/json2xml"
 	}
 }
