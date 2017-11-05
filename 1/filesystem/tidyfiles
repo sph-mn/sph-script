@@ -33,7 +33,8 @@
           ("js" "programming/javascript") ("sql" "programming/sql")
           ("pd" "programming/puredata") (("html" "rhtml") "programming/html")
           (("css" "less" "scss") "programming/stylesheet") (("c" "sc") "programming/c")
-          (("yml") "programming/other") ("text" "plain") ("csv" "machine-readable-data") (else "other")))))
+          (("yml") "programming/other") ("text" "plain")
+          ("csv" "machine-readable-data") (else "other")))))
   ("video/.*" "video") ("audio/.*" "audio")
   (("application/pdf") "documents" "uneditable")
   (("application/postscript") "documents" "uneditable")
@@ -83,9 +84,7 @@
     (l (name)
       (let* ((source-path name) (target-dir (source-path->target-path source-path config)))
         (if target-dir
-          (let
-            (target-path
-              (make-path-unique (path-append target-dir (default-file-rename name))))
+          (let (target-path (make-path-unique (path-append target-dir (default-file-rename name))))
             (guard (obj (#t (string-append "ignored file \"" name "\"")))
               (ensure-directory-structure target-dir) (rename-file source-path target-path))))))
     (stream-filter (negate dotfile?) (directory-stream path)))
