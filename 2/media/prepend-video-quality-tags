@@ -1,0 +1,46 @@
+#!/usr/bin/env guile
+!#
+
+(import (sph base) (sph media-info))
+
+(define prepend-video-quality-tags-description
+  "prepend strings to a filename that quantify the quality of the encoded video.
+   the current format is width + height + bitrate, a framerate and a codec factor")
+
+(define-as codec-factors ht-create
+  "h265" 1 "vp9" 0.95 "h264" 0.9 "vp8" 0.85 "dvix" 0.8 "xvid" 0.8 "wmv" 0.75 "wmv2" 1)
+
+(define (calculate-rating width height bitrate codec framerate)
+  (let
+    ((codec-factor (ht-ref codec-factors codec 0.9)) (framerate-factor (min 1 (/ framerate 26))))
+    (inexact->exact (round (/ (* (+ width height) bitrate codec-factor framerate-factor) 10000)))))
+
+(define (run)
+  (let*
+    ( (paths (tail (program-arguments)))
+      (data->framerate
+        (l (a)
+          (false-if-exception
+            (inexact->exact
+              (round (exact->inexact (string->number (alist-ref a "avg_frame_rate"))))))))
+      (data->width (l (a) (false-if-exception (alist-ref a "width"))))
+      (data->height (l (a) (false-if-exception (alist-ref a "height"))))
+      (data->codec (l (a) (false-if-exception (alist-ref a "codec_name"))))
+      (data->bitrate
+        (l (a)
+          (false-if-exception
+            (inexact->exact
+              (round (exact->inexact (/ (string->number (alist-ref a "bit_rate")) 1000))))))))
+    (each
+      (l (path)
+        (let*
+          ( (data (media-info-video path)) (framerate (or (data->framerate data) 23))
+            (width (or (data->width data) 320)) (height (or (data->height data) 240))
+            (codec (or (data->codec data) "xvid")) (bitrate (or (data->bitrate data) 200)))
+          (and-let* ((rating (calculate-rating width height bitrate codec framerate)))
+            ;(debug-log bitrate rating codec framerate path)
+            (rename-file path
+              (string-append (dirname path) "/q" (number->string rating) "." (basename path))))))
+      paths)))
+
+(run)

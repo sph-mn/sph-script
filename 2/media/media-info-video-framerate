@@ -1,0 +1,16 @@
+#!/usr/bin/env guile
+!#
+
+(import (sph base) (sph media-info))
+
+(define (media-video-framerate paths)
+  (map
+    (l (path)
+      (let (data (media-info-video path))
+        (if data
+          (display-line
+            (inexact->exact
+              (round (exact->inexact (string->number (alist-ref data "avg_frame_rate")))))))))
+    paths))
+
+(media-video-framerate (tail (program-arguments)))

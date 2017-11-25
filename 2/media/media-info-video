@@ -1,0 +1,7 @@
+#!/usr/bin/guile
+!#
+
+(import (sph base) (sph media-info))
+
+(each (l (a) (display-line (string-append (first a) ": " (any->string (tail a)))))
+  (media-info-video (first (tail (program-arguments)))))

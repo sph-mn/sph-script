@@ -7,6 +7,10 @@
     (json parser)
     (sph base))
 
+  (define sph-media-info-description
+    "analyse media files and get information like resolution and bitrate.
+     depends on ffmpeg")
+
   (define (media-info path)
     (hash-map->list pair
       (json-string->scm

@@ -1,0 +1,16 @@
+#!/usr/bin/env guile
+!#
+
+(import (sph base) (sph media-info))
+
+(define (media-video-resolution paths)
+  (map
+    (l (path)
+      (let (data (media-info-video path))
+        (if data
+          (display-line
+            (string-append (number->string (alist-ref data "width")) "x"
+              (number->string (alist-ref data "height")))))))
+    paths))
+
+(media-video-resolution (tail (program-arguments)))

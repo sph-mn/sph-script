@@ -1,0 +1,17 @@
+#!/usr/bin/env guile
+!#
+
+(import (sph base) (json parser) (srfi srfi-69))
+
+(define (media-bitrate paths)
+  (map
+    (l (path)
+      (let
+        (data
+          (json-string->scm
+            (execute->string "ffprobe"
+              "-v" "quiet" "-print_format" "json" "-show_format" path)))
+        (string->number (hash-ref (hash-ref data "format") "bit_rate"))))
+    paths))
+
+(each display-line (media-bitrate (tail (program-arguments))))
