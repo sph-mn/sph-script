@@ -7,13 +7,18 @@
   "prepend strings to a filename that quantify the quality of the encoded video.
    the current format is width + height + bitrate, a framerate and a codec factor")
 
-(define-as codec-factors ht-create
-  "h265" 1 "vp9" 0.95 "h264" 0.9 "vp8" 0.85 "dvix" 0.8 "xvid" 0.8 "wmv" 0.75 "wmv2" 1)
+(define-as codec-rating ht-create
+  "h265" 10 "hevc" 10 "vp9" 9 "h264" 9 "vp8" 8 "dvix" 7 "xvid" 7 "wmv" 9 "wmv2")
 
-(define (calculate-rating width height bitrate codec framerate)
+(define base-pxs 3000)
+(define base-fr 25)
+(define (div a b) (if (zero? b) b (/ a b)))
+
+(define (calculate-rating width height codec framerate)
   (let
-    ((codec-factor (ht-ref codec-factors codec 0.9)) (framerate-factor (min 1 (/ framerate 26))))
-    (inexact->exact (round (/ (* (+ width height) bitrate codec-factor framerate-factor) 10000)))))
+    ( (pxs (* 1000 (div (+ width height) base-pxs))) (codec (* 10 (ht-ref codec-rating codec 7)))
+      (fr (* 10 (div framerate base-fr))))
+    (inexact->exact (round (+ pxs codec fr)))))
 
 (define (run)
   (let*
@@ -25,20 +30,14 @@
               (round (exact->inexact (string->number (alist-ref a "avg_frame_rate"))))))))
       (data->width (l (a) (false-if-exception (alist-ref a "width"))))
       (data->height (l (a) (false-if-exception (alist-ref a "height"))))
-      (data->codec (l (a) (false-if-exception (alist-ref a "codec_name"))))
-      (data->bitrate
-        (l (a)
-          (false-if-exception
-            (inexact->exact
-              (round (exact->inexact (/ (string->number (alist-ref a "bit_rate")) 1000))))))))
+      (data->codec (l (a) (false-if-exception (alist-ref a "codec_name")))))
     (each
       (l (path)
-        (let*
-          ( (data (media-info-video path)) (framerate (or (data->framerate data) 23))
-            (width (or (data->width data) 320)) (height (or (data->height data) 240))
-            (codec (or (data->codec data) "xvid")) (bitrate (or (data->bitrate data) 200)))
-          (and-let* ((rating (calculate-rating width height bitrate codec framerate)))
-            ;(debug-log bitrate rating codec framerate path)
+        (let (data (media-info-video path))
+          (and-let*
+            ( (framerate (data->framerate data)) (width (data->width data))
+              (height (data->height data)) (codec (data->codec data))
+              (rating (calculate-rating width height codec framerate)))
             (rename-file path
               (string-append (dirname path) "/q" (number->string rating) "." (basename path))))))
       paths)))
