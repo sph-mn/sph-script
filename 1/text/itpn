@@ -5,7 +5,7 @@
   (sph list) (sph)
   (sph alist) (sph string)
   (sph io) (sph io read-write)
-  (rnrs sorting) (only (srfi srfi-1) find)
+  (rnrs sorting) (only (srfi srfi-1) find partition)
   (sph one) (sph list one)
   (sph lang itpn) (sph two) (ice-9 match) (sph lang indent-syntax) (sph lang parser key-values-table))
 
@@ -14,7 +14,11 @@
 (define command-line-interface
   (cli-create #:help program-description
     #:options
-    (list-q ((file-paths ...)) (search #:names #\s #:value-required? #t)
+    (list-q ((file-paths ...))
+      (search #:names #\s
+        #:value-required? #t
+        #:description
+        "search in the prefix part of itpn packets. conditions like word,word.~word.word are supported, where comma is \"or\", period is \"and\" and tilde is \"not\"")
       (search-suffix #:value-required? #t) (search-all #:names #\a #:value-required? #t)
       (sort-tags)
       (replace-tag #:value-required? #t
@@ -79,20 +83,70 @@
                     packet))
                 a))))
         (and sort-tags (l (a path) (itfpn-tags-sort a string<?)))
-        ;an optimisation could be possible here by evaluating the search before other processors. questions are
-        ;if the search should run after replace and what happens when the list is split into matches and non-matches
+        ; an optimisation could be possible here by evaluating the search before other processors. questions are
+        ; if the search should run after replace and what happens when the list is split into matches and non-matches
         (and (or search search-suffix search-all partition)
           (let
-            ( (patterns-prefix (or (and search (string-split search #\,)) (list)))
-              (patterns-suffix (or (and search-suffix (string-split search-suffix #\,)) (list)))
-              (patterns-anywhere (or (and search-all (string-split search-all #\,)) (list))))
+            ( (matchers
+                (map (l (a) (and a (parse-search a))) (list search search-suffix search-all))))
             (l (parsed-itpn path)
-              ( (if exclude (if partition reverse second) (if partition identity first))
-                (itpn-filter-all-patterns-all-parts parsed-itpn patterns-prefix
-                  patterns-suffix patterns-anywhere)))))))))
+              (let
+                (partition-select
+                  (if exclude (if partition reverse second) (if partition identity first)))
+                (partition-select (apply itpn-search parsed-itpn matchers))))))))))
 
-(define (get-all-itpn-from-standard-input)
-  (read-indent-tree->prefix-tree (current-input-port)))
+(define (list-logical-string-contains? a condition)
+  (list-logical-match (l (b) (string-contains a b)) condition))
+
+(define (itpn-search parsed-itpn prefix suffix all)
+  "list list:list-logical-match-condition ... -> (matches non-matches)
+   filter itpn-packets by list-logical-match conditions"
+  (apply-values list
+    (partition
+      (l (a)
+        (and (or (not prefix) (list-logical-string-contains? (first a) prefix))
+          (or (not suffix)
+            (list-logical-string-contains? (string-join (flatten (tail a)) " ") suffix))
+          (or (not all) (list-logical-string-contains? (string-join (flatten a) " ") all))))
+      parsed-itpn)))
+
+(define parse-search
+  (letrec
+    ( (split-words
+        (l (a char)
+          "string character -> list
+          split by char and replace multiple occurences of char with a single occurence so that
+          escaping and using the char in any of the words is still possible"
+          (map (l (a) (if (string-null? a) (string-append (string char) a) a))
+            (string-split a char))))
+      (parse-words
+        (l (words names chars unary)
+          (if (null? names) words
+            (fold-right
+              (l (a result)
+                (let
+                  (words
+                    (parse-words (split-words a (first chars)) (tail names)
+                      (tail chars) (tail unary)))
+                  (if (< 1 (length words))
+                    (if (first unary)
+                      (pairs (first words) (pair (first names) (tail words)) result)
+                      (pair (pair (first names) words) result))
+                    (append words result))))
+              null words)))))
+    (l (a)
+      "string -> list-logical-condition
+      parse search expressions into a list-logical-match condition.
+      words can be separated by any of the characters \",.~\".
+      comma: or, period: and, tilde: not.
+      priority is or, and, not.
+      a.b.c,d~f~g,h
+      ->
+      (and (or (and \"a\" \"b\" \"c\") (and \"d\" (not \"f\" \"g\")) \"h\"))"
+      (pair (q and)
+        (parse-words (list a) (list-q or and not) (list-q #\, #\. #\~) (list-q #f #f #t))))))
+
+(define (get-all-itpn-from-standard-input) (read-indent-tree->prefix-tree (current-input-port)))
 
 (define (get-all-itpn-from-file-path path)
   (call-with-input-file path (l (port) (read-indent-tree->prefix-tree port))))
