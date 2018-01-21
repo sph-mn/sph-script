@@ -39,8 +39,11 @@
       (exclude #:names #\e) (syntax-check #:names #\c)
       (list-unique-tags) (sort-packets) (deduplicate) (count))))
 
-(define (cli-parse-replace-tag a) "string:\"tag[.tag ...] tag[.tag ...]\" -> list"
-  (apply (l (tag replacements) (pair tag (string-split replacements #\.))) (string-split a #\space)))
+(define (cli-parse-replace-tag a) "string:\"tag[,tag ...] tag[,tag ...]\" -> (old new)"
+  (apply
+    (l* (tags #:optional replacements)
+      (pair (string-split tags #\,) (if replacements (string-split replacements #\,) null)))
+    (string-split a #\space)))
 
 (define (itpn-packet-map-tag-list proc packet)
   (map-first (l (a) (string-join (proc (string-split a #\space)) " ")) packet))
@@ -69,8 +72,11 @@
                   (l (packet)
                     (itpn-packet-map-tag-list
                       (l (a)
-                        (delete-duplicates
-                          (flatten (map (l (a) (if (string-equal? old a) new a)) a))))
+                        (let
+                          (a
+                            (if (contains-some? a old)
+                              (delete-duplicates (append (complement a old) new)) a))
+                          (if (null? a) (list "other") a)))
                       packet))
                   a)))
             (cli-parse-replace-tag replace-tag)))

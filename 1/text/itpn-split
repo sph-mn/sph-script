@@ -1,9 +1,9 @@
 #!/bin/sh
 
-# like itpn but in --split mode and automatically writing to the files "matches" and "rejects".
+# like itpn but in --split mode and automatically writing to the files "_matches" and "_rejects".
 # if any of the files already exists, the old file is not overwritten but a file with a unique suffix is created.
 # usage example: itpn-split --search=computer
 
-matches="$(get-unique-path matches)"
-rejects="$(get-unique-path rejects)"
+matches="$(get-unique-path _matches)"
+rejects="$(get-unique-path _rejects)"
 itpn --split --output-file-1="$matches" --output-file-2="$rejects" $@
