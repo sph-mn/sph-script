@@ -1,0 +1,8 @@
+#!/bin/sh
+# usage: git-log [git-options ...]
+#---
+# example:
+# user@host.eu 2016-10-31 commit message text 3d928e6
+# user@host.eu 2016-11-16 commit message text 720416c
+
+git --no-pager log --decorate --format=format:'%ae %ad %s %h' --date=short --reverse --max-count=32 "$@"

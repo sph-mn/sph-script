@@ -9,7 +9,7 @@
       ( (union #:names #\u) (intersection #:names #\i) (difference #:names #\d)
         (complement #:names #\c) ((file-path ...))))
     #:description
-    "applies set operations to the set of lines of files and writes the result to standard output"))
+    "applies set operations to sets of lines of files and writes the result to standard output"))
 
 (define (file-lines-set-operations-cli)
   (let*
