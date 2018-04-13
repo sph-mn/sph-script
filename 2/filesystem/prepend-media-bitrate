@@ -1,7 +1,7 @@
 #!/usr/bin/env guile
 !#
 
-(import (sph base) (json parser) (srfi srfi-69))
+(import (sph common) (json parser) (srfi srfi-69))
 
 (let*
   ( (paths (tail (program-arguments)))

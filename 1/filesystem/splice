@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph base) (sph cli)
+(import (sph common) (sph cli)
   (only (guile) dirname rmdir string-suffix?) (sph stream) (sph filesystem stream) (srfi srfi-41))
 
 ; empty directories

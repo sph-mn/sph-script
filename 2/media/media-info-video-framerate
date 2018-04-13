@@ -1,7 +1,7 @@
 #!/usr/bin/env guile
 !#
 
-(import (sph base) (sph media-info))
+(import (sph common) (sph media-info))
 
 (define (media-video-framerate paths)
   (map

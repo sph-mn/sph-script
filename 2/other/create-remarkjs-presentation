@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph base) (sph cli) (sph conditional) (sxml simple) (sph lang plcss))
+(import (sph common) (sph cli) (sph conditional) (sxml simple) (sph lang plcss))
 (define command-line-interface (cli-create #:options (q (((path-source path-target ...))))))
 
 (define default-style

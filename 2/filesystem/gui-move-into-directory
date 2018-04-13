@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph base) (sph one))
+(import (sph common) (sph one))
 ;parameters: path-of-file-to-move ...
 ;asks for a target path and moves paths given as arguments into the provided target path. (grouping of files)
 

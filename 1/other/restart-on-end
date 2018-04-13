@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph base) (sph cli))
+(import (sph common) (sph cli))
 
 (define description
   "restart command with a short delay after it exits. command is best specified with -- after this programs options. restart-on-end [options] -- command ...

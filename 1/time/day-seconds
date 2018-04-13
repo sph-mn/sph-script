@@ -1,5 +1,5 @@
 #!/usr/bin/guile
 !#
 
-(import (sph base) (sph time) (sph time string))
+(import (sph common) (sph time) (sph time string))
 (display-line (utc-elapsed-day-string (utc-current) 0 0))

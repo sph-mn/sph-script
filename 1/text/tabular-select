@@ -7,7 +7,7 @@ ignores the tab character)
 
 (import
   ; from guile-lib
-  (string transform) (sph base)
+  (string transform) (sph common)
   (sph cli) (ice-9 rdelim) (only (ice-9 streams) port->stream) (sph ice-9-stream))
 
 (define default-delimiter #\space)

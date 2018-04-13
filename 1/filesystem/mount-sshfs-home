@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph base) (sph cli) (sph process) (sph lang indent-syntax))
+(import (sph common) (sph cli) (sph process) (sph lang indent-syntax))
 (define program-description "mount remote filesystems using sshfs to $HOME/mnt/{hostname}")
 (define program-dependencies (q ("sph-lib" "sshfs" "mkdir")))
 

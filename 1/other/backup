@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph base) (guile)
+(import (sph common) (guile)
   (sph process) (sph process create) (sph cli) (sph time string) (only (ice-9 ftw) scandir))
 
 (define program-description

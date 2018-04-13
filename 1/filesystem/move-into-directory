@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph base) (sph cli))
+(import (sph common) (sph cli))
 
 (define command-line-interface
   (cli-create #:options (list-q ((path-directory path-file ...) #:value-required? #t #:required? #t))

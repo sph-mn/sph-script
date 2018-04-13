@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph base) (sph cli))
+(import (sph common) (sph cli))
 
 (let
   (arguments

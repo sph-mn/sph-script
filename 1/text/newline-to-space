@@ -4,7 +4,7 @@
 ; converts newlines read from standard input to spaces
 ; depends on sph-lib
 
-(import (sph base) (sph io) (srfi srfi-41) (sph stream))
+(import (sph common) (sph io) (srfi srfi-41) (sph stream))
 
 (let* ((lines (port->line-stream (current-input-port))) (rest (stream-tail lines)))
   (display (stream-first lines)) (stream-each (l (e) (display " ") (display e)) rest))

@@ -1,5 +1,5 @@
 #!/usr/bin/guile
 !#
-(import (sph base))
+(import (sph common))
 
 (display (apply make-path-unique (tail (program-arguments))))

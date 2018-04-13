@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (ice-9 ftw) (sph base) (sph cli) (sph process) (sph lang indent-syntax))
+(import (ice-9 ftw) (sph common) (sph cli) (sph process) (sph lang indent-syntax))
 (define mount-directory (string-append (getenv "HOME") "/mnt/"))
 (define (mountpoint? path) (exit-value-zero? (execute "mountpoint" "--quiet" path)))
 (define (file-system-fold-ignore path stat result) result)

@@ -1,7 +1,7 @@
 #!/usr/bin/env guile
 !#
 
-(import (sph base) (sph media-info))
+(import (sph common) (sph media-info))
 
 (define prepend-video-quality-tags-description
   "prepend strings to a filename that quantify the quality of the encoded video.

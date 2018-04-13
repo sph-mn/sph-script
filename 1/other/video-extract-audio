@@ -2,7 +2,7 @@
 !#
 
 ; depends on https://github.com/aconchillo/guile-json
-(import (sph base) (sph lang indent-syntax) (sph cli) (json))
+(import (sph common) (sph lang indent-syntax) (sph cli) (json))
 
 (define (guile-hash-table->alist a)
   (hash-map->list
