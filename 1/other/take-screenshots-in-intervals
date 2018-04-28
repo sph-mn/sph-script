@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# takes a screenshot of the currently focused window every n seconds
+# and saves it in a directory.
+# usage: take-screenshots-in-intervals [interval destination_dir]
+# dependencies: scrot
+
+interval=200
+destination_root="$HOME/interval-screenhots"
+date=$(date +%Y-%m-%d.%j)
+
+if test "$1"
+then
+  interval="$1"
+fi
+
+if test "$2"
+then
+  destination_root="$2"
+fi
+
+echo "destination: $destination_root, interval: ${interval}s"
+
+day_seconds() {
+  now=$(date '+%s')
+  midnight=$(date -d 'today 00:00:00' '+%s')
+  echo $((now - midnight))
+}
+
+while true; do
+  # the date might change while this loop is running
+  destination="$destination_root/$date"
+  mkdir -p $destination
+  scrot --focused --quality 50 "$destination/$(day_seconds).jpg"
+  sleep $interval
+done

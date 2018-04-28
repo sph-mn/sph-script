@@ -1,5 +1,5 @@
-#!/usr/bin/guile
-!#
+#!/bin/sh
 
-(import (sph common) (sph time) (sph time string))
-(display-line (utc-elapsed-day-string (utc-current) 0 0))
+now=$(date '+%s')
+midnight=$(date -d 'today 00:00:00' '+%s')
+echo $((now - midnight))
