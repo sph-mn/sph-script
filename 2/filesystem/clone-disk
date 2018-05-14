@@ -1,0 +1,13 @@
+#!/bin/sh
+# copies whole harddisks with mbr and everything.
+# arguments: input-device output-device
+# example: clone-disk /dev/sda /dev/sdc
+# dependencies: dd
+# dd options used:
+#   "bs=" sets the block size. defaults to 512 bytes, which is the "classic" block size for hard drives since the early 1980s,
+      but is not the most convenient
+#   "noerror" instructs dd to continue operation, ignoring all read errors. default behavior for dd is to halt at any error
+#   "sync" fills input blocks with zeroes if there were any read errors, so data offsets stay in sync
+#   "status=progress" shows periodic transfer statistics which can be used to estimate when the operation may be complete
+
+dd if="$1" of="$2" bs=64K conv=noerror,sync status=progress
