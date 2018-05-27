@@ -1,10 +1,9 @@
 #!/usr/bin/guile
 !#
 
-;:: integer
+;arguments: integer
 ;displays a list of numbers in the golden-ratio above and below the input number
-
-(import (sph) (sph number))
+(import (sph) (sph math) (sph number))
 
 (define* (golden-ratios start-number #:optional (count 10))
   (let loop
@@ -18,7 +17,9 @@
 (define (display-number-list a)
   (each (l (e) (display (round-to-decimal-places e 3)) (display " ") (display-line e)) a))
 
-(if (> (length (program-arguments)) 1)
-  (let (numbers (golden-ratios (string->number (first (tail (program-arguments))))))
-    (display-number-list (first numbers)) (newline) (display-number-list (tail numbers)))
-  (display-line "missing 1 integer argument"))
+(define (golden-ratios-cli arguments)
+  (if (null? arguments) (display-line "missing 1 integer argument")
+    (let (numbers (golden-ratios (string->number (first (tail (program-arguments))))))
+      (display-number-list (first numbers)) (newline) (display-number-list (tail numbers)))))
+
+(golden-ratios-cli (tail (program-arguments)))

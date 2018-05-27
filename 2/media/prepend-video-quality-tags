@@ -1,44 +1,48 @@
 #!/usr/bin/env guile
 !#
 
-(import (sph common) (sph media-info))
+(import (sph string) (sph) (sph cli) (sph alist) (sph hashtable) (sph list) (sph media-info))
 
 (define prepend-video-quality-tags-description
   "prepend strings to a filename that quantify the quality of the encoded video.
    the current format is width + height + bitrate, a framerate and a codec factor")
 
-(define-as codec-rating ht-create
-  "h265" 10 "hevc" 10 "vp9" 9 "h264" 9 "vp8" 9 "wmv2" 8 "dvix" 7 "xvid" 7 "wmv")
+(define-as codec-penalties ht-create "h265" 0 "hevc" 0 "vp9" 1 "h264" 1 "vp8" 2 "wmv3" 2 "wmv2" 3)
+(define unit-bitrate 400000)
 
-(define base-pxs 3000)
-(define base-fr 25)
-(define (div a b) (if (zero? b) b (/ a b)))
+(define (calculate-rating bitrate codec)
+  (and bitrate codec
+    (let
+      ( (codec-factor (- 1 (* (ht-ref codec-penalties codec 3) 0.1)))
+        (bitrate-rating (/ bitrate unit-bitrate)))
+      (inexact->exact (floor (* bitrate-rating codec-factor))))))
 
-(define (calculate-rating width height codec framerate)
-  (list (round (/ (+ width height) 100)) (ht-ref codec-rating codec 7) framerate))
+(define (create-rating-string rating) (number->string rating 10))
 
-(define (create-rating-string rating) (string-join (map (l (a) (number->string a 10)) rating) "-"))
+(define (get-media-info path)
+  (let (a (media-info-video path))
+    (alist-q bitrate (false-if-exception (string->number (alist-ref a "bit_rate")))
+      framerate
+      (false-if-exception
+        (inexact->exact (round (exact->inexact (string->number (alist-ref a "avg_frame_rate"))))))
+      width (alist-ref a "width") height (alist-ref a "height") codec (alist-ref a "codec_name"))))
 
-(define (run)
-  (let*
-    ( (paths (tail (program-arguments)))
-      (data->framerate
-        (l (a)
-          (false-if-exception
-            (inexact->exact
-              (round (exact->inexact (string->number (alist-ref a "avg_frame_rate"))))))))
-      (data->width (l (a) (false-if-exception (alist-ref a "width"))))
-      (data->height (l (a) (false-if-exception (alist-ref a "height"))))
-      (data->codec (l (a) (false-if-exception (alist-ref a "codec_name")))))
-    (each
-      (l (path)
-        (let (data (media-info-video path))
-          (and-let*
-            ( (framerate (or (data->framerate data) 25)) (width (data->width data))
-              (height (data->height data)) (codec (data->codec data))
-              (rating (calculate-rating width height codec framerate))
-              (rating-string (create-rating-string rating)))
-            (rename-file path (string-append (dirname path) "/q" rating-string "." (basename path))))))
-      paths)))
+(define (display-dry-run old new)
+  (display-line (string-append (string-quote old) " -> " (string-quote new))))
 
-(run)
+(define (pvqt paths dry-run)
+  (each
+    (l (path)
+      (and-let*
+        ( (data (get-media-info path))
+          (rating (calculate-rating (alist-ref-q data bitrate) (alist-ref-q data codec)))
+          (rating-string (create-rating-string rating)))
+        ( (if dry-run display-dry-run rename-file) path
+          (string-append (dirname path) "/q" rating-string "." (basename path)))))
+    paths))
+
+(define pvqt-cli
+  (let (cli (cli-create #:options (list-q (dry-run) ((paths ...)))))
+    (l (arguments) (alist-bind (cli arguments) (paths dry-run) (pvqt paths dry-run)))))
+
+(pvqt-cli (tail (program-arguments)))
