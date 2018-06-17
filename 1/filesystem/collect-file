@@ -16,7 +16,7 @@
 
 (define (collect-path a)
   (let (path-destination (string-append destination (basename a)))
-    (or (false-if-exception (symlink a path-destination)) (copy-file a path-destination))))
+    (symlink a path-destination)))
 
 (let (arguments (command-line-interface)) (ensure-directory-structure destination)
   (and-let* ((paths (alist-ref-q arguments path))) (each collect-path paths)))
