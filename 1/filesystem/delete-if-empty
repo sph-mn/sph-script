@@ -3,7 +3,7 @@
 
 ;delete-if-empty :: path ...
 ;tries to delete all empty directories and empty files found among the given paths and directory trees. deletes deeper files first
-(import (sph common))
+(import (sph filesystem) (sph hashtable) (sph io) (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph))
 
 (define (get-sorted-paths e)
   (let (with-path-lengths (map (l (e) (pair (string-count e #\/) e)) (directory-tree e)))

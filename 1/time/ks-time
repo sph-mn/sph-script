@@ -1,5 +1,5 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (sph time) (sph time string))
+(import (sph filesystem) (sph hashtable) (sph io) (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph time) (sph time string))
 (display-line (utc-elapsed-day-string (utc-current)))

@@ -1,17 +1,22 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (sph cli))
+(import (sph filesystem) (sph hashtable)
+  (sph io) (sph list) (sph alist)
+  (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph cli))
 
 (define description
   "restart command with a short delay after it exits. command is best specified with -- after this programs options. restart-on-end [options] -- command ...
-  example: restart-on-end -n 3 -- echo")
+   example: restart-on-end -n 3 -- echo")
 
 (define command-line-interface
   (cli-create #:options
     (list-q ((command ...) #:required? #t)
-      (max-restart-times #:names #\n #:value-required? #t #:value-optional? #t #:type integer #:description "default: infinite")
-      (delay #:names #\d #:value-required? #t #:value-optional? #t #:type integer #:description "in seconds. default: 1"))
+      (max-restart-times #:names #\n
+        #:value-required? #t #:value-optional? #t #:type integer #:description "default: infinite")
+      (delay #:names #\d
+        #:value-required? #t
+        #:value-optional? #t #:type integer #:description "in seconds. default: 1"))
     #:description description))
 
 (define (shell-command-restart-on-end command max-restart-times delay)

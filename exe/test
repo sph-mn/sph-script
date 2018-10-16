@@ -1,7 +1,9 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (sph process create) (sph two))
+(import (sph filesystem) (sph hashtable)
+  (sph io) (sph list) (sph alist)
+  (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph process create))
 
 (define (execute->error-and-status executable-path arguments)
   "string (string ...) -> string:error-port-output integer:exit-code"

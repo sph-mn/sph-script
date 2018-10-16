@@ -1,8 +1,14 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (sph cli)
-  (only (guile) dirname rmdir string-suffix?) (sph stream) (sph filesystem stream) (srfi srfi-41))
+(import (sph filesystem) (sph hashtable)
+  (sph io) (sph list)
+  (sph number) (sph other)
+  (sph process) (sph string)
+  (sph alist) (sph vector)
+  (sph) (sph cli) (only (guile) dirname rmdir string-suffix?) (sph stream)
+  ;(srfi srfi-41)
+  )
 
 ; empty directories
 ; child files with the same name as parent
@@ -14,6 +20,9 @@
       "remove the remaining empty directory. accepts multiple paths and"
       "renames new files should name conflicts occur")
     "\n"))
+
+(define (directory-stream a) "directory-handle/string:path -> stream"
+  (port->stream (if (string? a) (opendir a) a) readdir closedir))
 
 (define (splice-one path dry-run)
   "string boolean ->

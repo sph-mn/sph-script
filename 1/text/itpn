@@ -2,12 +2,11 @@
 !#
 
 (import (ice-9 ftw) (sph cli)
-  (sph list) (sph)
-  (sph alist) (sph string)
-  (sph io) (sph io read-write)
+  (sph list) (sph hashtable)
+  (sph) (sph alist)
+  (sph string) (sph io)
   (rnrs sorting) (only (srfi srfi-1) find partition)
-  (sph one) (sph list one)
-  (sph lang itpn) (sph two) (ice-9 match) (sph lang indent-syntax) (sph lang parser key-values-table))
+  (sph other) (sph list other) (sph lang itpn) (ice-9 match) (sph lang indent-syntax))
 
 (define program-description "indent packet notation filter and transformer")
 
@@ -38,6 +37,41 @@
         "prefix/suffix/filename. comma-separated names of block parts to display. default: prefix,suffix")
       (exclude #:names #\e) (syntax-check #:names #\c)
       (list-unique-tags) (sort-packets) (deduplicate) (count))))
+
+(define (create-indent size) (list->string (make-list (* size 2) #\space)))
+
+(define (rw-port->port read write port port-2)
+  (let loop ((e (read port))) (if (eof-object? e) e (begin (write e port-2) (loop (read port))))))
+
+(define (ht-associate-words! hashtable string)
+  "hashtable string ->
+   creates a hashtable entry from a string in format \"key value ...\".
+   create hashtable entry from space separated words in string"
+  (let (string (string-split string #\space)) (ht-set! hashtable (first string) (tail string))))
+
+(define (key-values-table-merge-from-port! port ht)
+  "port hashtable -> hashtable
+   see key-values-table-from-port"
+  (port-lines-each (l (line) (ht-associate-words! ht line)) port))
+
+(define (key-values-table-from-port port)
+  "port [hashtable] -> hashtable
+   read from port to create a hashtable from a string with lines in the format \"key value ...\"
+   example use case: configuration files for string pattern replacements"
+  (let (r (ht-create-string)) (port-lines-each (l (line) (ht-associate-words! r line)) port) r))
+
+(define (key-values-table-from-file path)
+  (call-with-input-file path (l (a) (key-values-table-from-port a))))
+
+(define (key-values-table-merge-from-file! path ht)
+  (call-with-input-file path (l (a) (key-values-table-merge-from-port! a ht))))
+
+(define (rw-file->port read write path port)
+  (call-with-input-file path (l (file-port) (rw-port->port read write file-port port))))
+
+(define* (rw-file-indirect->file read write path-1 #:optional (path-2 path-1))
+  "like rw-port->file but takes a path for reading from an input file"
+  (temp-file-port->file (l (port-output) (rw-file->port read write path-1 port-output)) path-2))
 
 (define (cli-parse-replace-tag a) "string:\"tag[,tag ...] tag[,tag ...]\" -> (old new)"
   (apply
@@ -198,9 +232,11 @@
             (fold (l (processor r) (processor r path)) parsed-itpn parsed-itpn-processors)))
         (with-type-and-result-creator
           (l (c)
-            (cond (syntax-check (c (q syntax-check) (l (parsed-itpn path) (list #t))))
+            (cond
+              (syntax-check (c (q syntax-check) (l (parsed-itpn path) (list #t))))
               (list-unique-tags (c (q unique-tags) (l (parsed-itpn path) (itfpn-tags parsed-itpn))))
-              (split (c (q split) apply-processors)) (else (c (q parsed-itpn) apply-processors))))))
+              (split (c (q split) apply-processors))
+              (else (c (q parsed-itpn) apply-processors))))))
       (l (paths process-one)
         "(string ...) procedure:{parsed-itpn -> any} -> any
         manages and accesses input resources and processing"
@@ -339,9 +375,11 @@
               result)))))))
 
 (define (result-handler arguments a process-after output-handler) "list list -> [list]"
-  (cond ((null? a) (exit 0))
+  (cond
+    ((null? a) (exit 0))
     ( (result? a)
-      (case (first a) ((syntax-check) (exit (if (every identity (tail (tail a))) 0 1)))
+      (case (first a)
+        ((syntax-check) (exit (if (every identity (tail (tail a))) 0 1)))
         ((parsed-itpn split unique-tags) (output-handler (process-after a)))))
     (else (raise (q invalid-internal-result-format)))))
 

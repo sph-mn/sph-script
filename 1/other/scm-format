@@ -1,7 +1,8 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (sph cli) (sph lang scm-format) (sph lang scheme))
+(import (sph) (sph alist)
+  (sph filesystem) (sph hashtable) (sph cli) (sph lang scm-format) (sph lang scheme))
 
 (define (scm-suffix-file-path a)
   (if (string-suffix? ".scm" a) a

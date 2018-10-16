@@ -5,7 +5,17 @@
   (import
     (guile)
     (json parser)
-    (sph common))
+    (sph)
+    (sph alist)
+    (sph filesystem)
+    (sph hashtable)
+    (sph io)
+    (sph list)
+    (sph number)
+    (sph other)
+    (sph process)
+    (sph string)
+    (sph vector))
 
   (define sph-media-info-description
     "analyse media files and get information like resolution and bitrate.

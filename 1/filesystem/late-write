@@ -2,7 +2,10 @@
 !#
 
 ;depends on sph-lib
-(import (sph common) (sph io read-write) (sph cli))
+
+(import (sph filesystem) (sph hashtable)
+  (sph io) (sph list) (sph alist)
+  (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph cli))
 
 (define description
   "write to output file only after all data from standard input has been read. allows to overwrite source files when using shell output redirection")

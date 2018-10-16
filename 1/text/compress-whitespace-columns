@@ -2,7 +2,7 @@
 !#
 
 ;for each line, replace whitespace multiples with one space.
-(import (sph common))
+(import (sph filesystem) (sph hashtable) (sph io) (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph))
 (define (string-compress-whitespace a) "string -> string" (regexp-replace a "\\s{2,}" " "))
 
 (port-lines-each (l (e) (display (string-compress-whitespace e))) (current-input-port)

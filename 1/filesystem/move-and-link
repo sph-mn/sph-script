@@ -1,12 +1,26 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (sph cli) (sph two) (rnrs io ports))
+(import (sph filesystem) (sph hashtable)
+  (sph io) (sph list)
+  (sph alist) (sph number)
+  (sph other) (sph process) (sph string) (sph vector) (sph) (sph cli) (rnrs io ports))
 
 (define command-line-interface
   (cli-create #:options
-    (list-q ((target-directory source-path ...) #:required? #t) (keep-directory-structure? #:names #\k))
+    (list-q ((target-directory source-path ...) #:required? #t)
+      (keep-directory-structure? #:names #\k))
     #:description "move files and replace the source paths with symlinks to the move destination"))
+
+(define (move-and-link target-path source-path)
+  "string ... -> (boolean ...)
+   move source-path to target-path and replace original source-path"
+  (let (target-path (path->full-path target-path))
+    (and (ensure-directory-structure target-path)
+      (execute-and-check-result "mv" "-t" target-path source-path)
+      (execute-and-check-result "ln" "-s"
+        (string-append (ensure-trailing-slash target-path) (basename source-path))
+        (dirname source-path)))))
 
 (define (move-and-link-cli)
   (let*

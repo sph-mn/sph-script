@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (ice-9 regex))
+(import (sph filesystem) (sph hashtable) (sph io) (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (ice-9 regex))
 
 (define (iso-date-remove-prefix-zeros a)
   (string-join

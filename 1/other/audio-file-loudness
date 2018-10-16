@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph) (sph one)
+(import (sph) (sph other)
   (sph process create) (sph cli)
   (sph list) (sph alist) (sph io) (sph string) (prefix (sph number) number-))
 

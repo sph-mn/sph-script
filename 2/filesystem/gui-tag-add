@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph common) (sph process))
+(import (sph filesystem) (sph hashtable) (sph io) (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph process))
 
 (apply execute "tag-add"
   (string-trim-right (shell-eval->string "zenity --entry")) (tail (program-arguments)))

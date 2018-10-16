@@ -2,7 +2,12 @@
 !#
 
 ;expects newline separated file paths on standard input and renames file names
-(import (sph common) (sph cli) (ice-9 rdelim) (ice-9 streams) (sph ice-9-stream))
+
+(import (sph filesystem) (sph hashtable)
+  (sph io) (sph list)
+  (sph alist) (sph number)
+  (sph other) (sph process) (sph string) (sph vector) (sph) (sph cli) (ice-9 rdelim) (ice-9 streams))
+
 (define arguments ((cli-create #:options (list-q (dry-run)))))
 (define dry-run (alist-ref-q arguments dry-run))
 
@@ -30,4 +35,4 @@
           (string-append (string-quote (basename a)) " -> " (string-quote (basename new-path)) "\n"))
         (if (not dry-run) (rename-file a new-path))))))
 
-(stream-each rename-clean-path (port->stream (current-input-port) read-line))
+(stream-for-each rename-clean-path (port->stream (current-input-port) read-line))

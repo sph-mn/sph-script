@@ -1,5 +1,12 @@
 #!/usr/bin/guile
 !#
 
-(import (sph) (sph time string) (sph two))
+(import (sph) (sph time string) (sph number) (sph time) (sph time utc) (sph process))
+
+(define (os-seconds-since-boot)
+  (string->number (first (string-split (shell-eval->string "cat /proc/uptime") #\space))))
+
+(define (os-seconds-at-boot)
+  (- (nanoseconds->seconds (utc-elapsed-day (utc-current))) (os-seconds-since-boot)))
+
 (display-line (s->ks-string (os-seconds-at-boot)))

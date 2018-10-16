@@ -7,8 +7,10 @@ ignores the tab character)
 
 (import
   ; from guile-lib
-  (string transform) (sph common)
-  (sph cli) (ice-9 rdelim) (only (ice-9 streams) port->stream) (sph ice-9-stream))
+  (string transform) (sph filesystem)
+  (sph hashtable) (sph io)
+  (sph list) (sph number) (sph alist)
+  (sph other) (sph process) (sph string) (sph vector) (sph) (sph cli) (ice-9 rdelim) (ice-9 streams))
 
 (define default-delimiter #\space)
 
@@ -16,7 +18,7 @@ ignores the tab character)
   (let
     ( (line-stream (port->stream text-port (l (ele) (read-line ele (q concat)))))
       (indices-count (length indices)))
-    (stream-each
+    (stream-for-each
       (l (line)
         (let*
           ( (parts
