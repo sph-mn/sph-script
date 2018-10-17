@@ -1,8 +1,13 @@
 #!/usr/bin/guile
 !#
 
-(import (sph filesystem) (sph hashtable) (sph io) (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (guile)
-  (sph process) (sph process create) (sph cli) (sph time string) (only (ice-9 ftw) scandir))
+(import (sph filesystem) (sph hashtable)
+  (sph io) (sph list)
+  (sph number) (sph other)
+  (sph process) (sph string)
+  (sph vector) (sph)
+  (guile) (sph process)
+  (sph process create) (sph cli) (sph time string) (only (ice-9 ftw) scandir) (rnrs sorting))
 
 (define program-description
   (string-join
@@ -67,8 +72,7 @@
     (validate-destination-paths
       (l (a)
         (let
-          (non-directories
-            (filter (l (a) (catch #t (nullary (not (directory? a))) (const #t))) a))
+          (non-directories (filter (l (a) (catch #t (nullary (not (directory? a))) (const #t))) a))
           (if (null? non-directories) #t
             (raise (pair (q non-directory-destination-paths) non-directories))))))
     (l (sources destinations encrypt dry-run)
@@ -159,7 +163,8 @@
   (backup #:key combine destinations dry-run encrypt list-configs list-files show-config sources
     tarsnap)
   (let (path-config (get-path-config))
-    (cond (list-files (create-result-list-files sources path-config))
+    (cond
+      (list-files (create-result-list-files sources path-config))
       (list-configs (create-result-list-configs path-config))
       (show-config (create-result-show-config sources path-config))
       (else (create-result-backup combine destinations dry-run encrypt sources tarsnap path-config)))))
@@ -183,7 +188,10 @@
           (append-map
             (l (a)
               (let ((key (first a)) (value (tail a)))
-                (list (symbol->keyword key) (case key ((sources) (cli-sources value)) (else value)))))
+                (list (symbol->keyword key)
+                  (case key
+                    ((sources) (cli-sources value))
+                    (else value)))))
             (command-line-interface)))
         (apply backup keyword-arguments)))))
 
