@@ -1,11 +1,14 @@
 #!/usr/bin/guile
 !#
 
-(import (sph filesystem) (sph hashtable) (sph io) (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph cli))
+(import (sph alist) (sph filesystem)
+  (sph hashtable) (sph io)
+  (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph cli))
 
 (define command-line-interface
-  (cli-create #:options (list-q ((path-directory path-file ...) #:value-required? #t #:required? #t))
-    #:description "ensures that a directory exists and moves all specified files into it"))
+  (cli-create #:options
+    (list-q ((path-directory path-file ...) #:value-required? #t #:required? #t)) #:description
+    "ensures that a directory exists and moves all specified files into it"))
 
 (define (move-into-directory path-directory path-file) (ensure-directory-structure path-directory)
   (let (path-file (delete path-directory path-file))
