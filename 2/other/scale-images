@@ -1,7 +1,9 @@
 #!/usr/bin/env guile
 !#
 
-(import (sph filesystem) (sph hashtable) (sph io) (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph cli))
+(import (sph filesystem) (sph alist)
+  (sph hashtable) (sph io)
+  (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph cli))
 
 (define (scale-image width path-source path-dest)
   (execute "gm" "convert"
