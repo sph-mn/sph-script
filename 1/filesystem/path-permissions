@@ -1,1 +1,3 @@
+# namei -m might be an alternative
+
 path-directories "$@" |xargs -d \\n -n 1 stat --format "%a %n"

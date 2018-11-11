@@ -6,6 +6,7 @@
 │   ├── delete-if-empty
 │   ├── fig
 │   ├── find-leaf-directories
+│   ├── find-recently-changed
 │   ├── full-path
 │   ├── get-unique-path
 │   ├── late-write
@@ -828,3 +829,6 @@ display the current posixtime
 * usage: ./exe/take-website-screenshot url output-filename
 * this script lies under other/take-website-screenshots
 * it depends on nodejs and requires "npm install" to have been executed in the other/take-website-screenshots directory
+
+# possible enhancements
+* make as many scripts as possible depend only on shell and gnu/coreutils

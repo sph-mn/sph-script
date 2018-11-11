@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph filesystem) (sph hashtable) (sph io) (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph cli) (sph time) (sph time string))
+(import (sph) (sph alist) (sph time string) (sph time) (sph string) (sph filesystem) (sph cli))
 
 (define destination
   (string-append (getenv "HOME") "/temp/collections/collected." (utc->ymd (utc-current)) "/"))
@@ -15,7 +15,7 @@
 (define command-line-interface (cli-create #:description description (list-q (path ...))))
 
 (define (collect-path a)
-  (let (path-destination (string-append destination (basename a)))
+  (let* ((a (realpath* a)) (path-destination (string-append destination (basename a))))
     (symlink a path-destination)))
 
 (let (arguments (command-line-interface)) (ensure-directory-structure destination)
