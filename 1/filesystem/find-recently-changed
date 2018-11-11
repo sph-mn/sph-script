@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# :: path/find-arguments
+# list all files under directory ordered by descending modification time.
+# all find arguments that can come before -type and -printf are supported.
+# depends on shell, find, sort and awk
+
+find $@ -type f -printf '%T@ %P\n' | sort --reverse --numeric-sort | awk '{print $2}'
