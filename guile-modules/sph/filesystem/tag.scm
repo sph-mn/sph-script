@@ -15,16 +15,12 @@
     (sph alist)
     (sph filesystem)
     (sph io)
-    (sph other)
     (sph list)
+    (sph other)
     (sph string)
     (only (srfi srfi-1) remove))
 
-  ;add-to-tag-group-from-search
-  ;add-to-tag-group-from-list-of-files
-  ;add, remove, sort tags - considering mime-extensions
-
-  (define (read-mime.types path)
+  (define (read-mime-types path)
     "string -> list:((string:type-name string:extension ...) ...)
      read a mime.types file into a list. path is for example /etc/mime.types"
     (call-with-input-file path
@@ -43,7 +39,7 @@
      get all filename extensions from \"/etc/mime.types\""
     (delete-duplicates
       (fold (l (a r) (if (null? a) r (let ((t (tail a))) (append t r)))) (list)
-        (read-mime.types path))))
+        (read-mime-types path))))
 
   (define get-mime-extensions-cached (procedure->cached-procedure get-mime-extensions))
 

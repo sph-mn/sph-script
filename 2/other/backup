@@ -1,0 +1,22 @@
+#!/bin/sh -e
+
+# usage: config [type] [tar/tarsnap-option ...]
+# example: backup2 text tarsnap
+# features:
+# * create local tgz or remote tarsnap archive
+# * read file paths from executable config file that writes file paths to standard output
+# * automatically add current datetime to archive name
+
+config="$1"
+type="$2"
+list="$(mktemp)"
+name="$config.$(iso-date).$(day-seconds)"
+
+"$HOME/.config/backup/$config" > "$list"
+
+if test tarsnap = "$type"
+then
+  tarsnap -cf "$name" -T "$list"
+else
+  tar -czf "$name.tgz" --verbatim-files-from -T "$list"
+fi
