@@ -218,7 +218,7 @@
   "procedure procedure procedure procedure procedure procedure any (string ...) -> any
    maps paths with calls to file-system-fold. stops on error"
   (first
-    (fold-multiple-with-continue
+    (fold-multiple-c
       (l (path continue r)
         (let (r-new (file-system-fold enter? leaf down up skip error r path)) (continue r-new)))
       paths init)))
