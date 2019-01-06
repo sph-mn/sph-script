@@ -33,7 +33,7 @@ ignores the tab character)
                         ;drop the newline character of the line
                         (string-drop-right (list-ref parts ele) 1) (list-ref parts ele))))
                   indices))))
-          (if (length-one? indices)
+          (if (= 1 (length indices))
             (display (let ((part (first selected-columns))) (if part part "")))
             (write selected-columns)))
         (newline))

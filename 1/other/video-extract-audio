@@ -2,15 +2,21 @@
 !#
 
 ; depends on https://github.com/aconchillo/guile-json
-(import (sph filesystem) (sph hashtable) (sph io) (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph lang indent-syntax) (sph cli) (json))
+
+(import (sph filesystem) (sph alist)
+  (sph hashtable) (sph io)
+  (sph list) (sph number)
+  (sph other) (sph process) (sph string) (sph vector) (sph) (sph lang indent-syntax) (sph cli) (json))
 
 (define (guile-hash-table->alist a)
   (hash-map->list
     (l (key value)
       (pair key
-        (cond ((hash-table? value) (guile-hash-table->alist value))
+        (cond
+          ((hash-table? value) (guile-hash-table->alist value))
           ((list? value) (map guile-hash-table->alist value))
-          ((vector? value) (vector-map guile-hash-table->alist value)) (else value))))
+          ((vector? value) (vector-map guile-hash-table->alist value))
+          (else value))))
     a))
 
 (define-as codec-name->extension-ht ht-create "vorbis" "ogg")

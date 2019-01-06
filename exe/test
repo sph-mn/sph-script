@@ -2,8 +2,9 @@
 !#
 
 (import (sph filesystem) (sph hashtable)
-  (sph io) (sph list) (sph alist)
-  (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph process create))
+  (sph io) (sph list)
+  (sph alist) (sph number)
+  (sph other) (sph process) (sph string) (sph vector) (sph) (sph process create))
 
 (define (execute->error-and-status executable-path arguments)
   "string (string ...) -> string:error-port-output integer:exit-code"
@@ -28,16 +29,17 @@
   "execute all programs that have a --help option and check output.
    these tests show missing variable references and other compile errors.
    unfortunately, guile writes its auto-compile info to standard error"
+  ; paths that dont exist must be removed
   (every (l (a) (test-error-output a "--help"))
     (list "1/filesystem/collect-file" "1/filesystem/late-write"
       "1/filesystem/mount-home" "1/filesystem/mount-sshfs-home"
       "1/text/lines-filter" "1/text/tabular-select"
       "1/filesystem/splice" "1/filesystem/move-and-link"
       "1/filesystem/merge-files" "1/other/scm-format"
-      "1/other/video-extract-audio" "1/other/backup"
-      "1/other/restart-on-end" "1/time/hms-to-ks"
-      "2/filesystem/clean-filenames" "2/filesystem/tag-remove"
-      "2/filesystem/tag-sort" "2/filesystem/tag-add" "2/convert/hex" "2/convert/binary")))
+      "1/other/video-extract-audio" "1/other/restart-on-end"
+      "1/time/hms-to-ks" "2/filesystem/clean-filenames"
+      "2/filesystem/tag-remove" "2/filesystem/tag-sort"
+      "2/filesystem/tag-add" "2/convert/hex" "2/convert/binary")))
 
 (define (test-compress-whitespace-columns)
   (execute-with-pipes
