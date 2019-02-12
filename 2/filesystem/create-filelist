@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# create a file /tmp/custom-name with a disk size/available/usage-percent header and
+# a complete list of files of the current directory.
+# can be used to index backup harddrives and mounts.
+# depends on iso-date, df and find.
+# arguments: custom-name
+
+if test -z $1
+then
+  echo missing argument
+fi
+
+a="/tmp/$1.$(iso-date)"
+
+# disk size/usage header
+df --si --output=size,avail,pcent . > "$a"
+
+# file listing
+find >> "$a"
