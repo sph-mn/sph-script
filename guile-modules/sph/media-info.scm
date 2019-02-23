@@ -44,6 +44,7 @@
                 (execute->string "ffprobe" "-v" "quiet" "-print_format" "json" "-show_streams" path))))))
       (if (and data (not (null? data)))
         (first
-          (filter (l (a) (string-equal? "video" (alist-ref a "codec_type")))
-            (alist-ref data "streams")))
+          (filter
+            (l (a) (string-equal? "video" (alist-ref a "codec_type")))
+            (vector->list (alist-ref data "streams"))))
         #f))))

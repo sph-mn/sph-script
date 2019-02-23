@@ -1,11 +1,13 @@
 #!/usr/bin/guile
 !#
 
-(import (sph filesystem) (sph hashtable) (sph io) (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph other))
+(import (sph filesystem) (sph hashtable)
+  (sph io) (sph list)
+  (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph other))
+
 ;parameters: path-of-file-to-move ...
 ;asks for a target path and moves paths given as arguments into the provided target path. (grouping of files)
-
-(define path-config-temp "/tmp/gui-move-into-directory-config")
+(define path-config-temp "/tmp/gui-group-config")
 
 (define (get-last-used-directory)
   (and (file-exists? path-config-temp)
@@ -32,6 +34,6 @@
         (begin
           (if (or (not last-used) (not (string-equal? last-used path-directory)))
             (set-last-used-directory path-directory))
-          (apply execute "move-into-directory" path-directory paths))))))
+          (apply execute "group" path-directory paths))))))
 
 (move-into-directory-zenity (tail (program-arguments)))

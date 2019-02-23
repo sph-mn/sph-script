@@ -71,7 +71,7 @@
 │   ├── delete-duplicate-files
 │   ├── file-size-sum
 │   ├── format-encrypt
-│   ├── gui-move-into-directory
+│   ├── gui-group
 │   ├── gui-tag-add
 │   ├── gui-tag-remove
 │   ├── hardlink-to-copy
