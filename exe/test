@@ -33,10 +33,10 @@
   (every (l (a) (test-error-output a "--help"))
     (list "1/filesystem/collect-file" "1/filesystem/late-write"
       "1/filesystem/mount-home" "1/filesystem/mount-sshfs-home"
-      "1/text/lines-filter" "1/text/tabular-select"
-      "1/filesystem/splice" "1/filesystem/move-and-link"
-      "1/filesystem/merge-files" "1/other/scm-format"
-      "1/other/video-extract-audio" "1/other/restart-on-end"
+      "1/text/lines-filter" "2/text/tabular-select"
+      "1/filesystem/splice" "2/filesystem/move-and-link"
+      "2/filesystem/merge-files" "1/other/scm-format"
+      "2/other/video-extract-audio" "1/other/restart-on-end"
       "1/time/hms-to-ks" "2/filesystem/clean-filenames"
       "2/filesystem/tag-remove" "2/filesystem/tag-sort"
       "2/filesystem/tag-add" "2/convert/hex" "2/convert/binary")))
@@ -70,8 +70,8 @@
 ;; filesystem/delete-if-empty
 ;; filesystem/prefix-sort
 ;; filesystem/searchl
-;; filesystem/move-into-directory
-;; filesystem/get-unique-path
+;; filesystem/group
+;; filesystem/unique-path
 ;; filesystem/rename-lowercase
 ;; filesystem/search
 ;; text/file-lines-set-operations

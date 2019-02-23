@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-; depends on https://github.com/aconchillo/guile-json
+; depends on ffmpeg, guile, guile-json and sph-lib.
 
 (import (sph filesystem) (sph alist)
   (sph hashtable) (sph io)

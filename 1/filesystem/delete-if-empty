@@ -1,6 +1,8 @@
 #!/usr/bin/guile
 !#
 
+; depends on guile and sph-lib
+;
 (import (sph) (ice-9 ftw))
 
 (define description

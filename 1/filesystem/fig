@@ -1,5 +1,7 @@
 #!/bin/sh
-# list all paths under the current working directory that contain all (default) of the given search strings
+
+# list all paths under the current working directory that contain all (default) of the given search strings.
+# excludes .git directories.
 # signature: fig :: [lines-filter-options ...] search-string ...
 # examples:
 #   fig test

@@ -1,22 +1,24 @@
 #!/usr/bin/guile
 !#
 
+; depends on guile and sph-lib.
+; see: collect-file --help
+;
 (import (sph) (sph alist) (sph time string) (sph time) (sph string) (sph filesystem) (sph cli))
 
 (define destination
   (string-append (getenv "HOME") "/temp/collections/collected." (utc->ymd (utc-current)) "/"))
 
-(define description
-  (string-append
-    "symlinks or copies files into a automatically chosen target directory. the current destination directory is "
-    (string-quote destination)))
-
-; one use case is browsing files and using right click actions to collect files.
-(define command-line-interface (cli-create #:description description (list-q (path ...))))
-
 (define (collect-path a)
   (let* ((a (realpath* a)) (path-destination (string-append destination (basename a))))
     (symlink a path-destination)))
 
-(let (arguments (command-line-interface)) (ensure-directory-structure destination)
+(let*
+  ( (cli
+      (cli-create #:description
+        (string-append "symlinks or copies files into a automatically chosen target directory"
+          "\nthe current destination is " destination)
+        (list-q (path ...))))
+    (arguments (cli)))
+  (ensure-directory-structure destination)
   (and-let* ((paths (alist-ref-q arguments path))) (each collect-path paths)))

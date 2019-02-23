@@ -1,0 +1,8 @@
+#!/usr/bin/guile
+!#
+
+; modify the given path string until no file exists with the path which is returned.
+; depends on guile and sph-lib.
+;
+(import (sph) (sph filesystem))
+(display (apply make-path-unique (tail (program-arguments))))

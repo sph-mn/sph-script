@@ -16,7 +16,7 @@ name="$config.$(iso-date).$(day-seconds)"
 
 if test tarsnap = "$type"
 then
-  tarsnap -cf "$name" -T "$list"
+  tarsnap -cf "$name" -T "$list" --cachedir "$HOME/.cache/tarsnap" --keyfile "/home/nonroot/.tarsnap.key"
 else
   tar -czf "$name.tgz" --verbatim-files-from -T "$list"
 fi

@@ -1,20 +1,24 @@
 #!/usr/bin/guile
 !#
 
+; group files into a directory. see: group --help
+; depends on guile and sph-lib.
+; uses sph-lib for duplicate file name detection and renaming.
+
 (import (sph alist) (sph filesystem)
   (sph hashtable) (sph io)
   (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph cli))
-
-(define command-line-interface
-  (cli-create #:options
-    (list-q ((path-directory path-file ...) #:value-required? #t #:required? #t)) #:description
-    "ensures that a directory exists and moves all specified files into it"))
 
 (define (move-into-directory path-directory path-file) (ensure-directory-structure path-directory)
   (let (path-file (delete path-directory path-file))
     (if (null? path-file) #t
       (apply execute "mv" (cli-option "target-directory" path-directory) path-file))))
 
-(let (arguments (command-line-interface))
-  (if (null? arguments) (command-line-interface (list "--help"))
+(let*
+  ( (cli
+      (cli-create #:options
+        (list-q ((path-directory path-file ...) #:value-required? #t #:required? #t)) #:description
+        "ensures that a directory exists and moves all given files into it"))
+    (arguments (cli)))
+  (if (null? arguments) (cli (list "--help"))
     (move-into-directory (alist-ref-q arguments path-directory) (alist-ref-q arguments path-file))))

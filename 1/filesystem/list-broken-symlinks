@@ -1,1 +1,3 @@
+#!/bin/sh
+
 find . -type l ! -exec test -r {} \; -print

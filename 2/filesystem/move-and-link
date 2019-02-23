@@ -1,10 +1,10 @@
 #!/usr/bin/guile
 !#
 
-(import (sph filesystem) (sph hashtable)
-  (sph io) (sph list)
-  (sph alist) (sph number)
-  (sph other) (sph process) (sph string) (sph vector) (sph) (sph cli) (rnrs io ports))
+; move a file or directory and replace it with a symlink to the new place.
+; depends on guile and sph-lib.
+;
+(import (sph filesystem) (sph cli) (sph) (sph alist) (sph process))
 
 (define command-line-interface
   (cli-create #:options
@@ -14,7 +14,7 @@
 
 (define (move-and-link target-path source-path)
   "string ... -> (boolean ...)
-   move source-path to target-path and replace original source-path"
+   move a file or directory and replace it with a symlink to the new place"
   (let (target-path (path->full-path target-path))
     (and (ensure-directory-structure target-path)
       (execute-and-check-result "mv" "-t" target-path source-path)

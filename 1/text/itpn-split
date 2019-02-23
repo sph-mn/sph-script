@@ -4,6 +4,6 @@
 # if any of the files already exists, the old file is not overwritten but a file with a unique suffix is created.
 # usage example: itpn-split --search=computer
 
-matches="$(get-unique-path _matches)"
-rejects="$(get-unique-path _rejects)"
+matches="$(unique-path _matches)"
+rejects="$(unique-path _rejects)"
 itpn --split --output-file-1="$matches" --output-file-2="$rejects" $@

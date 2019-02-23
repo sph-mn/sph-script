@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# display filesystem permissions for all directories above the current or given one.
+# namei -m might be an alternative
+
+path-directories "$@" |xargs -d \\n -n 1 stat --format "%a %n"

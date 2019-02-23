@@ -8,39 +8,32 @@
 │   ├── find-leaf-directories
 │   ├── find-recently-changed
 │   ├── full-path
-│   ├── get-unique-path
+│   ├── group
 │   ├── late-write
 │   ├── list-broken-symlinks
-│   ├── merge-files
 │   ├── mount-home
 │   ├── mount-sshfs-home
-│   ├── move-and-link
-│   ├── move-into-directory
-│   ├── path-directories
-│   ├── path-permissions
-│   ├── prefix-sort
-│   ├── rename-lowercase
 │   ├── search
 │   ├── searchl
 │   ├── splice
-│   └── tidyfiles
+│   └── unique-path
 ├── other
-│   ├── audio-file-loudness
-│   ├── backup
 │   ├── git-log
+│   ├── git-log-short
 │   ├── golden-ratio
 │   ├── http-status
 │   ├── nargs
 │   ├── nargsp
 │   ├── restart-on-end
 │   ├── scm-format
-│   ├── video-extract-audio
+│   ├── take-screenshots-in-intervals
 │   └── with-dialog-and-delay
 ├── text
 │   ├── comma-to-newline
 │   ├── compress-whitespace-columns
 │   ├── file-lines-set-operations
 │   ├── itpn
+│   ├── itpn-split
 │   ├── lines-filter
 │   ├── lines-reject
 │   ├── lowercase
@@ -48,8 +41,7 @@
 │   ├── newline-to-space
 │   ├── remove-double-newlines
 │   ├── remove-hash-comment-lines
-│   ├── space-to-newline
-│   └── tabular-select
+│   └── space-to-newline
 └── time
     ├── day-seconds
     ├── hms-time
@@ -74,6 +66,8 @@
 │   └── xml2sxml
 ├── filesystem
 │   ├── clean-filenames
+│   ├── clone-disk
+│   ├── create-filelist
 │   ├── delete-duplicate-files
 │   ├── file-size-sum
 │   ├── format-encrypt
@@ -83,16 +77,30 @@
 │   ├── hardlink-to-copy
 │   ├── lf
 │   ├── list-file-size
+│   ├── merge-files
 │   ├── mkdir-wrap
+│   ├── move-and-link
 │   ├── name-add-date
 │   ├── parent-dir-references
+│   ├── path-directories
+│   ├── path-permissions
+│   ├── prefix-sort
 │   ├── prepend-media-bitrate
 │   ├── prepend-to-filename
-│   ├── remove-video-quality-info
+│   ├── rename-lowercase
 │   ├── tag-add
 │   ├── tag-remove
-│   └── tag-sort
+│   ├── tag-sort
+│   └── tidyfiles
+├── media
+│   ├── media-info-json
+│   ├── media-info-video
+│   ├── media-info-video-bitrate
+│   ├── media-info-video-framerate
+│   └── media-info-video-resolution
 ├── other
+│   ├── audio-file-loudness
+│   ├── backup
 │   ├── cpioc
 │   ├── cpioe
 │   ├── create-remarkjs-presentation
@@ -117,8 +125,8 @@
 │   ├── split-flac-cue
 │   ├── ssh-install-key
 │   ├── take-screenshot
-│   ├── take-screenshots-in-intervals
-│   └── take-screenshot-window
+│   ├── take-screenshot-window
+│   └── video-extract-audio
 ├── programming
 │   ├── astyle-to-file
 │   ├── c-format
@@ -126,7 +134,6 @@
 │   ├── coffee-compile-from-to
 │   ├── compress-js
 │   ├── guile-module-dependencies
-│   ├── javascript-format
 │   ├── javascript-format-add-function-spacing
 │   ├── javascript-remove-semicolons
 │   ├── json-to-file
@@ -135,7 +142,8 @@
 │   ├── scm-list-documentation
 │   ├── sph-module-dependencies
 │   ├── sql-format
-│   └── xml-format
+│   ├── xml-format
+│   └── xml-json-converter
 └── text
     ├── alternate-text-direction
     ├── camelcase-to-dash
@@ -143,9 +151,10 @@
     ├── decapitalise
     ├── randomise-lines
     ├── remove-iso-date-prefix-zeros
-    └── string-bits
+    ├── string-bits
+    └── tabular-select
 
-9 directories, 133 files
+11 directories, 141 files
 ```
 
 additionally included are:
@@ -153,8 +162,10 @@ additionally included are:
 * other/xml-json-converter
 * other/web-search
 
+scripts in `1` are generally more useful and scripts in `2` are more experimental
+
 # dependencies
-varying, but mostly posix shell (/bin/sh) or guile and [sph-lib](https://github.com/sph-mn/sph-lib).
+varying, but primarily posix shell (/bin/sh) or guile and [sph-lib](https://github.com/sph-mn/sph-lib).
 some scripts depend on other programs as noted in their description
 
 # installation
@@ -191,18 +202,18 @@ find files containing all argument strings in the name. the name is a combinatio
 
 display the full path that starts from the root directory for a given path
 
-### get-unique-path
+### unique-path
 displays a filename that does not exist
 
 * $ touch /tmp/t.scm
-* $ get-unique-path /tmp/t.scm
+* $ unique-path /tmp/t.scm
 
 ```
 /tmp/t.scm.1
 ```
 
 * $ touch /tmp/t.scm.1
-* $ get-unique-path /tmp/t.scm
+* $ unique-path /tmp/t.scm
 ```
 /tmp/t.scm.2
 ```
