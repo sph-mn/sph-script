@@ -8,6 +8,7 @@
 (define (scale-image width path-source path-dest)
   (execute "gm" "convert"
     "-size" (string-append width ">x")
+    "-quality" "100"
     path-source "-auto-orient" "-resize" (string-append width ">x") "+profile" "*" path-dest))
 
 (define (scale-images-cli)
