@@ -7,12 +7,11 @@
 
 (import (guile) (ice-9 regex)
   (sph alist) (except (srfi srfi-1) map)
-  (sph filesystem) (sph hashtable)
-  (sph io) (sph list)
-  (sph number) (sph other)
-  (sph process) (sph string)
-  (sph vector) (sph)
-  (sph cli) (rnrs exceptions) (sph process) (sph stream) (sph filesystem stream) (sph tree))
+  (ice-9 ftw) (sph filesystem)
+  (sph hashtable) (sph io)
+  (sph list) (sph number)
+  (sph other) (sph process)
+  (sph string) (sph vector) (sph) (sph cli) (rnrs exceptions) (sph process) (sph tree))
 
 (define trim-char-set (list->char-set (quote (#\newline #\space))))
 
@@ -24,7 +23,8 @@
 (define-syntax-rule (filename-extension-case path cond ...)
   (let (t (filename-extension path)) (string-case (or t "") cond ...)))
 
-(define-as ignored-filenames list-q "personal" "download" "collections" "backup" "screenshots")
+(define-as ignored-filenames list-q
+  "personal" "download" "collections" "backup" "screenshots" "nosync" "p")
 
 (define-as mime-type->path list-qq
   ; (mime-type-regexp target-directory [relative-target-directory/relative-target-directory-proc])
@@ -41,14 +41,13 @@
           (("yml") "programming/other") ("text" "plain")
           ("csv" "machine-readable-data") (else "other")))))
   ("video/.*" "video") ("audio/.*" "audio")
-  (("application/pdf") "documents" "uneditable")
-  (("application/postscript") "documents" "uneditable")
-  (("application/vnd.oasis.opendocument") "documents" "editable")
-  (("application/vnd.open.*") "documents" "editable")
+  ( ("application/pdf" "application/postscript" "application/vnd.oasis.opendocument"
+      "application/vnd.open.*")
+    "documents")
   ( ("application/x-gzip" "application/x-rar" "application/x-xz"
       "application/x-7z-compressed" "application/zip")
     "other" "compressed")
-  ("inode/x-empty" "other" "empty") (".*" "other" "other"))
+  (".*" "other"))
 
 (define default-file-rename-config
   (map (l (a) (pair (make-regexp (first a)) (tail a)))
@@ -85,14 +84,14 @@
             ""))))))
 
 (define (tidyfiles path config) "each directory entry, then delete empty toplevel directories"
-  (stream-each
+  (each
     (l (name)
       (let* ((source-path name) (target-dir (source-path->target-path source-path config)))
         (if target-dir
           (let (target-path (make-path-unique (path-append target-dir (default-file-rename name))))
             (guard (obj (#t (string-append "ignored file \"" name "\"")))
               (ensure-directory-structure target-dir) (rename-file source-path target-path))))))
-    (stream-filter (negate dotfile?) (directory-stream path)))
+    (scandir path))
   (system* "delete-if-empty" path))
 
 (define (tidyfiles-cli)
