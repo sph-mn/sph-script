@@ -33,16 +33,12 @@
   ( ("text/.*" "application/xml") "text"
     (unquote
       (l (path)
-        (filename-extension-case path ("scm" "programming/scm")
-          ("sh" "programming/bash") ("rb" "programming/ruby")
-          ("js" "programming/javascript") ("sql" "programming/sql")
-          ("pd" "programming/puredata") (("html" "rhtml") "programming/html")
-          (("css" "less" "scss") "programming/stylesheet") (("c" "sc") "programming/c")
-          (("yml") "programming/other") ("text" "plain")
-          ("csv" "machine-readable-data") (else "other")))))
+        (filename-extension-case path ("scm" "programming/scheme")
+          (("sh" "rb" "js" "sql" "html" "css" "less" "scss" "c" "sc") "programming") ("text" "plain")
+          (else "other")))))
   ("video/.*" "video") ("audio/.*" "audio")
-  ( ("application/pdf" "application/postscript" "application/vnd.oasis.opendocument"
-      "application/vnd.open.*")
+  ("application/pdf" "documents" "pdf")
+  ( ("application/postscript" "application/vnd.oasis.opendocument" "application/vnd.open.*")
     "documents")
   ( ("application/x-gzip" "application/x-rar" "application/x-xz"
       "application/x-7z-compressed" "application/zip")

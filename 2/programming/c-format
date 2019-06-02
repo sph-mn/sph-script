@@ -1,5 +1,3 @@
 #!/bin/sh
-# formats c code in a common style.
-# dependencies: astyle
 
-astyle --indent=spaces=4 --align-pointer=type --pad-oper --style=otbs "$@"
+clang-format -style="{BasedOnStyle: Mozilla, SortIncludes: false, AlignEscapedNewlines: DontAlign, AlignOperands: false, AllowShortFunctionsOnASingleLine: true, AllowShortIfStatementsOnASingleLine: true, AllowShortLoopsOnASingleLine: true, ContinuationIndentWidth: 2}" $@
