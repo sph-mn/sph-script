@@ -1,0 +1,9 @@
+#!/usr/bin/guile
+!#
+; requires wisp.scm from wisp at https://bitbucket.org/ArneBab/wisp/downloads/ to be installed
+; as a guile module, as /usr/share/guile/site/wisp.scm should work.
+; example usage:
+;   cat t.w | wisp2lisp
+
+(import (wisp) (rnrs io ports))
+(display (wisp2lisp (get-string-all (current-input-port))))
