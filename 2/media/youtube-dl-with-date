@@ -1,0 +1,10 @@
+#!/bin/sh
+# download a video from youtube and give it a filename  that includes upload-date, video-id and title.
+# depends on youtube-dl (https://ytdl-org.github.io) which is also available in some package repositories.
+
+if test -z $1
+then
+  echo missing argument
+else
+  exec youtube-dl --no-playlist -o "%(upload_date)s.%(id)s.%(title)s.%(ext)s" $@
+fi

@@ -1,4 +1,0 @@
-#!/bin/dash
-# open a new sakura terminal window and run a command in it.
-# for example to open files by command-line programs from graphical file-managers.
-sakura --execute "$*"

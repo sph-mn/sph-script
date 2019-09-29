@@ -1,4 +1,0 @@
-#!/bin/sh
-# run guile for each of the given paths
-
-for k in $*; do guile "$k"; done

@@ -1,0 +1,18 @@
+#!/usr/bin/env guile
+!#
+
+; remove video tags added by prepend-video-tags
+; usage: remove-video-tags path ...
+
+(import (sph filesystem) (sph hashtable)
+  (sph io) (sph list)
+  (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph media-info))
+
+(let (paths (map path->full-path (tail (program-arguments))))
+  (each
+    (l (a)
+      (let*
+        ( (new-name (string-trim (regexp-replace (basename a) "\\.?[0-9]+(p|ks|s)" "") #\.))
+          (new-name (string-append (dirname a) "/" new-name)))
+        (if (not (string-equal? new-name a)) (rename-file a new-name))))
+    paths))

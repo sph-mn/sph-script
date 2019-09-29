@@ -93,40 +93,41 @@
 │   ├── tag-sort
 │   └── tidyfiles
 ├── media
+│   ├── audio-file-loudness
+│   ├── create-video-from-png-images
+│   ├── get-audio-disc-files
 │   ├── media-info-json
 │   ├── media-info-video
 │   ├── media-info-video-bitrate
 │   ├── media-info-video-framerate
-│   └── media-info-video-resolution
+│   ├── media-info-video-resolution
+│   ├── prepend-video-tags
+│   ├── remove-video-tags
+│   ├── scale-images
+│   ├── scale-images-directory
+│   ├── split-flac-cue
+│   ├── video-extract-audio
+│   └── youtube-dl-with-date
 ├── other
-│   ├── audio-file-loudness
 │   ├── backup
 │   ├── cpioc
 │   ├── cpioe
 │   ├── create-remarkjs-presentation
-│   ├── create-video-from-png-images
 │   ├── e
 │   ├── g
-│   ├── get-audio-disc-files
 │   ├── git-create-stable-branch
 │   ├── git-merge-stable-master
 │   ├── git-push
 │   ├── git-stati
 │   ├── gui-emacs
-│   ├── guile-all
 │   ├── gui-md5sum
 │   ├── gui-scale-images
 │   ├── ldd-list-not-found
 │   ├── mariadb-create-user-database-sql
-│   ├── sakura-start
-│   ├── scale-images
-│   ├── scale-images-directory
 │   ├── show-process-memory-usage-top
-│   ├── split-flac-cue
 │   ├── ssh-install-key
 │   ├── take-screenshot
-│   ├── take-screenshot-window
-│   └── video-extract-audio
+│   └── take-screenshot-window
 ├── programming
 │   ├── astyle-to-file
 │   ├── c-format
@@ -142,6 +143,7 @@
 │   ├── scm-list-documentation
 │   ├── sph-module-dependencies
 │   ├── sql-format
+│   ├── wisp2lisp
 │   ├── xml-format
 │   └── xml-json-converter
 └── text
@@ -751,6 +753,35 @@ display the current time like this: 2015-11-15:69.18
 
 where the last part are the elapsed kiloseconds of the current day
 
+## media
+### youtube-dl-with-date
+download videos from youtube with a filename that includes upload date, video id and title. without a date in the name, it would be tedious to figure out when a video was uploaded.
+depends on [youtube-dl](https://ytdl-org.github.io/youtube-dl), which is also available in some package repositories.
+
+### prepend-video-tags
+add resolution and duration to the beginning of the filename. for example "myvideo.mkv" becomes "1080p.12ks.myvideo.mkv".
+ks are kiloseconds which are 1000s of seconds, 12ks is 12000 seconds. usage: "prepend-video-tags path ...".
+to remove the tags you can use remove-video-tags.
+
+### create-video-from-png-images
+* create-video-from-png-images :: path-directory [skip-resize?]
+* creates a video from a directory filled with png files
+* if skip-resize? is "true", then it is assumed that the resize-pass has already run and resized pictures are available in the $source/edit directory. this speeds up the compilation process significantly
+
+### get-audio-disc-files
+read files from an audio disc and save them in the flac format.
+depends on "cdparanoia"
+
+### split-flac-cue
+* split-flac-cue :: path-file-cue path-file-flac
+* split a flac file corresponding to a cue file
+* depends on "shnsplit" from "shntool"
+
+### scale-images
+* scale :: width
+* scales all png or jpg images in a directory. a new directory "edit" is created where result images are put
+* depends on "graphicsmagick"
+
 ## other
 ### cpioc
 create a cpio archive by reading paths from standard-input
@@ -758,21 +789,12 @@ create a cpio archive by reading paths from standard-input
 ### cpioe
 extract a cpio archive in the current directory
 
-### create-video-from-png-images
-* create-video-from-png-images :: path-directory [skip-resize?]
-* creates a video from a directory filled with png files
-* if skip-resize? is "true", then it is assumed that the resize-pass has already run and resized pictures are available in the $source/edit directory. this speeds up the compilation process significantly
-
 ### dwm-show-time
 ### e
 pass all arguments to the program of the $EDITOR environment variable
 
 ### g
 short alias for grep
-
-### get-audio-disc-files
-read files from an audio disc and save them in the flac format.
-depends on "cdparanoia"
 
 ### git-push
 do not care about commit-messages, commit all changes with "-" as the commit-message and push
@@ -784,9 +806,6 @@ execute "git status" for every directory in the current directory
 display the md5sums of one or multiple files given as arguments in a graphical dialog window.
 depends on "zenity"
 
-### guile-all
-execute all argument-paths with guile
-
 ### mariadb-create-user-database-sql
 * mariadb-create-user-database-sql :: database [username password]
 * create the sql to create a database in mariadb and a user that has all privileges on the database.
@@ -795,11 +814,6 @@ execute all argument-paths with guile
 
 ### posixtime
 display the current posixtime
-
-### scale-images
-* scale :: width
-* scales all png or jpg images in a directory. a new directory "edit" is created where result images are put
-* depends on "graphicsmagick"
 
 ### take-screenshot
 * create a screenshot of all monitors in a configured directory
@@ -825,11 +839,6 @@ display the current posixtime
 108 9149 /usr/bin/guile /home/nonroot/.exec/show-process-memory-usage-top
 66 4352 /usr/lib/upower/upowerd
 ```
-
-### split-flac-cue
-* split-flac-cue :: path-file-cue path-file-flac
-* split a flac file corresponding to a cue file
-* depends on "shnsplit" from "shntool"
 
 ### ssh-install-key
 * ssh-install-key :: full-key-name remote-host-uri
