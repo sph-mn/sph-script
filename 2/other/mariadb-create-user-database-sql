@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # _ :: database [username password]
 # create the sql to create a database in mariadb and a user that has all privileges on the database.
 # username and password are optional. if username is ommited it is set to the database name.
@@ -25,7 +25,7 @@ elif [[ $# -eq 3 ]]; then
 fi
 
 echo "start transaction;"
-echo "create database $database;"
+echo "create database $database charset=utf8mb4;"
 echo "create user '$username'@'%' identified by '$password';"
 echo "grant all privileges on $database.* to '$username'@'%';"
 echo "flush privileges;"
