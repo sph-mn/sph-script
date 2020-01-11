@@ -7,7 +7,6 @@
 
 interval=200
 destination_root="$HOME/interval-screenhots"
-date=$(date +%Y-%m-%d.%j)
 
 if test "$1"
 then
@@ -29,6 +28,7 @@ day_seconds() {
 
 while true; do
   # the date might change while this loop is running
+  date=$(date +%Y-%m-%d.%j)
   destination="$destination_root/$date"
   mkdir -p $destination
   scrot --focused --quality 50 "$destination/$(day_seconds).jpg"

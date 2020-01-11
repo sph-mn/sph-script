@@ -5,13 +5,18 @@
 ; search for strings inside files under the current working directory and list paths of matching files
 (import (sph) (sph process) (sph process create))
 
-(define (searchl-cli to-search . to-filter) (execute "clear")
-  (process-chain-finish-success?
-    (process-chain #f (current-output-port)
-      (list
-        (list "grep" "--dereference-recursive"
-          "--fixed-strings" "--ignore-case" "--files-with-matches" to-search)
-        (pair "lines-filter" to-filter))
-      #:search-path? #t)))
+(define (search-cli to-search . to-filter) (execute "clear")
+  (let*
+    ( (lines
+        (process-chain->string #f
+          (list
+            (list "grep" "--dereference-recursive"
+              "--fixed-strings" "--ignore-case" "--line-number" to-search)
+            (pair "lines-filter" to-filter))
+          #:search-path? #t))
+      (file-paths
+        (remove string-null?
+          (map (l (a) (first (string-split a #\:))) (string-split lines #\newline)))))
+    (each display-line (delete-duplicates file-paths))))
 
-(apply searchl-cli (tail (program-arguments)))
+(apply search-cli (tail (program-arguments)))
