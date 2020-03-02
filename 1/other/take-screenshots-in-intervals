@@ -31,6 +31,6 @@ while true; do
   date=$(date +%Y-%m-%d.%j)
   destination="$destination_root/$date"
   mkdir -p $destination
-  scrot --focused --quality 50 "$destination/$(day_seconds).jpg"
+  scrot --focused --quality 60 "$destination/$(day_seconds).jpg"
   sleep $interval
 done
