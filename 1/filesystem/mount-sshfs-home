@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph filesystem) (sph hashtable)
+(import (srfi srfi-1) (sph filesystem) (sph hashtable)
   (sph io) (sph list)
   (sph alist) (sph number)
   (sph other) (sph process)
@@ -10,12 +10,12 @@
 (define program-description "mount remote filesystems using sshfs to $HOME/mnt/{hostname}")
 (define program-dependencies (q ("sph-lib" "sshfs" "mkdir")))
 
-(define-as about quasiquote
-  ( ("description" (unquote program-description))
-    ("benefits" "paths are automatically chosen" "paths are predictable"
-      "paths are in the home directory")
-    ("depends on" (unquote (string-join program-dependencies " "))) ("license" "GPLv3")
-    ("maintainer and copyright" "sph@posteo.eu | http://sph.io")))
+(define about (quasiquote
+    ( ("description" (unquote program-description))
+      ("benefits" "paths are automatically chosen" "paths are predictable"
+        "paths are in the home directory")
+      ("depends on" (unquote (string-join program-dependencies " "))) ("license" "GPLv3")
+      ("maintainer and copyright" "sph@posteo.eu | http://sph.io"))))
 
 (define (create-target-argument hostname)
   (string-append (getenv "HOME") "/mnt/" (string-downcase hostname)))

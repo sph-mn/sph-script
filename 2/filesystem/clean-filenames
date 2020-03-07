@@ -1,9 +1,9 @@
 #!/usr/bin/guile
 !#
 
-;expects newline separated file paths on standard input and renames file names
+"expects newline separated file paths on standard input and renames file names"
 
-(import (sph filesystem) (sph hashtable)
+(use-modules (srfi srfi-1) (sph filesystem) (sph hashtable)
   (sph io) (sph list)
   (sph alist) (sph number)
   (sph other) (sph process) (sph string) (sph vector) (sph) (sph cli) (ice-9 rdelim) (ice-9 streams))

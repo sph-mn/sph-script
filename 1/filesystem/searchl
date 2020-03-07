@@ -1,9 +1,6 @@
-#!/usr/bin/guile
+#!/usr/bin/env guile
 !#
-
-; searchl :: search-string ...
-; search for strings inside files under the current working directory and list matching lines
-(import (sph) (sph process) (sph process create))
+(use-modules (sph) (sph process) (sph process create))
 
 (define (searchl-cli to-search . to-filter) (execute "clear")
   (process-chain-finish-success?

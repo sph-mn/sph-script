@@ -1,12 +1,12 @@
 #!/usr/bin/guile
 !#
 
-; depends on ffmpeg, guile, guile-json and sph-lib.
-
-(import (sph filesystem) (sph alist)
+(use-modules (srfi srfi-2) (sph filesystem) (sph alist)
   (sph hashtable) (sph io)
   (sph list) (sph number)
   (sph other) (sph process) (sph string) (sph vector) (sph) (sph lang indent-syntax) (sph cli) (json))
+
+(define description "depends on ffmpeg, guile, guile-json and sph-lib")
 
 (define (guile-hash-table->alist a)
   (hash-map->list
@@ -19,7 +19,7 @@
           (else value))))
     a))
 
-(define-as codec-name->extension-ht ht-create "vorbis" "ogg")
+(define codec-name->extension-ht (ht-create "vorbis" "ogg"))
 (define (codec-name->extension a) (ht-ref codec-name->extension-ht a a))
 
 (define (ffprobe-audio-codec path)

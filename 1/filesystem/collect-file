@@ -4,7 +4,7 @@
 ; depends on guile and sph-lib.
 ; see: collect-file --help
 ;
-(import (sph) (sph alist) (sph time string) (sph time) (sph string) (sph filesystem) (sph cli))
+(use-modules (srfi srfi-2) (sph) (sph alist) (sph time string) (sph time) (sph string) (sph filesystem) (sph cli))
 
 (define destination
   (string-append (getenv "HOME") "/temp/collections/collected." (utc->ymd (utc-current)) "/"))
