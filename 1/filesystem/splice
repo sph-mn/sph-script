@@ -1,14 +1,13 @@
 #!/usr/bin/guile
 !#
 
-(import (sph filesystem) (sph hashtable)
+(use-modules (sph filesystem) (sph hashtable)
   (sph io) (sph list)
   (sph number) (sph other)
   (sph process) (sph string)
   (sph alist) (sph vector)
-  (sph) (sph cli) (only (guile) dirname rmdir string-suffix?) (sph stream)
-  ;(srfi srfi-41)
-  )
+  (sph) (sph cli) (sph stream)
+  (srfi srfi-41))
 
 ; empty directories
 ; child files with the same name as parent

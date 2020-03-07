@@ -1,11 +1,11 @@
 #!/usr/bin/guile
 !#
 
-; split at column-splitting character, default being spaces, and select a part by index.
-; indices starting from one. ignores the tab character.
-; depends on guile, guile-lib and sph-lib.
-;
-(import (string transform) (sph) (sph alist) (sph io) (sph stream) (ice-9 rdelim) (sph cli))
+"split at column-splitting character, default being spaces, and select a part by index.
+ indices starting from one. ignores the tab character.
+ depends on guile, guile-lib and sph-lib."
+
+(import (string transform) (sph) (sph alist) (sph io) (sph stream) (srfi srfi-41) (ice-9 rdelim) (sph cli))
 (define default-delimiter #\space)
 
 (define (tabular-select column-delimiter indices text-port)

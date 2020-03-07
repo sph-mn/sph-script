@@ -3,7 +3,7 @@
 
 ; search :: search-string ...
 ; search for strings inside files under the current working directory and list paths of matching files
-(import (sph) (sph process) (sph process create))
+(use-modules (srfi srfi-1) (sph) (sph process) (sph process create))
 
 (define (search-cli to-search . to-filter) (execute "clear")
   (let*
