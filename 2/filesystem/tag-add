@@ -1,7 +1,10 @@
 #!/usr/bin/guile
 !#
 
-(import (sph filesystem) (sph hashtable) (sph io) (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph filesystem tag) (sph alist) (sph cli))
+(use-modules (sph filesystem) (sph hashtable)
+  (sph io) (sph list)
+  (sph number) (sph other)
+  (sph process) (sph string) (sph vector) (sph) (sph filesystem tag) (sph alist) (sph cli))
 
 (define (tag-add-cli)
   (let (arguments ((cli-create #:options (list-q ((tags path ...) #:required? #t)))))

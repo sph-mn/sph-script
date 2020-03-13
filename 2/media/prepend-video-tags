@@ -1,7 +1,7 @@
 #!/usr/bin/env guile
 !#
 
-(import (sph string) (sph) (sph cli) (sph alist) (sph hashtable) (sph list) (sph media-info))
+(use-modules (srfi srfi-1) (sph string) (sph) (sph cli) (sph alist) (sph hashtable) (sph list) (sph media-info))
 
 (define prepend-video-quality-tags-description
   "prepend strings to a filename that give information about video content like quality or duration.
