@@ -29,7 +29,8 @@
       (tags
         (compact
           (list (and height (string-append (number->string height) "p"))
-            (and duration (string-append (number->string (round (/ duration 1000))) "ks")))))
+            ;(and duration (string-append (number->string (round (/ duration 1000))) "ks"))
+            )))
       (string-join tags "." (q suffix)))))
 
 (define (prepend-video-tags paths dry-run)

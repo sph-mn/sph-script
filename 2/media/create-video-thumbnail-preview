@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# creates images with thumbnails as a preview of video contents.
+# it generates an image for each given file path or all files in given directory paths.
+# depends on ffmpeg and https://gitlab.com/movie_thumbnailer/mtn
+# usage: output_directory video_path ...
+
+rows=4
+columns=4
+gap=0
+width=900
+edge_detection_strength=8
+skip=0
+background=ffffff
+font=/usr/share/fonts/TTF/DejaVuSansMono.ttf
+no_timestamps=-t
+full_name=-X
+
+mkdir -p $1 &&
+mtn -q -g $gap -c $columns -r $rows -w $width \
+  -D $edge_detection_strength -E $skip -i -k $background \
+  -f $font $full_name $no_timestamps -O "$@"

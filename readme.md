@@ -65,7 +65,6 @@
 │   ├── sxml2xml
 │   └── xml2sxml
 ├── filesystem
-│   ├── clean-filenames
 │   ├── clone-disk
 │   ├── create-filelist
 │   ├── delete-duplicate-files
@@ -95,6 +94,7 @@
 ├── media
 │   ├── audio-file-loudness
 │   ├── create-video-from-png-images
+│   ├── create-video-thumbnail-preview
 │   ├── get-audio-disc-files
 │   ├── media-info-json
 │   ├── media-info-video
@@ -645,9 +645,6 @@ create a freemind .mm mind-map file from an indented tree
 * xml2sxml
 
 ## filesystem
-### clean-filenames
-an example script for removing/replacing strings in all filenames of the current directory and sub-directories
-
 ### delete-duplicate-files
 delete duplicate files in the current directory and sub-directories.
 depends on "duff".
@@ -767,6 +764,13 @@ to remove the tags you can use remove-video-tags.
 * create-video-from-png-images :: path-directory [skip-resize?]
 * creates a video from a directory filled with png files
 * if skip-resize? is "true", then it is assumed that the resize-pass has already run and resized pictures are available in the $source/edit directory. this speeds up the compilation process significantly
+
+### create-video-thumbnail-preview
+* create-video-from-png-images :: output-directory video-path ...
+
+creates images with thumbnails as a preview of video contents.
+generates an image for each given file path or all files in given directory paths.
+depends on ffmpeg and https://gitlab.com/movie_thumbnailer/mtn
 
 ### get-audio-disc-files
 read files from an audio disc and save them in the flac format.
