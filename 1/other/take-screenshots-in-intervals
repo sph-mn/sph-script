@@ -21,16 +21,17 @@ fi
 echo "destination: $destination_root, interval: ${interval}s"
 
 day_seconds() {
-  now=$(date '+%s')
-  midnight=$(date -d 'today 00:00:00' '+%s')
+  now=$(date --utc '+%s')
+  midnight=$(date --utc -d 'today 00:00:00' '+%s')
   echo $((now - midnight))
 }
 
 while true; do
   # the date might change while this loop is running
-  date=$(date +%Y-%m-%d.%j)
+  date=$(date --utc +%Y-%m-%d.%j)
   destination="$destination_root/$date"
   mkdir -p $destination
+  echo scrot --focused --quality 60 "$destination/$(day_seconds).jpg"
   scrot --focused --quality 60 "$destination/$(day_seconds).jpg"
   sleep $interval
 done
