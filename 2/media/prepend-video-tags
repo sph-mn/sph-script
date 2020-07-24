@@ -42,5 +42,5 @@
             (string-append (dirname path) "/" tags-string (basename path))))))
     paths))
 
-(let (cli (cli-create #:options (list-q (dry-run) ((paths ...)))))
+(let (cli (cli-create #:options (q ((dry-run) ((paths ...))))))
   (alist-bind (cli) (paths dry-run) (prepend-video-tags paths dry-run)))

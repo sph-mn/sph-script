@@ -17,7 +17,7 @@
 (let*
   ( (cli
       (cli-create #:options
-        (list-q ((path-directory path-file ...) #:value-required? #t #:required? #t)) #:description
+        (q (((path-directory path-file ...) #:value-required? #t #:required? #t))) #:description
         "ensures that a directory exists and moves all given files into it"))
     (arguments (cli)))
   (if (null? arguments) (cli (list "--help"))

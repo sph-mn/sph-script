@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph filesystem) (sph hashtable)
+(use-modules (sph filesystem) (sph hashtable)
   (sph io) (sph list)
   (sph number) (sph alist)
   (sph other) (sph process)
@@ -32,13 +32,13 @@
   (let
     (arguments
       ( (cli-create #:options
-          (list-q
-            (replace #:names #\r
-              #:description
-              "no ks values in brackets, times are replaced. default for string arguments")
-            (no-replace #:names #\n
-              #:description "opposite of \"--replace\". default when reading from standard input")
-            ((string-argument ...)))
+          (q
+            ( (replace #:names #\r
+                #:description
+                "no ks values in brackets, times are replaced. default for string arguments")
+              (no-replace #:names #\n
+                #:description "opposite of \"--replace\". default when reading from standard input")
+              ((string-argument ...))))
           #:description (string-join hms-description "\n  "))))
     (alist-bind arguments (replace no-replace string-argument)
       (if string-argument

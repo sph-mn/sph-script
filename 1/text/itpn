@@ -1,11 +1,12 @@
 #!/usr/bin/guile
 !#
 
-(import (ice-9 ftw) (sph cli)
+(use-modules (ice-9 ftw) (sph cli)
   (sph list) (sph hashtable)
+  (srfi srfi-1)
   (sph) (sph alist)
   (sph string) (sph io)
-  (rnrs sorting) (only (srfi srfi-1) find partition)
+  (rnrs sorting)
   (sph other) (sph list other) (sph lang itpn) (ice-9 match) (sph lang indent-syntax))
 
 (define program-description "indent packet notation filter and transformer")
@@ -13,30 +14,30 @@
 (define command-line-interface
   (cli-create #:help program-description
     #:options
-    (list-q ((file-paths ...))
-      (search #:names #\s
-        #:value-required? #t
-        #:description
-        "search in the prefix part of itpn packets. conditions like word,word.~word.word are supported, where comma is \"or\", period is \"and\" and tilde is \"not\"")
-      (search-suffix #:value-required? #t) (search-all #:names #\a #:value-required? #t)
-      (sort-tags)
-      (replace-tag #:value-required? #t
-        #:description "value format: \"tags-to-replace replacements\" \"tag[.tag] tag[.tag]\"")
-      (replace-tags-from-file #:value-required? #t
-        #:description
-        "takes a path to a file that contains lines in the format \"tag replacement ...\"")
-      (add-file-name-tags)
-      (split #:description
-        "split into matches and non-matches. output-file-1 receives matches, output-file-2 non-matches, and if any of those is not specified output is written to standard output")
-      (output-to-source #:description
-        "overwrite source files when output would otherwise be written to standard-output")
-      (output-file-1 #:value-required? #t #:description "path for a file to write matches to")
-      (output-file-2 #:value-required? #t #:description "path for a file to write non-matches to")
-      (format #:value-required? #t
-        #:description
-        "prefix/suffix/filename. comma-separated names of block parts to display. default: prefix,suffix")
-      (exclude #:names #\e) (syntax-check #:names #\c)
-      (list-unique-tags) (sort-packets) (deduplicate) (count))))
+    (q (((file-paths ...))
+        (search #:names #\s
+          #:value-required? #t
+          #:description
+          "search in the prefix part of itpn packets. conditions like word,word.~word.word are supported, where comma is \"or\", period is \"and\" and tilde is \"not\"")
+        (search-suffix #:value-required? #t) (search-all #:names #\a #:value-required? #t)
+        (sort-tags)
+        (replace-tag #:value-required? #t
+          #:description "value format: \"tags-to-replace replacements\" \"tag[.tag] tag[.tag]\"")
+        (replace-tags-from-file #:value-required? #t
+          #:description
+          "takes a path to a file that contains lines in the format \"tag replacement ...\"")
+        (add-file-name-tags)
+        (split #:description
+          "split into matches and non-matches. output-file-1 receives matches, output-file-2 non-matches, and if any of those is not specified output is written to standard output")
+        (output-to-source #:description
+          "overwrite source files when output would otherwise be written to standard-output")
+        (output-file-1 #:value-required? #t #:description "path for a file to write matches to")
+        (output-file-2 #:value-required? #t #:description "path for a file to write non-matches to")
+        (format #:value-required? #t
+          #:description
+          "prefix/suffix/filename. comma-separated names of block parts to display. default: prefix,suffix")
+        (exclude #:names #\e) (syntax-check #:names #\c)
+        (list-unique-tags) (sort-packets) (deduplicate) (count)))))
 
 (define (create-indent size) (list->string (make-list (* size 2) #\space)))
 
@@ -185,7 +186,7 @@
       ->
       (and (or (and \"a\" \"b\" \"c\") (and \"d\" (not \"f\" \"g\")) \"h\"))"
       (pair (q and)
-        (parse-words (list a) (list-q or and not) (list-q #\, #\. #\~) (list-q #f #f #t))))))
+        (parse-words (list a) (q (or and not)) (q (#\, #\. #\~)) (q (#f #f #t)))))))
 
 (define (get-all-itpn-from-standard-input) (read-indent-tree->prefix-tree (current-input-port)))
 

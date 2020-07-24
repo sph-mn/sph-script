@@ -23,8 +23,8 @@
   "string integer -> (string ...)
    call sox using the stat effect and return the result as a list of string lines which had been written on standard error (default behaviour of sox stat)"
   (execute-with-pipes (l (out) (port->lines out)) sox-path
-    (list-qq (unquote audio-file-path) "--null"
-      (unquote-splicing (if channel (list "remix" (number->string channel)) (list))) "stat")
+    (qq ((unquote audio-file-path) "--null"
+        (unquote-splicing (if channel (list "remix" (number->string channel)) (list))) "stat"))
     #f #f #t))
 
 (define* (sox-stat->alist audio-file-path #:optional channel)
@@ -56,7 +56,7 @@
 
 (define audio-loudness-cli
   (let
-    ((cli (cli-create #:description cli-description #:options (list-q ((audio-file-path ...))))))
+    ((cli (cli-create #:description cli-description #:options (q (((audio-file-path ...)))))))
     (l () "parse program arguments and run the requested features"
       (if (not sox-path) (begin (display-line "error: \"sox\" not found in $PATH") (exit 1)))
       (let (options (cli))

@@ -1,9 +1,10 @@
 #!/usr/bin/guile
 !#
 
-; moves files into directories by using regular expressions on mime-types
-; removes unwanted characters from file names
-; deletes empty directories
+(define description
+  "moves files into directories by using regular expressions on mime-types
+   removes unwanted characters from file names
+   deletes empty directories")
 
 (import (guile) (ice-9 regex)
   (sph alist) (except (srfi srfi-1) map)
@@ -23,27 +24,27 @@
 (define-syntax-rule (filename-extension-case path cond ...)
   (let (t (filename-extension path)) (string-case (or t "") cond ...)))
 
-(define-as ignored-filenames list-q
-  "personal" "download" "collections" "backup" "screenshots" "nosync" "p")
+(define ignored-filenames (list
+    "personal" "download" "collections" "backup" "screenshots" "nosync" "p"))
 
-(define-as mime-type->path list-qq
-  ; (mime-type-regexp target-directory [relative-target-directory/relative-target-directory-proc])
-  ; (string/(string ...) string [string/procedure])
-  ("image/.*" "picture")
-  ( ("text/.*" "application/xml") "text"
-    (unquote
-      (l (path)
-        (filename-extension-case path ("scm" "programming/scheme")
-          (("sh" "rb" "js" "sql" "html" "css" "less" "scss" "c" "sc") "programming") ("text" "plain")
-          (else "other")))))
-  ("video/.*" "video") ("audio/.*" "audio")
-  ("application/pdf" "documents" "pdf")
-  ( ("application/postscript" "application/vnd.oasis.opendocument" "application/vnd.open.*")
-    "documents")
-  ( ("application/x-gzip" "application/x-rar" "application/x-xz"
-      "application/x-7z-compressed" "application/zip")
-    "other" "compressed")
-  (".*" "other"))
+(define mime-type->path (qq (
+      ; (mime-type-regexp target-directory [relative-target-directory/relative-target-directory-proc])
+      ; (string/(string ...) string [string/procedure])
+      ("image/.*" "picture")
+      ( ("text/.*" "application/xml") "text"
+        (unquote
+          (l (path)
+            (filename-extension-case path ("scm" "programming/scheme")
+              (("sh" "rb" "js" "sql" "html" "css" "less" "scss" "c" "sc") "programming") ("text" "plain")
+              (else "other")))))
+      ("video/.*" "video") ("audio/.*" "audio")
+      ("application/pdf" "documents" "pdf")
+      ( ("application/postscript" "application/vnd.oasis.opendocument" "application/vnd.open.*")
+        "documents")
+      ( ("application/x-gzip" "application/x-rar" "application/x-xz"
+          "application/x-7z-compressed" "application/zip")
+        "other" "compressed")
+      (".*" "other"))))
 
 (define default-file-rename-config
   (map (l (a) (pair (make-regexp (first a)) (tail a)))
@@ -84,7 +85,7 @@
     (l (name)
       (let* ((source-path name) (target-dir (source-path->target-path source-path config)))
         (if target-dir
-          (let (target-path (make-path-unique (path-append target-dir (default-file-rename name))))
+          (let (target-path (get-unique-path (path-append target-dir (default-file-rename name))))
             (guard (obj (#t (string-append "ignored file \"" name "\"")))
               (ensure-directory-structure target-dir) (rename-file source-path target-path))))))
     (scandir path))
@@ -93,7 +94,7 @@
 (define (tidyfiles-cli)
   (let
     (options
-      ((cli-create #:description "move files into directories by mime type" (list-q (path)))))
+      ((cli-create #:description "move files into directories by mime type" (q ((path))))))
     (tidyfiles (alist-ref-q options path) (prepare-mime-type->path mime-type->path))))
 
 (tidyfiles-cli)

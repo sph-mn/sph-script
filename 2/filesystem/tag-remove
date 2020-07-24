@@ -7,7 +7,7 @@
   (sph process) (sph string) (sph vector) (sph) (sph filesystem tag) (sph cli))
 
 (define (tag-remove-cli)
-  (let (arguments ((cli-create #:options (list-q ((tags path ...) #:required? #t)))))
+  (let (arguments ((cli-create #:options (q (((tags path ...) #:required? #t))))))
     (alist-bind arguments (tags path) (tag-remove (string-split tags #\.) path))))
 
 (tag-remove-cli)

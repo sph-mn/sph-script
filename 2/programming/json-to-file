@@ -6,7 +6,7 @@
 (let
   (arguments
     ( (cli-create #:options
-        (list-q ((output input) #:required? #t) (json-options #:value-required? #t) (dry-run)))))
+        (q (((output input) #:required? #t) (json-options #:value-required? #t) (dry-run))))))
   (alist-bind arguments (output input json-options dry-run)
     ( (if dry-run display-line shell-eval)
       (string-append "json " (if json-options (string-append json-options " ") "")

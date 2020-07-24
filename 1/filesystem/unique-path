@@ -5,4 +5,4 @@
 ; depends on guile and sph-lib.
 ;
 (import (sph) (sph filesystem))
-(display (apply make-path-unique (tail (program-arguments))))
+(display (apply get-unique-path (tail (program-arguments))))

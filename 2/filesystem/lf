@@ -2,7 +2,7 @@
 !#
 
 (import (term ansi-color) (sph filesystem) (sph hashtable) (sph io) (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (ice-9 ftw) (sph cli))
-(define prog-arg ((cli-create #:option (list-q (all #:names #\a) (clear #:cames #\c)))))
+(define prog-arg ((cli-create #:option (q ((all #:names #\a) (clear #:cames #\c))))))
 (define colors (list->vector (map any->list (q (none WHITE BLUE MAGENTA GREEN)))))
 (define color-count (vector-length colors))
 (define color-size-min (- (current-time) (* 86400 15)))

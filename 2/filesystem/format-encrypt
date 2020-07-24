@@ -40,7 +40,7 @@
               ("maintainer and copyright" "sph@posteo.eu | http://sph.mn") ("license" "gpl3+")))))
       (options
         ( (cli-create #:about about
-            #:description (string-join description "\n  ") #:options (list-q ((path)) (run))))))
+            #:description (string-join description "\n  ") #:options (q ( ((path)) (run)))))))
     (format-encrypt (alist-ref-q options path) (alist-ref-q options run))))
 
 (run)

@@ -15,7 +15,7 @@
   (let*
     ( (d "scaled")
       (cli
-        (cli-create #:options (list-q ((width path ...)))
+        (cli-create #:options (q (((width path ...))))
           #:description
           (string-append "scales images given by paths using graphicsmagick. a new directory "
             (string-quote d) " is created in the current directory where result images are put")))

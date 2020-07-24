@@ -36,8 +36,8 @@
     ( (cli-create #:description program-description
         #:about (prefix-tree->indent-tree about)
         #:options
-        (list-q (path #:names #\p #:value-required? #t) (user #:names #\u #:value-required? #t)
-          (dry-run #:names #\d) ((hostname sshfs-argument ...))))))
+        (q ( (path #:names #\p #:value-required? #t) (user #:names #\u #:value-required? #t)
+            (dry-run #:names #\d) ((hostname sshfs-argument ...)))))))
   (apply mount-sshfs-home (alist-ref options (q hostname))
     (alist-ref options (q path)) (alist-ref options (q user))
     (alist-ref options (q dry-run)) (or (alist-ref options (q sshfs-argument)) (list))))

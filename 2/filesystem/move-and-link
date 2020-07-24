@@ -8,8 +8,8 @@
 
 (define command-line-interface
   (cli-create #:options
-    (list-q ((target-directory source-path ...) #:required? #t)
-      (keep-directory-structure? #:names #\k))
+    (q (((target-directory source-path ...) #:required? #t)
+        (keep-directory-structure? #:names #\k)))
     #:description "move files and replace the source paths with symlinks to the move destination"))
 
 (define (move-and-link target-path source-path)

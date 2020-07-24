@@ -55,9 +55,9 @@
         ( (cli-create #:description description
             #:about (prefix-tree->indent-tree about)
             #:options
-            (list-q
-              (format #:value-required? #t #:description "filename extension of the output format")
-              ((source-path ...))))))
+            (q (
+                (format #:value-required? #t #:description "filename extension of the output format")
+                ((source-path ...)))))))
       (format (alist-ref options (q format))))
     (map (l (source) (ffmpeg-extract-audio source format))
       (alist-ref options (q source-path) (list)))))

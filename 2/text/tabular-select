@@ -37,7 +37,7 @@
   (let*
     ( (arguments
         ( (cli-create #:usage "tabular-select [options] index ..."
-            #:options (list-q (delimiter #:names (#\d) #:value-required? #t) ((index ...))))))
+            #:options (q ((delimiter #:names (#\d) #:value-required? #t) ((index ...)))))))
       (indices (alist-ref arguments (q index))) (delimiter (alist-ref arguments (q delimiter))))
     (if (not (null? indices))
       (tabular-select

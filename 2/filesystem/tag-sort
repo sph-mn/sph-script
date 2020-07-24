@@ -7,7 +7,7 @@
   (sph other) (sph process) (sph string) (sph vector) (sph) (sph filesystem tag) (sph cli))
 
 (define (tag-sort-cli)
-  (let (arguments ((cli-create #:options (list-q ((path ...) #:required? #t)))))
+  (let (arguments ((cli-create #:options (q (((path ...) #:required? #t))))))
     (alist-bind arguments (path) (tag-sort path))))
 
 (tag-sort-cli)

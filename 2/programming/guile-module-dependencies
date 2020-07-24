@@ -75,9 +75,9 @@
     (arguments
       ( (cli-create #:description guile-module-dependencies-description
           #:options
-          (list-q ((name)) (format #:value-required? #t)
-            (only #:value-required? #t) (exclude #:value-required? #t)
-            (max-depth #:value-required? #t) (strip-prefix #:value-required? #t) (remove-brackets)))))
+          (q (((name)) (format #:value-required? #t)
+              (only #:value-required? #t) (exclude #:value-required? #t)
+              (max-depth #:value-required? #t) (strip-prefix #:value-required? #t) (remove-brackets))))))
     (alist-bind arguments (name format only exclude strip-prefix remove-brackets max-depth)
       (let
         ( (names (list (string->datum name)))

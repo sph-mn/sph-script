@@ -59,7 +59,7 @@
 
 (define (run)
   (let*
-    ( (dependencies (list-q "sph-lib" "mount" "mkdir" "mountpoint" "[sudo]"))
+    ( (dependencies (list "sph-lib" "mount" "mkdir" "mountpoint" "[sudo]"))
       (description
         "mount filesystems to $HOME/mnt/{first-part-of-source-path/second-last-part.last-part}")
       (about
@@ -74,9 +74,9 @@
             #:description description
             #:about (prefix-tree->indent-tree about)
             #:options
-            (list-q (user #:names #\u #:value-required? #t) (dry-run #:names #\d)
-              (sudo #:names #\s) (mount-arguments #:names #\o #:value-required? #t)
-              ((source-path ...)))))))
+            (q ( (user #:names #\u #:value-required? #t) (dry-run #:names #\d)
+                (sudo #:names #\s) (mount-arguments #:names #\o #:value-required? #t)
+                ((source-path ...))))))))
     (apply mount-home (alist-ref options (q sudo))
       (alist-ref options (q dry-run)) (alist-ref options (q mount-arguments))
       (alist-ref options (q source-path) (list)))

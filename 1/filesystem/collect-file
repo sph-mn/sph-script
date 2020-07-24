@@ -18,7 +18,7 @@
       (cli-create #:description
         (string-append "symlinks or copies files into a automatically chosen target directory"
           "\nthe current destination is " destination)
-        (list-q (path ...))))
+        (q ((path ...)))))
     (arguments (cli)))
   (ensure-directory-structure destination)
   (and-let* ((paths (alist-ref-q arguments path))) (each collect-path paths)))

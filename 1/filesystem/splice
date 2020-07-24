@@ -36,7 +36,7 @@
             (l (r e)
               (let
                 ( (cur-path (string-append path e))
-                  (target-path (make-path-unique (path-append path-dirname e))))
+                  (target-path (get-unique-path (path-append path-dirname e))))
                 (if dry-run (simple-format #t "rename-file ~A ~A\n" cur-path target-path)
                   (rename-file cur-path target-path))
                 (if (string-equal? e path-basename) target-path r)))
@@ -51,6 +51,6 @@
     (if path (each (l (e) (splice-one e dry-run)) (map path->full-path path)))))
 
 (let*
-  ( (cli (cli-create #:about program-description #:options (list-q (dry-run) ((path ...)))))
+  ( (cli (cli-create #:about program-description #:options (q ((dry-run) ((path ...))))))
     (options (cli)))
   (if (null? options) (cli (list "--help")) (splice options)))
