@@ -1,42 +1,30 @@
 #!/usr/bin/guile
 !#
 
-(use-modules (srfi srfi-2) (sph filesystem) (sph alist)
-  (sph hashtable) (sph io)
-  (sph list) (sph number)
-  (sph other) (sph process) (sph string) (sph vector) (sph) (sph lang indent-syntax) (sph cli) (json))
+(use-modules (srfi srfi-2) (sph filesystem)
+  (sph alist) (sph io)
+  (sph list) (ice-9 pretty-print)
+  (sph number) (sph other)
+  (sph process) (sph string) (sph vector) (sph) (sph lang indent-syntax) (sph cli) (json))
 
 (define description "depends on ffmpeg, guile, guile-json and sph-lib")
 
-(define (guile-hash-table->alist a)
-  (hash-map->list
-    (l (key value)
-      (pair key
-        (cond
-          ((hash-table? value) (guile-hash-table->alist value))
-          ((list? value) (map guile-hash-table->alist value))
-          ((vector? value) (vector-map guile-hash-table->alist value))
-          (else value))))
-    a))
-
-(define codec-name->extension-ht (ht-create "vorbis" "ogg"))
-(define (codec-name->extension a) (ht-ref codec-name->extension-ht a a))
-
 (define (ffprobe-audio-codec path)
-  (false-if-exception
-    (let*
-      ( (json
-          (json-string->scm
-            (execute->string "ffprobe" "-v"
-              "quiet" "-print_format" "json" "-show_streams" "-select_streams" "a" path)))
-        (codec-names
-          (map (l (e) (alist-ref e "codec_name"))
-            (alist-ref (guile-hash-table->alist json) "streams"))))
-      (if (null? codec-names) codec-names (first codec-names)))))
+  (catch #t
+    (nullary
+      (let*
+        ( (json
+            (json-string->scm
+              (execute->string "ffprobe" "-v"
+                "quiet" "-print_format" "json" "-show_streams" "-select_streams" "a" path)))
+          (codec-names
+            (map (l (a) (alist-ref a "codec_name")) (vector->list (alist-ref json "streams")))))
+        (if (null? codec-names) codec-names (first codec-names))))
+    (l exc (pretty-print exc) #f)))
 
 (define (ffmpeg-extract-audio path-source format)
   (and-let*
-    ( (audio-codec (or format (codec-name->extension (ffprobe-audio-codec path-source))))
+    ( (audio-codec (or format (ffprobe-audio-codec path-source)))
       (path-destination (string-append path-source "." audio-codec)))
     (apply execute "ffmpeg"
       "-i" path-source "-map" "0:a" path-destination (if format (list) (list "-c" "copy")))))
@@ -55,8 +43,9 @@
         ( (cli-create #:description description
             #:about (prefix-tree->indent-tree about)
             #:options
-            (q (
-                (format #:value-required? #t #:description "filename extension of the output format")
+            (q
+              ( (format #:value-required? #t
+                  #:description "filename extension of the output format")
                 ((source-path ...)))))))
       (format (alist-ref options (q format))))
     (map (l (source) (ffmpeg-extract-audio source format))
