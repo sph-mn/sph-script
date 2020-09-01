@@ -26,7 +26,7 @@ fi
 
 echo "start transaction;"
 echo "create database $database charset=utf8mb4;"
-echo "create user '$username'@'%' identified by '$password';"
-echo "grant all privileges on $database.* to '$username'@'%';"
+echo "create user '$username'@'localhost' identified by '$password';"
+echo "grant all privileges on $database.* to '$username'@'localhost';"
 echo "flush privileges;"
 echo "commit;"
