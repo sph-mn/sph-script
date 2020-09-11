@@ -1,0 +1,28 @@
+#!/usr/bin/guile
+!#
+
+(use-modules (sph) ((sph alist) #:select (alist-ref-q))
+  (sph cli) (sph documentation) (sph lang scheme))
+
+(let*
+  ( (arguments
+      ( (cli-create #:about "depends on guile and sph-lib"
+          #:description
+          (string-append
+            "display documentation (bindings, arguments and docstrings) extracted from guile modules.\n"
+            "module name is with brackets, for example \"(rnrs hashtables)\".\n"
+            "format is either indent, markdown, signature or list. the default is indent")
+          #:options (quote (((module-name)) (format #:names #\f #:value-required? #t))))))
+    (module-name (string->datum (alist-ref-q arguments module-name)))
+    (format (alist-ref-q arguments format))
+    (format (if format (string->symbol format) (quote indent)))
+    (output-format
+      (case format
+        ((indent) output-format-indent)
+        ((markdown) output-format-markdown)
+        ((list) output-format-list)
+        ((signature) output-format-signature)
+        (else #f))))
+  (display
+    (if output-format (format-module-documentation module-name output-format)
+      "error: no such format\n")))
