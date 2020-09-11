@@ -1,2 +1,0 @@
-#!/bin/sh
-guile-module-dependencies --only="(sph " --strip-prefix="sph" --format=gv "$@" --remove-brackets

@@ -1,14 +1,16 @@
 #!/usr/bin/guile
 !#
 
-(import (sph filesystem) (sph hashtable)
-  (sph io) (sph list)
-  (sph number) (sph other)
-  (sph process) (sph string)
-  (sph vector) (sph)
+(use-modules
+  (sph filesystem)
+  (sph hashtable)
+  (sph)
   (sph alist) (sph cli)
-  (sph documentation) (sph documentation display-format-itpn)
-  (sph documentation display-format-plist) (sph documentation display-format-signature))
+  (sph documentation)
+  (sph documentation display-format-itpn)
+  (sph documentation display-format-plist)
+  (sph documentation display-format-signature)
+  )
 
 (let*
   ( (arguments
@@ -19,7 +21,9 @@
     (module-names
       (map (l (a) (map string->symbol (string-split a #\space)))
         (alist-ref-q arguments module-name)))
+    (format (alist-ref-q arguments format))
     (format
-      (if-pass (alist-ref-q arguments format) (l (format) (string->symbol format))
-        (quote signature))))
+      (if format (string->symbol format)
+          (quote signature))
+ ))
   (display (format-module-documentation module-names format)))

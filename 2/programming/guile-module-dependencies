@@ -1,15 +1,34 @@
 #!/usr/bin/guile
 !#
 
-(import (sph filesystem) (sph hashtable) (sph io) (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (ice-9 pretty-print)
-  (sph module) (sph cli) (ice-9 match) (sph tree) (sph lang indent-syntax))
+(use-modules (srfi srfi-1) (rnrs sorting)
+  (sph) (sph cli)
+  (sph module) ((sph alist) #:select (alist-bind))
+  ((sph lang scheme) #:select (string->datum)) ((sph list) #:select (contains? list-prefix?))
+  ((sph string) #:select (string-quote any->string))
+  ((sph tree) #:select (tree-map-leafs prefix-tree->relations))
+  ((sph lang indent-syntax) #:select (prefix-tree->indent-tree)))
 
 (define guile-module-dependencies-description
-  "displays all dependencies of a module in various formats. depends on sph-lib")
+  "displays a module dependency tree of a module.
+   module name is given with brackets, for example \"(srfi srfi-1)\"")
+
+(define (string-trim-round-brackets a) (substring a 1 (- (string-length a) 1)))
+
+(define (pairs->gv-digraph a) "(pair ...) -> string"
+  (string-append "digraph {"
+    (string-join
+      (list-sort string<?
+        (map (l (a) (string-append (string-quote (first a)) " -> " (string-quote (tail a)) ";")) a))
+      "\n  " (q prefix))
+    "\n}"))
+
+(define (prefix-tree->gv-digraph a) "list -> string"
+  (pairs->gv-digraph (delete-duplicates (prefix-tree->relations a))))
 
 (define (module-dependencies-tree module match? max-depth)
   "module procedure:{list:module-name -> boolean} integer -> list
-   get a list of module dependencies and nested dependency dependencies"
+   get a list of module dependencies and dependency dependencies"
   (let loop ((module module) (parents (list)) (depth 0))
     (pair module
       (filter-map
@@ -20,75 +39,61 @@
                 (let (b (loop a (pair a parents) (+ 1 depth))) (if (= 1 (length b)) (first b) b))))))
         (module-dependencies module)))))
 
-(define (pairs->gv-digraph a) "(pair ...) -> string"
-  (string-append "digraph {"
-    (string-join
-      (list-sort string<?
-        (map (l (a) (string-append (string-quote (first a)) " -> " (string-quote (tail a)) ";")) a))
-      "\n  " (q prefix))
-    "\n}"))
-
-(define (prefix-tree->gv-digraph a) (pairs->gv-digraph (prefix-tree->relations a)))
-(define (string-trim-round-brackets a) (substring a 1 (- (string-length a) 1)))
-
-(define (prefix-tree->gv-digraph* a) "list -> string"
-  (pairs->gv-digraph (delete-duplicates (prefix-tree->relations a))))
+(define (module-dependencies->strings strip-prefix no-brackets deps)
+  (tree-map-leafs
+    (l (a)
+      (let*
+        ( (a (module-name a))
+          (a
+            (if strip-prefix
+              (or
+                (any (l (b) (and (list-prefix? a b) (> (length a) 1) (drop a (length b))))
+                  strip-prefix)
+                a)
+              a))
+          (a (any->string a)) (a (if no-brackets (string-trim-round-brackets a) a)))
+        a))
+    deps))
 
 (define
-  (guile-module-dependencies names format only exclude strip-prefix remove-brackets max-depth)
-  "((symbol ...) ...) symbol false/(string:name-prefix ...) false/(string:name-prefix ...) false/string boolean integer -> unspecified"
+  (display-module-dependencies name format include exclude strip-prefix no-brackets max-depth)
+  "(symbol ...) symbol false/(symbol:name-prefix ...) false/(symbol:name-prefix ...) false/(symbol:name-prefix ...) boolean integer -> unspecified"
   (let
-    (match?
-      (l (a) "(symbol ...) -> boolean"
-        (let (a (any->string a))
-          (and (or (not only) (any (l (b) (string-prefix? b a)) only))
-            (or (not exclude) (not (any (l (b) (string-prefix? b a)) exclude)))))))
-    (each
-      (l (a)
-        (display-line
-          (let*
-            ( (deps (module-dependencies-tree (resolve-module a) match? max-depth))
-              (deps
-                (tree-map-leafs
-                  (l (a)
-                    (let*
-                      ( (a (module-name a))
-                        (a
-                          (if strip-prefix
-                            (or
-                              (any
-                                (l (b)
-                                  (and (apply list-prefix? a b) (> (length a) 1)
-                                    (drop a (length b))))
-                                strip-prefix)
-                              a)
-                            a))
-                        (a (any->string a)) (a (if remove-brackets (string-trim-round-brackets a) a)))
-                      a))
-                  deps)))
-            (case format ((indent) (prefix-tree->indent-tree (list deps)))
-              ((gv) (prefix-tree->gv-digraph* (list deps)))))))
-      names)))
+    ( (match?
+        (l (a) "(symbol ...) -> boolean. filter modules to include"
+          (and (or (not include) (any (l (b) (list-prefix? a b)) include))
+            (or (not exclude) (not (any (l (b) (list-prefix? a b)) exclude))))))
+      (display-dependencies
+        (l (deps)
+          (display-line
+            (case format
+              ((indent) (prefix-tree->indent-tree (tail deps)))
+              ((graphviz) (prefix-tree->gv-digraph (list deps))))))))
+    (display-dependencies
+      (module-dependencies->strings strip-prefix no-brackets
+        (module-dependencies-tree (resolve-module name) match? max-depth)))))
 
-(define (guile-module-dependencies-cli)
-  (let
-    (arguments
-      ( (cli-create #:description guile-module-dependencies-description
-          #:options
-          (q (((name)) (format #:value-required? #t)
-              (only #:value-required? #t) (exclude #:value-required? #t)
-              (max-depth #:value-required? #t) (strip-prefix #:value-required? #t) (remove-brackets))))))
-    (alist-bind arguments (name format only exclude strip-prefix remove-brackets max-depth)
+(define (module-list-argument a) "string -> ((symbol ...) ...)"
+  (and a (map string->datum (string-split a #\,))))
+
+(define cli
+  (cli-create #:description guile-module-dependencies-description
+    #:options
+    (q
+      ( ( (name)) (format #:value-required? #t #:description "indent or graphviz (dot language)")
+        (include #:value-required? #t #:description "prefixes to include, \"(a b),(c)\"")
+        (exclude #:value-required? #t #:description "prefixes to exclude")
+        (max-depth #:value-required? #t) (strip-prefix #:value-required? #t) (no-brackets)))))
+
+(define (guile-module-dependencies options)
+  (alist-bind options (name format include exclude strip-prefix no-brackets max-depth)
+    (if name
       (let
-        ( (names (list (string->datum name)))
-          (format (if format (string->symbol format) (q indent)))
-          (only (and only (string-split only #\,)))
-          (exclude (and exclude (string-split exclude #\,)))
-          (strip-prefix
-            (and strip-prefix
-              (map (l (a) (map string->symbol (string-split a #\space)))
-                (string-split strip-prefix #\,))))
+        ( (name (string->datum name)) (format (if format (string->symbol format) (q indent)))
+          (include (module-list-argument include)) (exclude (module-list-argument exclude))
+          (strip-prefix (module-list-argument strip-prefix))
           (max-depth (if max-depth (string->number max-depth) (inf))))
-        (guile-module-dependencies names format only exclude strip-prefix remove-brackets max-depth)))))
+        (display-module-dependencies name format include exclude strip-prefix no-brackets max-depth))
+      (cli (list "--help")))))
 
-(guile-module-dependencies-cli)
+(guile-module-dependencies (cli))
