@@ -10,7 +10,7 @@
   ((sph lang indent-syntax) #:select (prefix-tree->indent-tree)))
 
 (define guile-module-dependencies-description
-  "displays a module dependency tree of a module.
+  "displays a dependency tree for a module.
    module name is given with brackets, for example \"(srfi srfi-1)\"")
 
 (define (string-trim-round-brackets a) (substring a 1 (- (string-length a) 1)))
