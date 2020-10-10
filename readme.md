@@ -1,4 +1,4 @@
-```
+~~~
 1
 ├── filesystem
 │   ├── collect-file
@@ -28,6 +28,9 @@
 │   ├── scm-format
 │   ├── take-screenshots-in-intervals
 │   └── with-dialog-and-delay
+├── programming
+│   ├── guile-display-documentation
+│   └── guile-module-dependencies
 ├── text
 │   ├── comma-to-newline
 │   ├── compress-whitespace-columns
@@ -134,14 +137,11 @@
 │   ├── coffee-compile
 │   ├── coffee-compile-from-to
 │   ├── compress-js
-│   ├── guile-module-dependencies
 │   ├── javascript-format-add-function-spacing
 │   ├── javascript-remove-semicolons
 │   ├── json-to-file
 │   ├── lines-to-quoted-comma-lines
 │   ├── lines-to-scheme-data
-│   ├── scm-list-documentation
-│   ├── sph-module-dependencies
 │   ├── sql-format
 │   ├── wisp2lisp
 │   ├── xml-format
@@ -156,8 +156,8 @@
     ├── string-bits
     └── tabular-select
 
-11 directories, 141 files
-```
+12 directories, 142 files
+~~~
 
 additionally included are:
 * other/take-website-screenshots

@@ -1,2 +1,4 @@
 #!/bin/sh
+echo ~~~
 tree 1 2 -L 2
+echo ~~~
