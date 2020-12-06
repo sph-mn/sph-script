@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph) (sph alist)
+(use-modules (sph) (sph alist)
   (sph filesystem) (sph hashtable) (sph cli) (sph lang scm-format) (sph lang scheme))
 
 (define (scm-suffix-file-path a)
@@ -24,7 +24,9 @@
 
 (define (create-config format transform)
   (ht-from-list
-    (append (if format (list (q format) (parse-scm-arg-hashtable format)) (list))
+    (append
+      (list (q scm-read) read)
+      (if format (list (q format) (parse-scm-arg-hashtable format)) (list))
       (if transform (list (q transform) (parse-scm-arg-hashtable transform)) (list)))))
 
 (define (scm-format-file-path file-path in-place output config)

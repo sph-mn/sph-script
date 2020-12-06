@@ -5,8 +5,6 @@
   (sph io) (sph list)
   (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph other))
 
-;parameters: path-of-file-to-move ...
-;asks for a target path and moves paths given as arguments into the provided target path. (grouping of files)
 (define path-config-temp "/tmp/gui-group-config")
 
 (define (get-last-used-directory)
@@ -19,6 +17,8 @@
 (define (get-entry-text-option) "")
 
 (define (move-into-directory-zenity paths)
+  "arguments: path-of-file-to-move ...
+   asks for a target path and moves paths given as arguments into the provided target path. (grouping of files)"
   (if (not (null? paths))
     (let*
       ( (last-used (get-last-used-directory))
