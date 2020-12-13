@@ -11,7 +11,7 @@
         (process-chain->string #f
           (list
             (list "grep" "--dereference-recursive"
-              "--fixed-strings" "--ignore-case" "--line-number" to-search)
+              "--fixed-strings" "--ignore-case" "--line-number" "--binary-files=without-match" to-search)
             (pair "lines-filter" to-filter))
           #:search-path? #t))
       (file-paths
