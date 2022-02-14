@@ -9,6 +9,6 @@
   (if (not (equal? (getcwd) target-directory))
     (begin (if (not (file-exists? target-directory)) (mkdir target-directory))
       (chdir target-directory)))
-  (system "cdparanoia -B && eject && flac --delete-input-file --best *wav"))
+  (system "cdparanoia -B && eject"))
 
 (apply audio-disc->flac-files (tail (command-line)))

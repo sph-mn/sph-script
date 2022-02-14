@@ -19,3 +19,5 @@ df --si --output=size,avail,pcent . > "$a"
 
 # file listing
 find >> "$a"
+
+echo "written to $a"

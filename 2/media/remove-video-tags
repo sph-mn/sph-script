@@ -12,7 +12,7 @@
   (each
     (l (a)
       (let*
-        ( (new-name (string-trim (regexp-replace (basename a) "\\.?[0-9]+(p|ks|s)" "") #\.))
+        ( (new-name (string-trim (regexp-replace (basename a) "\\.?[0-9]+(p|ks|hs|s)" "") #\.))
           (new-name (string-append (dirname a) "/" new-name)))
         (if (not (string-equal? new-name a)) (rename-file a new-name))))
     paths))

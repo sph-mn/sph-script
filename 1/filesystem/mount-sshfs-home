@@ -27,7 +27,7 @@
   (let*
     ( (target (create-target-argument hostname))
       (source (create-source-argument user hostname path))
-      (commands (list (list "mkdir" "-p" target) (list "sshfs" source target))))
+      (commands (list (list "mkdir" "-p" target) (cons* "sshfs" source target sshfs-arguments))))
     (if dry-run? (each (l (a) (display-line (string-join (map any->string a) " "))) commands)
       (every (l (a) (apply execute-and-check-result a)) commands))))
 
