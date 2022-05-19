@@ -2,7 +2,8 @@
 !#
 (use-modules (sph) (sph process) (sph process create))
 
-(define (searchl-cli to-search . to-filter) (execute "clear")
+(define (searchl-cli to-search . to-filter)
+  ;(execute "clear")
   (process-chain-finish-success?
     (process-chain #f (current-output-port)
       (list

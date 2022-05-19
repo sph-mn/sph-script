@@ -4,4 +4,4 @@
 # dependencies: scrot
 
 destination=$HOME/temp/screenshots/
-mkdir -p $destination && scrot $destination/%s.png "$@"
+mkdir -p $destination && scrot "$destination/%Y-%m-%d_%H:%M.png" "$@"
