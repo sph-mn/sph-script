@@ -8,6 +8,7 @@
     (process-chain #f (current-output-port)
       (list
         (list "grep" "--dereference-recursive"
+          "--exclude-dir=node_modules" "--exclude-dir=vendor"
           "--fixed-strings" "--ignore-case" "--line-number" "--binary-files=without-match" to-search)
         (pair "lines-filter" to-filter))
       #:search-path? #t)))

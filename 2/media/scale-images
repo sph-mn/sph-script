@@ -1,15 +1,14 @@
 #!/usr/bin/env guile
 !#
 
-(import (sph filesystem) (sph alist)
-  (sph hashtable) (sph io)
-  (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph cli))
+(import (only (sph filesystem) ensure-directory-structure) (sph alist)
+  (ice-9 threads) (sph process) (sph string) (sph) (sph cli))
 
 (define (scale-image width path-source path-dest)
   (execute "gm" "convert"
     "-size" (string-append width ">x")
     "-quality" "100"
-    path-source "-auto-orient" "-resize" (string-append width ">x") "+profile" "*" path-dest))
+    path-source "-auto-orient" "-resize" (string-append width "x" width ">") "+profile" "*" path-dest))
 
 (define (scale-images-cli)
   (let*
@@ -23,7 +22,7 @@
     (alist-bind arguments (width path)
       (if (and width path)
         (begin (ensure-directory-structure d)
-          (each (l (a) (scale-image width a (string-append d "/" (basename a)))) path))
+          (par-for-each (l (a) (scale-image width a (string-append d "/" (basename a)))) path))
         (cli (list "--help"))))))
 
 (scale-images-cli)

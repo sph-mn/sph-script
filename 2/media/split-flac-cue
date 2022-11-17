@@ -3,6 +3,6 @@
 # split a flac file corresponding to a cue file
 # depends on "shnsplit" from "shntool"
 
-cue=$1
-file=$2
+file=$1
+cue=$2
 shnsplit -f "$cue" -o flac -t "%n.%t" "$file" < "$cue"
