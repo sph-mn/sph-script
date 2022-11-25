@@ -24,18 +24,32 @@
 (define (rename-dry-run old new)
   (display-line (string-append (string-quote old) " -> " (string-quote new))))
 
+(define (make-height-rating a)
+  (string-append (cond ((< 2000 a) "4") ((< 1000 a) "3") ((< 500 a) "2") (else "1")) "q"))
+
+(define (make-duration-rating a)
+  (string-append
+    (cond
+      ((< 3600 a) "6")
+      ((< 1800 a) "5")
+      ((< 900 a) "4")
+      ((< 300 a) "3")
+      ((< 120 a) "2")
+      (else "1"))
+    "l"))
+
 (define (create-tags-string data)
   (alist-bind data (height duration)
     (let
       (tags
         (compact
-          (list (and height (string-append (number->string height) "p"))
-            (and duration (string-append (number->string (round (/ duration 100))) "hs")))))
+          (list (and height (make-height-rating height))
+            (and duration (make-duration-rating duration)))))
       (string-join tags "." (q suffix)))))
 
 (define (prepend-video-tags paths dry-run)
   (each
-    (l (path) (get-media-info path)
+    (l (path)
       (and-let* ((data (get-media-info path)) (tags-string (create-tags-string data)))
         (if (not (string-null? tags-string))
           ( (if dry-run rename-dry-run rename-file) path

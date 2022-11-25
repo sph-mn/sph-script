@@ -6,13 +6,20 @@
 
 (import (sph filesystem) (sph hashtable)
   (sph io) (sph list)
+  (srfi srfi-1) (ice-9 regex)
   (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph media-info))
+
+(define (remove-tags a)
+  (let ((regexp (make-regexp "[0-9]+(p|ks|hs|s|q|l)")) (parsed (reverse (string-split a #\.))))
+    (string-join
+      (append (filter-map (l (a) (and (not (regexp-exec regexp a)) a)) (tail parsed))
+        (list (first parsed)))
+      ".")))
 
 (let (paths (map path->full-path (tail (program-arguments))))
   (each
     (l (a)
       (let*
-        ( (new-name (string-trim (regexp-replace (basename a) "\\.?[0-9]+(p|ks|hs|s)" "") #\.))
-          (new-name (string-append (dirname a) "/" new-name)))
+        ((new-name (remove-tags (basename a))) (new-name (string-append (dirname a) "/" new-name)))
         (if (not (string-equal? new-name a)) (rename-file a new-name))))
     paths))
