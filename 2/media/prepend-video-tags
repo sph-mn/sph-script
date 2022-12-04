@@ -43,8 +43,8 @@
     (let
       (tags
         (compact
-          (list (and height (make-height-rating height))
-            (and duration (make-duration-rating duration)))))
+          (list (and duration (make-duration-rating duration))
+            (and height (make-height-rating height)))))
       (string-join tags "." (q suffix)))))
 
 (define (prepend-video-tags paths dry-run)

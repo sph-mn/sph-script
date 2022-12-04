@@ -1,0 +1,10 @@
+#!/bin/sh
+
+if ! test $# -eq 3
+then
+  echo missing arguments. :: path directory-perm file-perm
+  exit 1
+fi
+
+find "$1" -type d -exec chmod "$2" {} \;
+find "$1" -type f -exec chmod "$3" {} \;
