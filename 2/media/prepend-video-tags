@@ -24,27 +24,23 @@
 (define (rename-dry-run old new)
   (display-line (string-append (string-quote old) " -> " (string-quote new))))
 
-(define (make-height-rating a)
-  (string-append (cond ((< 2000 a) "4") ((< 1000 a) "3") ((< 500 a) "2") (else "1")) "q"))
+(define (height-rating a) (cond ((< 2000 a) 4) ((< 1000 a) 3) ((< 500 a) 2) (else 1)))
+(define (height-rating-string a) (number->string (height-rating a)))
 
-(define (make-duration-rating a)
-  (string-append
-    (cond
-      ((< 3600 a) "6")
-      ((< 1800 a) "5")
-      ((< 900 a) "4")
-      ((< 300 a) "3")
-      ((< 120 a) "2")
-      (else "1"))
-    "l"))
+(define (duration-rating a)
+  (cond ((< 3600 a) 6) ((< 1800 a) 5) ((< 900 a) 4) ((< 300 a) 3) ((< 120 a) 2) (else 1)))
+
+(define (duration-rating-string a) (number->string (duration-rating a)))
+
+(define (combined-rating height duration)
+  (+ (* 10 (if height (height-rating height) 0)) (if duration (duration-rating duration) 0)))
+
+(define (combined-rating-string height duration)
+  (string-append (number->string (combined-rating height duration)) "r"))
 
 (define (create-tags-string data)
   (alist-bind data (height duration)
-    (let
-      (tags
-        (compact
-          (list (and duration (make-duration-rating duration))
-            (and height (make-height-rating height)))))
+    (let (tags (compact (list (combined-rating-string height duration))))
       (string-join tags "." (q suffix)))))
 
 (define (prepend-video-tags paths dry-run)

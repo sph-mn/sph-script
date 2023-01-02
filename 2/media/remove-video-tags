@@ -10,7 +10,7 @@
   (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph media-info))
 
 (define (remove-tags a)
-  (let ((regexp (make-regexp "[0-9]+(p|ks|hs|s|q|l)")) (parsed (reverse (string-split a #\.))))
+  (let ((regexp (make-regexp "^[0-9]{1,4}(r|p|hs|q|l|ks)$")) (parsed (reverse (string-split a #\.))))
     (string-join
       (append (filter-map (l (a) (and (not (regexp-exec regexp a)) a)) (tail parsed))
         (list (first parsed)))
