@@ -2,23 +2,44 @@
 !#
 
 ; depends on guile and sph-lib.
-; see: collect-file --help
-;
-(use-modules (srfi srfi-2) (sph) (sph alist) (sph time string) (sph time) (sph string) (sph filesystem) (sph cli))
+; see "collect-file --help"
+
+(use-modules (srfi srfi-2) (sph)
+  (sph alist) (sph time string) (sph time) (sph string) (sph filesystem) (sph cli))
 
 (define destination
   (string-append (getenv "HOME") "/temp/collections/collected." (utc->ymd (utc-current)) "/"))
 
-(define (collect-path a)
-  (let* ((a (realpath* a)) (path-destination (string-append destination (basename a))))
-    (symlink a path-destination)))
+(define cli
+  (cli-create #:description
+    (string-append "symlinks or copies files into an automatically chosen target directory"
+      "\nthe current destination is " destination)
+    #:options
+    (q
+      ( ( (path ...) #:required? #t)
+        (dry-run #:description "make no changes to the filesystem, only list what would be done")
+        (copy #:description "always copy the file") (symlink #:description "always symlink the file")))))
 
-(let*
-  ( (cli
-      (cli-create #:description
-        (string-append "symlinks or copies files into a automatically chosen target directory"
-          "\nthe current destination is " destination)
-        (q ((path ...)))))
-    (arguments (cli)))
-  (ensure-directory-structure destination)
-  (and-let* ((paths (alist-ref-q arguments path))) (each collect-path paths)))
+(define (collect-files sources destination-directory dry-run always-copy always-symlink)
+  (and (or dry-run (ensure-directory-structure destination-directory))
+    (let (destination-device (stat:dev (stat destination-directory)))
+      (each
+        (l (source)
+          (let
+            ( (collect-file
+                (cond
+                  (always-copy copy-file)
+                  (always-symlink symlink)
+                  (else (if (= destination-device (stat:dev (stat source))) symlink copy-file))))
+              (destination (string-append destination-directory (basename source))))
+            (if (file-exists? destination)
+              (if dry-run (debug-log delete-file destination) (delete-file destination)))
+            (if dry-run (debug-log collect-file source destination)
+              (collect-file source destination))))
+        (map realpath* sources)))))
+
+(define (collect-file-cli)
+  (alist-bind (cli) (path copy symlink dry-run)
+    (collect-files path destination dry-run copy symlink)))
+
+(collect-file-cli)
