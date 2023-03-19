@@ -8,7 +8,7 @@
   (sph alist) (sph time string) (sph time) (sph string) (sph filesystem) (sph cli))
 
 (define destination
-  (string-append (getenv "HOME") "/temp/collections/collected." (utc->ymd (utc-current)) "/"))
+  (string-append (getenv "HOME") "/nosync/collections/collected." (utc->ymd (utc-current)) "/"))
 
 (define cli
   (cli-create #:description

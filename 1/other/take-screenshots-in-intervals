@@ -5,7 +5,8 @@
 # usage: take-screenshots-in-intervals [interval destination_dir]
 # dependencies: scrot
 
-interval=200
+image_width=300
+interval=1000
 destination_root="$HOME/interval-screenhots"
 
 if test "$1"
@@ -26,12 +27,20 @@ day_seconds() {
   echo $((now - midnight))
 }
 
+scale_image() {
+  width=$1
+  path=$2
+  temp_path=$(dirname "$path")/scaled_$(basename "$path")
+  gm convert -size "$width>x" "$path" -auto-orient -resize "${width}x${width}>" "+profile" "*" "$temp_path" &&
+    mv "$temp_path" "$path"
+}
+
 while true; do
   # the date might change while this loop is running
   date=$(date --utc +%Y-%m-%d.%j)
-  destination="$destination_root/$date"
-  mkdir -p $destination
-  echo scrot --focused --quality 60 "$destination/$(day_seconds).jpg"
-  scrot --focused --quality 60 "$destination/$(day_seconds).jpg"
+  directory="$destination_root/$date"
+  mkdir -p $directory
+  full_path="$directory/$(day_seconds).jpg"
+  scrot --focused --quality 10 "$full_path" && scale_image $image_width "$full_path"
   sleep $interval
 done

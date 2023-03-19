@@ -1,28 +1,16 @@
-#!/usr/bin/env guile
-!#
+#!/bin/sh
 
-(import (only (sph filesystem) ensure-directory-structure) (sph alist)
-  (ice-9 threads) (sph process) (sph string) (sph) (sph cli))
+# example: scale-image 300 test/file.jpg
+# example: find | xargs scale-image 300
 
-(define (scale-image width path-source path-dest)
-  (execute "gm" "convert"
-    "-size" (string-append width ">x")
-    "-quality" "100"
-    path-source "-auto-orient" "-resize" (string-append width "x" width ">") "+profile" "*" path-dest))
+width=$1
+path=$2
+target_path="scaled-images/$path"
 
-(define (scale-images-cli)
-  (let*
-    ( (d "scaled")
-      (cli
-        (cli-create #:options (q (((width path ...))))
-          #:description
-          (string-append "scales images given by paths using graphicsmagick. a new directory "
-            (string-quote d) " is created in the current directory where result images are put")))
-      (arguments (cli)))
-    (alist-bind arguments (width path)
-      (if (and width path)
-        (begin (ensure-directory-structure d)
-          (par-for-each (l (a) (scale-image width a (string-append d "/" (basename a)))) path))
-        (cli (list "--help"))))))
+if test -f "$target_path"
+then
+  exit 0
+fi
 
-(scale-images-cli)
+mkdir -p $(dirname "$target_path") &&
+gm convert -size $width\>x "$path" -resize $width\>x +profile "*" "$target_path"

@@ -14,37 +14,16 @@
   (sph other) (sph process)
   (sph string) (sph vector) (sph) (sph cli) (rnrs exceptions) (sph process) (sph tree))
 
+(load (string-append (getenv "HOME") "/.config/sph/tidyfiles.scm"))
 (define trim-char-set (list->char-set (quote (#\newline #\space))))
+
+(define-syntax-rule (filename-extension-case path cond ...)
+  (let (t (filename-extension path)) (string-case (or t "") cond ...)))
 
 (define (path->mime-type path)
   (string-trim-both
     (shell-eval->string (string-append "file --brief --mime-type " (string-quote path)))
     trim-char-set))
-
-(define-syntax-rule (filename-extension-case path cond ...)
-  (let (t (filename-extension path)) (string-case (or t "") cond ...)))
-
-(define ignored-filenames (list
-    "personal" "download" "collections" "backup" "screenshots" "nosync" "p"))
-
-(define mime-type->path (qq (
-      ; (mime-type-regexp target-directory [relative-target-directory/relative-target-directory-proc])
-      ; (string/(string ...) string [string/procedure])
-      ("image/.*" "picture")
-      ( ("text/.*" "application/xml") "text"
-        (unquote
-          (l (path)
-            (filename-extension-case path ("scm" "programming/scheme")
-              (("sh" "rb" "js" "sql" "html" "css" "less" "scss" "c" "sc") "programming") ("text" "plain")
-              (else "other")))))
-      ("video/.*" "video") ("audio/.*" "audio")
-      ("application/pdf" "documents" "pdf")
-      ( ("application/postscript" "application/vnd.oasis.opendocument" "application/vnd.open.*")
-        "documents")
-      ( ("application/x-gzip" "application/x-rar" "application/x-xz"
-          "application/x-7z-compressed" "application/zip")
-        "other" "compressed")
-      (".*" "other"))))
 
 (define default-file-rename-config
   (map (l (a) (pair (make-regexp (first a)) (tail a)))
@@ -54,7 +33,7 @@
   (fold (l (a r) (regexp-replace r (first a) (tail a))) (string-downcase a)
     default-file-rename-config))
 
-(define (prepare-mime-type->path a)
+(define (prepare-config-mapping a)
   (map
     (l (a)
       (list->vector
@@ -65,36 +44,45 @@
           (tail a))))
     a))
 
-(define target-toplevel-directories (delete-duplicates (map second mime-type->path)))
+(define target-toplevel-directories (delete-duplicates (map second config-mapping)))
 
-(define (source-path->target-path source-path mime-type->path)
+(define (source-path->target-path source-path config-mapping)
   (let (mime-type (path->mime-type source-path))
     (if
       (or (contains? target-toplevel-directories (basename source-path))
-        (contains? ignored-filenames (basename source-path)))
+        (contains? config-ignore (basename source-path)))
       #f
-      (let (config (find (l (a) (regexp-exec (vector-ref a 0) mime-type)) mime-type->path))
+      (let (config (find (l (a) (regexp-exec (vector-ref a 0) mime-type)) config-mapping))
         (path-append (vector-ref config 1)
           (if (> (vector-length config) 2)
             (let (relative-path (vector-ref config 2))
               (if (procedure? relative-path) (relative-path source-path) relative-path))
             ""))))))
 
-(define (tidyfiles path config) "each directory entry, then delete empty toplevel directories"
+(define (tidyfiles path config dry-run)
+  "each directory entry, then delete empty toplevel directories"
   (each
     (l (name)
       (let* ((source-path name) (target-dir (source-path->target-path source-path config)))
         (if target-dir
           (let (target-path (get-unique-path (path-append target-dir (default-file-rename name))))
             (guard (obj (#t (string-append "ignored file \"" name "\"")))
-              (ensure-directory-structure target-dir) (rename-file source-path target-path))))))
-    (scandir path))
+              (if dry-run
+                (display
+                  (string-append (string-trim-right target-dir #\/) " <- "
+                    (if (string-contains source-path " ") (string-quote source-path) source-path)
+                    "\n"))
+                (begin (ensure-directory-structure target-dir)
+                  (rename-file source-path target-path))))))))
+    (scandir path (negate dotfile?)))
   (system* "delete-if-empty" path))
 
 (define (tidyfiles-cli)
   (let
     (options
-      ((cli-create #:description "move files into directories by mime type" (q ((path))))))
-    (tidyfiles (alist-ref-q options path) (prepare-mime-type->path mime-type->path))))
+      ( (cli-create #:description "move files into directories by mime type"
+          (q ((path))) (q (dry-run)))))
+    (alist-bind options (path dry-run)
+      (tidyfiles path (prepare-config-mapping config-mapping) dry-run))))
 
 (tidyfiles-cli)

@@ -3,5 +3,5 @@
 # _ :: scrot-arguments
 # dependencies: scrot
 
-destination=$HOME/temp/screenshots/
+destination=$HOME/nosync/screenshots/
 mkdir -p $destination && scrot "$destination/%Y-%m-%d_%H:%M.png" "$@"
