@@ -15,49 +15,32 @@
 │   ├── mount-sshfs-home
 │   ├── search
 │   ├── searchl
-│   ├── splice
-│   └── unique-path
+│   └── splice
 ├── other
 │   ├── git-log
-│   ├── git-log-short
-│   ├── golden-ratio
-│   ├── http-status
 │   ├── nargs
 │   ├── nargsp
 │   ├── restart-on-end
-│   ├── scm-format
-│   ├── take-screenshots-in-intervals
 │   └── with-dialog-and-delay
-├── programming
-│   ├── guile-display-documentation
-│   └── guile-module-dependencies
 ├── text
 │   ├── comma-to-newline
 │   ├── compress-whitespace-columns
 │   ├── file-lines-set-operations
-│   ├── itpn
-│   ├── itpn-split
 │   ├── lines-filter
 │   ├── lines-reject
 │   ├── lowercase
 │   ├── newline-to-comma
 │   ├── newline-to-space
 │   ├── remove-double-newlines
-│   ├── remove-hash-comment-lines
 │   └── space-to-newline
 └── time
     ├── day-seconds
     ├── hms-time
-    ├── hms-to-ks
     ├── iso-date
     ├── iso-week-number
-    ├── ks-time
-    ├── ks-to-hms
     ├── posixtime
     ├── posixtime-to-date
     ├── tzdate
-    ├── uptime-duration-ks
-    ├── uptime-start-ks
     └── year-week-count
 2
 ├── convert
@@ -71,8 +54,10 @@
 │   ├── clone-disk
 │   ├── create-filelist
 │   ├── delete-duplicate-files
+│   ├── fig-full
 │   ├── file-size-sum
 │   ├── format-encrypt
+│   ├── get-unique-path
 │   ├── gui-group
 │   ├── gui-tag-add
 │   ├── gui-tag-remove
@@ -90,11 +75,13 @@
 │   ├── prepend-media-bitrate
 │   ├── prepend-to-filename
 │   ├── rename-lowercase
+│   ├── set-permissions
 │   ├── tag-add
 │   ├── tag-remove
 │   ├── tag-sort
 │   └── tidyfiles
 ├── media
+│   ├── aac-to-wav
 │   ├── audio-file-loudness
 │   ├── create-video-from-png-images
 │   ├── create-video-thumbnail-preview
@@ -104,12 +91,13 @@
 │   ├── media-info-video-bitrate
 │   ├── media-info-video-framerate
 │   ├── media-info-video-resolution
+│   ├── normalize-volume
 │   ├── prepend-video-tags
 │   ├── remove-video-tags
 │   ├── scale-images
-│   ├── scale-images-directory
 │   ├── split-flac-cue
 │   ├── video-extract-audio
+│   ├── wav32-to-flac
 │   └── youtube-dl-with-date
 ├── other
 │   ├── backup
@@ -117,19 +105,25 @@
 │   ├── cpioe
 │   ├── create-remarkjs-presentation
 │   ├── e
+│   ├── emacs-open-in-background
 │   ├── g
 │   ├── git-create-stable-branch
+│   ├── git-log-short
 │   ├── git-merge-stable-master
 │   ├── git-push
 │   ├── git-stati
+│   ├── golden-ratio
 │   ├── gui-emacs
 │   ├── gui-md5sum
 │   ├── gui-scale-images
+│   ├── http-status
 │   ├── ldd-list-not-found
 │   ├── mariadb-create-user-database-sql
+│   ├── scm-format
 │   ├── show-process-memory-usage-top
 │   ├── ssh-install-key
 │   ├── take-screenshot
+│   ├── take-screenshots-in-intervals
 │   └── take-screenshot-window
 ├── programming
 │   ├── astyle-to-file
@@ -137,6 +131,8 @@
 │   ├── coffee-compile
 │   ├── coffee-compile-from-to
 │   ├── compress-js
+│   ├── guile-display-documentation
+│   ├── guile-module-dependencies
 │   ├── javascript-format-add-function-spacing
 │   ├── javascript-remove-semicolons
 │   ├── json-to-file
@@ -146,17 +142,29 @@
 │   ├── wisp2lisp
 │   ├── xml-format
 │   └── xml-json-converter
-└── text
-    ├── alternate-text-direction
-    ├── camelcase-to-dash
-    ├── camelcase-to-underscore
-    ├── decapitalise
-    ├── randomise-lines
-    ├── remove-iso-date-prefix-zeros
-    ├── string-bits
-    └── tabular-select
+├── text
+│   ├── alternate-text-direction
+│   ├── camelcase-to-dash
+│   ├── camelcase-to-underscore
+│   ├── decapitalise
+│   ├── itpn
+│   ├── itpn-split
+│   ├── randomise-lines
+│   ├── remove-hash-comment-lines
+│   ├── remove-iso-date-prefix-zeros
+│   ├── remove-semicolon-comment-lines
+│   ├── string-bits
+│   └── tabular-select
+└── time
+    ├── d
+    ├── hms-to-ks
+    ├── hms-to-minutes
+    ├── ks-time
+    ├── ks-to-hms
+    ├── uptime-duration-ks
+    └── uptime-start-ks
 
-12 directories, 142 files
+14 directories, 150 files
 ~~~
 
 additionally included are:
@@ -201,27 +209,10 @@ deletes empty files or directories, recursively. for example a directory structu
 find files containing all argument strings in the name. the name is a combination of find and grep
 
 ### full-path
-
 display the full path that starts from the root directory for a given path
 
-### unique-path
-displays a filename that does not exist
-
-* $ touch /tmp/t.scm
-* $ unique-path /tmp/t.scm
-
-```
-/tmp/t.scm.1
-```
-
-* $ touch /tmp/t.scm.1
-* $ unique-path /tmp/t.scm
-```
-/tmp/t.scm.2
-```
-
 ### late-write
-```
+~~~
 parameters
   options ... output-file
 description
@@ -230,20 +221,18 @@ description
 options
   --help | -h
   --interface
-```
-#### example
+~~~
 
-```
+#### example
+~~~
 cat testfile | newline-to-space | late-write testfile
-```
+~~~
+
 testfile is not truncated but updated with the expected results.
 be careful: do not use ">" out of habit. ">" *always* truncates, late-write only takes simple pipe input with "|"
 
 ### list-broken-symlinks
 list broken symlinks in the current directory
-
-### merge-files
-merge files, automatically create a non-existing target filename from the source filenames and check if the result file size matches the summarised size of the source files
 
 ### mount-home
 * mount filesystems to automatically chosen paths under ~/mnt
@@ -300,19 +289,6 @@ options
   --user=value | -u value
 ```
 
-### move-and-link
-
-```
-parameters
-  options ... target-directory source-path ...
-description
-  move files and replace the source paths with symlinks to the move destination
-options
-  --help | -h
-  --interface
-  --keep-directory-structure? | -k
-```
-
 ### path-directories
 displays parent directories
 
@@ -338,16 +314,6 @@ path-permissions $PWD
 ### rate rate-modify
 move files into 1/2/3/n rating directories
 
-### rename-lowercase
-* renames file to have an all lowercase filename. overwrites any existing paths
-
-* $ touch TEST TEST-2
-* $ rename-lowercase TEST TEST-2
-* $ ls
-```
-test test-2
-```
-
 ### search
 search for a string inside files in the current directory and display the names of files where it is included
 
@@ -362,11 +328,9 @@ search for a string inside files in the current directory and display the names 
 * merge contents of a directory with the current directory
 * considers duplicate filenames and automatically renames conflicts
 
-### tidyfiles
-automatically sort files into directories by file type
-
 ## text
 ### comma-to-newline
+replaces commas with newlines
 
 ### compress-whitespace-columns
 ```
@@ -389,37 +353,6 @@ options
   --interface
   --intersection | -i
   --union | -u
-```
-
-### itpn
-featureful itpn note taking format processor
-$ itpn --help
-```
-parameters
-  options ... file-paths ...
-options
-  --add-file-name-tags
-  --count
-  --deduplicate
-  --exclude | -e
-  --format=value  prefix/suffix/filename. comma-separated names of block parts to display. default: prefix,suffix
-  --help | -h
-  --interface
-  --list-unique-tags
-  --output-file-1=value  path for a file to write matches to
-  --output-file-2=value  path for a file to write non-matches to
-  --output-to-source  overwrite source files when output would otherwise be written to standard-output
-  --replace-tag=value  value format: "tags-to-replace replacements" "tag[.tag] tag[.tag]"
-  --replace-tags-from-file=value  takes a path to a file that contains lines in the format "tag replacement ..."
-  --search=value | -s value  search in the prefix part of itpn packets. conditions like word,word.~word.word are
-    supported, where comma is "or", period is "and" and tilde is "not"
-  --search-all=value | -a value
-  --search-suffix=value
-  --sort-packets
-  --sort-tags
-  --split  split into matches and non-matches. output-file-1 receives matches, output-file-2 non-matches, and if
-    any of those is not specified output is written to standard output
-  --syntax-check | -c
 ```
 
 ### lines-filter
@@ -470,8 +403,6 @@ bin boot dev etc home lib lib64 lost+found mnt opt proc root run sbin srv sys tm
 ### remove-double-newlines
 $ cat textfile | remove-double-newlines
 
-### remove-hash-comment-lines
-
 ### tabular-select
 select whitespace separated columns of newline separated lines by index
 
@@ -494,22 +425,6 @@ $ iso-week-number
 ```
 46
 ```
-
-### ks-time
-show the current days elapsed kiloseconds
-
-### ks-to-hms hms-to-ks
-convert kiloseconds to traditional hh:[mm:ss] time and back
-
-$ ks-to-hms 32
-```
-8:53:20
-```
-$ hms-to-ks 15
-```
-54
-```
-can also read text from standard input, where it replaces all occurrences of hh:mm[:ss] patterns with kilosecond values, optionally only in parentheses
 
 ### posixtime
 ### posixtime-to-date
@@ -568,45 +483,6 @@ tantalum@online.de 2014-08-15 - f472c3f
 M    sph/cli.scm
 ```
 
-### golden-ratio
-displays a list of numbers in the golden-ratio above and below the input number
-```
-199.005 199.00502493123727
-122.992 122.99186934331752
-76.013 76.01315559640044
-46.979 46.97871375215843
-29.034 29.03444184748134
-17.944 17.944271906679102
-11.09 11.090169942039552
-6.854 6.8541019654042525
-4.236 4.23606797710791
-2.618 2.6180339885884316
-1.618 1.6180339887
-
-0.618 0.618033988768953
-0.382 0.3819660112736623
-0.236 0.2360679775216284
-0.146 0.14589803376831154
-0.09 0.09016994376337698
-0.056 0.05572809001115205
-0.034 0.03444185375606755
-0.021 0.021286236257459373
-0.013 0.013155617500075927
-0.008 0.008130618758290567
-0.005 0.00502499874234599
-```
-
-### http-status
-display the http-status code for an url
-
-### scm-format
-format scheme code
-depends on sph-lib
-
-### take-screenshots-in-intervals
-creates a screenshot every n seconds and saves it in a configured directory.
-depends on scrot
-
 ### with-dialog-and-delay
 usage: with-dialog-and-delay command ...
 
@@ -620,6 +496,7 @@ test
 ```
 
 example use case: preventing accidental execution of poweroff, reboot or other system shutdown commands
+
 
 # 2, more experimental, less useful scripts
 ## convert
@@ -638,17 +515,50 @@ $ echo test | hex
 74 65 73 74 a
 ```
 
-### indent2freemind
-create a freemind .mm mind-map file from an indented tree
-
-* sxml2xml
-* xml2sxml
-
 ## filesystem
-### delete-duplicate-files
-delete duplicate files in the current directory and sub-directories.
-depends on "duff".
-note: there are cases where duplicates are required for something to work like in VIDEO_TS and AUDIO_TS directories from a dvd
+### tidyfiles
+automatically sort files into directories by file type
+
+### rename-lowercase
+* renames file to have an all lowercase filename. overwrites any existing paths
+
+* $ touch TEST TEST-2
+* $ rename-lowercase TEST TEST-2
+* $ ls
+```
+test test-2
+```
+
+### move-and-link
+```
+parameters
+  options ... target-directory source-path ...
+description
+  move files and replace the source paths with symlinks to the move destination
+options
+  --help | -h
+  --interface
+  --keep-directory-structure? | -k
+```
+
+### merge-files
+merge files, automatically create a non-existing target filename from the source filenames and check if the result file size matches the summarised size of the source files
+
+### get-unique-path
+displays a filename that does not exist
+
+* $ touch /tmp/t.scm
+* $ unique-path /tmp/t.scm
+
+```
+/tmp/t.scm.1
+```
+
+* $ touch /tmp/t.scm.1
+* $ unique-path /tmp/t.scm
+```
+/tmp/t.scm.2
+```
 
 ### display-relative-path-up
 ### file-size-sum
@@ -697,6 +607,39 @@ depends on "uglifyjs"
 ### scm-doc
 
 ## text
+### remove-hash-comment-lines
+
+### itpn
+featureful itpn note taking format processor
+$ itpn --help
+```
+parameters
+  options ... file-paths ...
+options
+  --add-file-name-tags
+  --count
+  --deduplicate
+  --exclude | -e
+  --format=value  prefix/suffix/filename. comma-separated names of block parts to display. default: prefix,suffix
+  --help | -h
+  --interface
+  --list-unique-tags
+  --output-file-1=value  path for a file to write matches to
+  --output-file-2=value  path for a file to write non-matches to
+  --output-to-source  overwrite source files when output would otherwise be written to standard-output
+  --replace-tag=value  value format: "tags-to-replace replacements" "tag[.tag] tag[.tag]"
+  --replace-tags-from-file=value  takes a path to a file that contains lines in the format "tag replacement ..."
+  --search=value | -s value  search in the prefix part of itpn packets. conditions like word,word.~word.word are
+    supported, where comma is "or", period is "and" and tilde is "not"
+  --search-all=value | -a value
+  --search-suffix=value
+  --sort-packets
+  --sort-tags
+  --split  split into matches and non-matches. output-file-1 receives matches, output-file-2 non-matches, and if
+    any of those is not specified output is written to standard output
+  --syntax-check | -c
+```
+
 ### alternate-text-direction
 * reverses text direction for every even line
 * considers punctuation
@@ -745,10 +688,21 @@ echo abc |string-bits
 ```
 
 ## time-display
-### dt
-display the current time like this: 2015-11-15:69.18
+### ks-time
+show the current days elapsed kiloseconds
 
-where the last part are the elapsed kiloseconds of the current day
+### ks-to-hms hms-to-ks
+convert kiloseconds to traditional hh:[mm:ss] time and back
+
+$ ks-to-hms 32
+```
+8:53:20
+```
+$ hms-to-ks 15
+```
+54
+```
+can also read text from standard input, where it replaces all occurrences of hh:mm[:ss] patterns with kilosecond values, optionally only in parentheses
 
 ## media
 ### youtube-dl-with-date
@@ -787,6 +741,45 @@ depends on "cdparanoia"
 * depends on "graphicsmagick"
 
 ## other
+### golden-ratio
+displays a list of numbers in the golden-ratio above and below the input number
+```
+199.005 199.00502493123727
+122.992 122.99186934331752
+76.013 76.01315559640044
+46.979 46.97871375215843
+29.034 29.03444184748134
+17.944 17.944271906679102
+11.09 11.090169942039552
+6.854 6.8541019654042525
+4.236 4.23606797710791
+2.618 2.6180339885884316
+1.618 1.6180339887
+
+0.618 0.618033988768953
+0.382 0.3819660112736623
+0.236 0.2360679775216284
+0.146 0.14589803376831154
+0.09 0.09016994376337698
+0.056 0.05572809001115205
+0.034 0.03444185375606755
+0.021 0.021286236257459373
+0.013 0.013155617500075927
+0.008 0.008130618758290567
+0.005 0.00502499874234599
+```
+
+### scm-format
+format scheme code
+depends on sph-lib
+
+### http-status
+display the http-status code for an url
+
+### take-screenshots-in-intervals
+creates a screenshot every n seconds and saves it in a configured directory.
+depends on scrot
+
 ### cpioc
 create a cpio archive by reading paths from standard-input
 

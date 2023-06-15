@@ -1,0 +1,9 @@
+#!/bin/sh -e
+
+# convert a 32 bit pcm wave file to flac.
+
+name=$(basename "$1" .wav)
+new_name=16b_"$name"
+sox "$name.wav" -b16 "$new_name.wav"
+flac --delete-input-file "$new_name.wav"
+mv "$new_name.flac" "$name.flac"

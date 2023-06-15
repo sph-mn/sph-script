@@ -4,7 +4,7 @@
 ; depends on guile and sph-lib
 ;
 
-(import (sph) (sph alist) (sph cli) (sph list) (sph io))
+(import (srfi srfi-1) (sph) (sph alist) (sph cli) (sph list) (sph io))
 
 (define cli-parser
   (cli-create #:options
@@ -12,7 +12,7 @@
       ( (union #:names #\u) (intersection #:names #\i) (difference #:names #\d)
         (complement #:names #\c) ((file-path ...))))
     #:description
-    "applies set operations to sets of lines of files and writes the result to standard output"))
+    "applies set operations to the lines of files, where each file is one set, and writes the result to standard output"))
 
 (define (file-lines-set-operations-cli)
   (let*

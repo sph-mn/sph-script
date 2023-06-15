@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# open new files in emacs without opening a window.
+# useful for searching and adding files in one terminal and editing in an open emacs window in another terminal.
+
+for file in $@
+do
+  emacsclient -e '(find-file "'$file'")'
+done

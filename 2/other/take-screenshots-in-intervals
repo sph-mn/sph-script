@@ -5,7 +5,7 @@
 # usage: take-screenshots-in-intervals [interval destination_dir]
 # dependencies: scrot
 
-image_width=300
+image_width=400
 interval=1000
 destination_root="$HOME/interval-screenhots"
 
@@ -36,7 +36,7 @@ scale_image() {
 }
 
 while true; do
-  # the date might change while this loop is running
+  # the date may change while this loop is running
   date=$(date --utc +%Y-%m-%d.%j)
   directory="$destination_root/$date"
   mkdir -p $directory

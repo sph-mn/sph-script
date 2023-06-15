@@ -4,21 +4,24 @@
 # username and password are optional. if username is ommited it is set to the database name.
 # if password is ommitted it is set to the username.
 
-if [ $# -eq 0 ]
+if test $# -eq 0
 then
   echo usage: database_name username password
   exit
 fi
 
-if [[ $# -eq 1 ]]; then
+if test $# -eq 1
+then
   database=$1
   username=$1
   password=$1
-elif [[ $# -eq 2 ]]; then
+elif test $# -eq 2
+then
   database=$1
   username=$2
   password=$2
-elif [[ $# -eq 3 ]]; then
+elif test $# -eq 3
+then
   database=$1
   username=$2
   password=$3

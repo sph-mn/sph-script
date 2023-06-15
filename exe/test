@@ -36,9 +36,9 @@
       "1/filesystem/mount-home" "1/filesystem/mount-sshfs-home"
       "1/text/lines-filter" "2/text/tabular-select"
       "1/filesystem/splice" "2/filesystem/move-and-link"
-      "2/filesystem/merge-files" "1/other/scm-format"
+      "2/filesystem/merge-files" "2/other/scm-format"
       "2/media/video-extract-audio" "1/other/restart-on-end"
-      "1/time/hms-to-ks" "2/filesystem/tag-remove"
+      "2/time/hms-to-ks" "2/filesystem/tag-remove"
       "2/filesystem/tag-sort" "2/filesystem/tag-add" "2/convert/hex" "2/convert/binary")))
 
 (define (test-compress-whitespace-columns)
@@ -59,9 +59,9 @@
 
 (define (test-iso-week-number) (integer? (execute->number "1/time/iso-week-number")))
 (define (test-day-seconds) (integer? (execute->number "1/time/day-seconds")))
-(define (test-uptime-start-ks) (number? (execute->number "1/time/uptime-start-ks")))
-(define (test-uptime-duration-ks) (number? (execute->number "1/time/uptime-start-ks")))
-(define (test-ks-time) (number? (execute->number "1/time/ks-time")))
+(define (test-uptime-start-ks) (number? (execute->number "2/time/uptime-start-ks")))
+(define (test-uptime-duration-ks) (number? (execute->number "2/time/uptime-start-ks")))
+(define (test-ks-time) (number? (execute->number "2/time/ks-time")))
 
 (define untested-description
   "; yet untested:

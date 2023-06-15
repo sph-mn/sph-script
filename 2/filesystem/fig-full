@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# like fig but displays full paths
+
+find "$PWD" | lines-reject /.git/ /node_modules/ /vendor/ | lines-filter "$@"
