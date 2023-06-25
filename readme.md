@@ -146,10 +146,10 @@
 │   ├── alternate-text-direction
 │   ├── camelcase-to-dash
 │   ├── camelcase-to-underscore
-│   ├── decapitalise
+│   ├── decapitalize
 │   ├── itpn
 │   ├── itpn-split
-│   ├── randomise-lines
+│   ├── randomize-lines
 │   ├── remove-hash-comment-lines
 │   ├── remove-iso-date-prefix-zeros
 │   ├── remove-semicolon-comment-lines
@@ -670,16 +670,16 @@ $ echo camelCaseString | camelcase-to-dashes
 camel-case-string
 ~~~
 
-### decapitalise
+### decapitalize
 remove capitalisation from words read on standard-input.
 
 ### file-lines-intersection
 ### ls-file-size
 
-### randomise-lines
-randomises the order of lines read from standard input.
+### randomize-lines
+randomizes the order of lines read from standard input.
 
-$ cat testfile | randomise-lines
+$ cat testfile | randomize-lines
 ~~~
 test-3
 test-2
