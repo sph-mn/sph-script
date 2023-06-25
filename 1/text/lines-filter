@@ -1,7 +1,7 @@
 #!/usr/bin/guile
 !#
 
-(import (sph) (sph io) (sph alist) (sph string) (sph cli))
+(use-modules (sph) (sph io) (sph alist) (sph string) (sph cli))
 
 (define lines-filter-cli
   (let

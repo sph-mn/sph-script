@@ -1,18 +1,20 @@
 #!/usr/bin/guile
 !#
 
-; search :: search-string ...
-; search for strings inside files under the current working directory and list paths of matching files
 (use-modules (srfi srfi-1) (sph) (sph process) (sph process create))
 
-(define (search-cli to-search . to-filter) (execute "clear")
+(define (search-cli to-search . to-filter)
+  "search :: search-string ...
+   search for strings inside files under the current working directory and list paths of matching files"
+  (execute "clear")
   (let*
     ( (lines
         (process-chain->string #f
           (list
             (list "grep" "--dereference-recursive"
               "--exclude-dir=node_modules" "--exclude-dir=vendor"
-              "--fixed-strings" "--ignore-case" "--line-number" "--binary-files=without-match" to-search)
+              "--fixed-strings" "--ignore-case"
+              "--line-number" "--binary-files=without-match" to-search)
             (pair "lines-filter" to-filter))
           #:search-path? #t))
       (file-paths
