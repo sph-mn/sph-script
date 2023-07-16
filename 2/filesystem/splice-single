@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# remove overly nested directories by moving the contents of directories with only one entry into the current directory.
+
+for a in "$@"
+do
+  if test -d "$a" -a 1 -eq $(ls "$a" --almost-all | wc -l)
+  then
+    b="$a-splice-single"
+    mv "$a" "$b"
+    mv -t . "$b"/*
+    rmdir "$b"
+  fi
+done

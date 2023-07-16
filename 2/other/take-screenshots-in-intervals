@@ -41,6 +41,6 @@ while true; do
   directory="$destination_root/$date"
   mkdir -p $directory
   full_path="$directory/$(day_seconds).jpg"
-  scrot --focused --quality 10 "$full_path" && scale_image $image_width "$full_path"
+  scrot --focused --quality 85 "$full_path" && scale_image $image_width "$full_path"
   sleep $interval
 done

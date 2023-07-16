@@ -1,0 +1,25 @@
+#!/usr/bin/guile
+!#
+
+(define description
+  "add a semicolon in front of the first space in a line, ignoring indent.
+   use case: creating csv data where the first space-separated word is the first column and
+   the rest of the line goes into a second column, instead of multiple columns if the csv were opened as space delimited")
+
+(use-modules (sph) (sph stream))
+(define delimiter ";")
+
+(stream-each
+  (lambda (a)
+    (let (indent (or (string-skip a #\space) 0))
+      (display
+        (string-append (substring a 0 indent)
+          (string-join
+            (apply
+              (lambda (first-column . rest-column)
+                (cons (if (null? rest-column) first-column (string-append first-column delimiter))
+                  rest-column))
+              (string-split (substring a indent) #\space))
+            " "))))
+    (newline))
+  (port->line-stream (current-input-port)))

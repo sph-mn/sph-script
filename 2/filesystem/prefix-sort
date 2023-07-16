@@ -1,71 +1,63 @@
 #!/usr/bin/guile
 !#
 
-; sort all files in a given directory into directories based on shared dot-separated file name prefixes.
-; depends on guile and sph-lib
+(define description
+  "group files into directories based on delimiter separated prefixes, if at least two files with the given prefix exist.
+   for example, a.1 and a.2 are moved to a/a.1 and a/a.2. the default delimiter is \".\".
+   depends on guile and sph-lib")
 
-(import (sph filesystem) (sph hashtable)
-  (sph io) (sph list)
-  (sph number) (sph other)
-  (sph process) (sph string) (sph vector) (sph) (sph cli) (sph list one) (ice-9 pretty-print))
+(use-modules (sph) (sph cli)
+  (sph list) (sph list other)
+  (sph alist) (ice-9 pretty-print) (srfi srfi-1) (sph filesystem) (sph string))
 
 (define default-delimiter #\.)
 
-(define (prefix-sort dry-run? delimiter . paths)
-  (each
-    (l (path-parent)
-      (let
-        (action-data
-          (let*
-            ( (file-data
-                (let*
-                  ( (file-names (directory-list path-parent))
-                    (prefixes (map (l (a) (first (string-split a delimiter))) file-names)))
-                  (filter-map
-                    (l (prefix file-name)
-                      (let (prefix-count (count (l (a) (string-prefix-ci? prefix a)) prefixes))
-                        (and (> prefix-count 1)
-                          (pair prefix (string-append path-parent "/" file-name)))))
-                    prefixes file-names)))
-              (groups (group file-data first)))
-            (append-map
-              (l (a)
-                (apply
-                  (l (prefix . file-data)
-                    (pair (list (q mkdir) (string-append path-parent "/" prefix))
-                      (map
-                        (l (path-file)
-                          (list (q rename-file) path-file
-                            (string-append path-parent "/" prefix "/" (basename path-file))))
-                        (map tail file-data))))
-                  a))
-              groups)))
-        (if dry-run? (pretty-print action-data)
-          (every
-            (l (a)
-              (catch #t
-                (nullary
-                  (apply
-                    (case (first a)
-                      ((rename-file) rename-file)
-                      ((mkdir) mkdir))
-                    (tail a)))
-                (l a #t)))
-            action-data))))
-    (map path->full-path paths)))
+(define (prefix-sort-action-data delimiter paths)
+  (let*
+    ( (paths (map path->full-path paths))
+      (prefixes-and-paths
+        (let*
+          ( (basenames (map basename paths)) (dirnames (map dirname paths))
+            (prefixes (map (l (a) (first (string-split a delimiter))) basenames)))
+          (filter-map
+            (l (prefix dir base)
+              (let (prefix-count (count (l (a) (string-equal? prefix a)) prefixes))
+                (and (< 1 prefix-count)
+                  (let
+                    ((target (string-append dir "/" prefix)) (source (string-append dir "/" base)))
+                    (and (not (string-equal? target source)) (pair target source))))))
+            prefixes dirnames basenames))))
+    (map-apply (l (target . sources) (pair target (map tail sources)))
+      (group prefixes-and-paths first))))
+
+(define (dry-run-f name) (l a (pretty-print (pair name a))))
+
+(define (prefix-sort dry-run? delimiter paths)
+  (let
+    ( (rename-file (if dry-run? (dry-run-f (q rename-file)) rename-file))
+      (mkdir (if dry-run? (dry-run-f (q mkdir)) mkdir)))
+    (each
+      (l (target-and-sources)
+        (catch #t
+          (nullary
+            (let (target (first target-and-sources))
+              (if (not (file-exists? target)) (mkdir target))
+              (each (l (source) (rename-file source (string-append target "/" (basename source))))
+                (tail target-and-sources))))
+          (l a (display-line (append a target-and-sources)))))
+      (prefix-sort-action-data delimiter paths))))
 
 (define (prefix-sort-cli)
   (let*
     ( (cli
         (cli-create #:options
-          (q ((delimiter #:names #\d #:value-required? #t) (dry-run) ((path-directory ...))))
-          #:description
-          "in the specified directories, group files with the same (by default dot separated) prefix into a directory"))
+          (q ((delimiter #:names #\d #:value-required? #t) (dry-run) ((paths ...)))) #:description
+          description))
       (arguments (cli))
       (delimiter
         (let (a (alist-ref-q arguments delimiter))
           (if (and (string? a) (= 1 (string-length a))) (string-ref a 0) default-delimiter))))
-    (apply prefix-sort (alist-ref-q arguments dry-run)
-      delimiter (any->list (alist-ref-q arguments path-directory)))))
+    (prefix-sort (alist-ref-q arguments dry-run) delimiter
+      (any->list (alist-ref-q arguments paths)))))
 
 (prefix-sort-cli)

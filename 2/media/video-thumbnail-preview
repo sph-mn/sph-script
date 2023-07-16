@@ -5,10 +5,10 @@
 # depends on ffmpeg and https://gitlab.com/movie_thumbnailer/mtn
 # usage: output_directory video_path ...
 
-rows=4
-columns=4
+rows=8
+columns=8
 gap=0
-width=900
+width=1800
 edge_detection_strength=8
 skip=0
 background=ffffff

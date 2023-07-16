@@ -2,9 +2,10 @@
 
 if ! test $# -eq 3
 then
-  echo missing arguments. :: directory-perm file-perm path
+  echo missing arguments. :: directory-perm file-perm path ...
   exit 1
 fi
 
-find "$3" -type d -exec chmod "$1" {} \;
-find "$3" -type f -exec chmod "$2" {} \;
+command=chmod
+find "$3" -type d -exec $command "$1" {} \;
+find "$3" -type f -exec $command "$2" {} \;
