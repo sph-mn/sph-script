@@ -1,8 +1,8 @@
 #!/usr/bin/env guile
 !#
 
-; remove video tags added by prepend-video-tags
-; usage: remove-video-tags path ...
+(define description
+  "remove video tags added by prepend-video-tags. usage: remove-video-tags path ...")
 
 (import (sph filesystem) (sph hashtable)
   (sph io) (sph list)
@@ -10,11 +10,10 @@
   (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph media-info))
 
 (define (remove-tags a)
-  (let ((regexp (make-regexp "^[0-9]{1,4}(r|p|hs|q|l|ks)$")) (parsed (reverse (string-split a #\.))))
-    (string-join
-      (append (filter-map (l (a) (and (not (regexp-exec regexp a)) a)) (tail parsed))
-        (list (first parsed)))
-      ".")))
+  (let
+    ( (regexp (make-regexp "^[0-9]{1,4}(p|r|hs|q|l|ks)([0-9]+)?(-[0-9]+)?$"))
+      (parsed (string-split a #\.)))
+    (string-join (filter-map (l (a) (and (not (regexp-exec regexp a)) a)) parsed) ".")))
 
 (let (paths (map path->full-path (tail (program-arguments))))
   (each

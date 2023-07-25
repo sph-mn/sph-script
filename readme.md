@@ -730,8 +730,11 @@ download videos from youtube with a filename that includes upload date, video id
 depends on [youtube-dl](https://ytdl-org.github.io/youtube-dl), which is also available in some package repositories.
 
 ### prepend-video-tags
-experimental script that adds a number that corresponds to video quality to the front of given video filenames. one use case is to sort videos in a directory by quality.
-considers resolution and frame rate.
+prepend "{pixel-height}p{frames-per-second}." to file names.
+
+~~~
+$ prepend-video-tags path ...
+~~~
 
 remove-video-tags removes the tags.
 

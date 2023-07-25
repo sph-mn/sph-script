@@ -26,14 +26,13 @@
     (if (list? a) (map json-result->list a) a)))
 
 (define (media-info-video path)
-  (let*
-    ( (data
-        (json-result->list
-          (json-string->scm
-            (string-trim-right
-              (execute->string "ffprobe" "-v" "quiet" "-print_format" "json" "-show_streams" path))))))
-    (if (and data (not (null? data)))
+  (let
+    (data
+      (json-result->list
+        (json-string->scm
+          (string-trim-right
+            (execute->string "ffprobe" "-v" "quiet" "-print_format" "json" "-show_streams" path)))))
+    (and data (not (null? data))
       (first
         (filter (l (a) (string-equal? "video" (alist-ref a "codec_type")))
-          (vector->list (alist-ref data "streams"))))
-      #f)))
+          (vector->list (alist-ref data "streams")))))))

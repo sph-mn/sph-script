@@ -1,56 +1,32 @@
-#!/usr/bin/env guile
+#!/usr/bin/guile
 !#
 
-(use-modules (srfi srfi-1) (srfi srfi-2)
-  (sph string) (sph) (sph cli) (sph alist) (sph hashtable) (sph list) (sph media-info))
+(use-modules (srfi srfi-2) (sph string) (sph) (sph cli) (sph alist) (sph media-info))
 
 (define prepend-video-quality-tags-description
-  "prepend strings to a filename that give information about video content like quality or duration.
-   the current format is {pixel-height}p.{duration}s.
+  "prepend \"{pixel-height}p{frames-per-second}.\" to filenames.
    usage: prepend-video-tags path ...")
-
-(define (media-info-video-f path)
-  (let (media-info (media-info-video path))
-    (l (key . processors)
-      (and-let* ((value (alist-ref media-info key)))
-        (fold (l (processor result) (processor value)) value processors)))))
-
-(define (get-media-info path)
-  (let* ((get (media-info-video-f path)) (duration (or (get "duration" string->number) 1)))
-    (alist-q duration duration
-      height (get "height")
-      framerate (inexact->exact (round (/ (or (get "nb_frames" string->number) 0) duration))))))
 
 (define (rename-dry-run old new)
   (display-line (string-append (string-quote old) " -> " (string-quote new))))
 
-(define (quality-rating height framerate)
-  (+ (- (max 1 (inexact->exact (round (/ framerate 30)))) 1)
-    (cond ((< 2000 height) 4) ((< 1000 height) 3) ((< 500 height) 2) (else 1))))
+(define (media-info-get-number media-info key)
+  (let (a (alist-ref media-info key)) (if (string? a) (string->number a) a)))
 
-(define (duration-rating a)
-  (cond ((< 3600 a) 6) ((< 1800 a) 5) ((< 900 a) 4) ((< 300 a) 3) ((< 120 a) 2) (else 1)))
+(define (get-tag path)
+  (and-let* ((media-info (media-info-video path)) (height (alist-ref media-info "height")))
+    (string-append (number->string height) "p"
+      (or
+        (and-let*
+          ( (duration (media-info-get-number media-info "duration"))
+            (frames (media-info-get-number media-info "nb_frames")))
+          (number->string (inexact->exact (round (/ frames duration)))))
+        ""))))
 
-(define (duration-rating-string a) (number->string (duration-rating a)))
+(define (add-tag path tag dry-run)
+  (let (new-path (string-append (dirname path) "/" tag "." (basename path)))
+    (if (not (string-equal? new-path path)) ((if dry-run rename-dry-run rename-file) path new-path))))
 
-(define (combined-rating-string height framerate duration)
-  (string-append (number->string (if height (quality-rating height framerate) 0))
-    (number->string (if duration (duration-rating duration) 0)) "r"))
-
-(define (create-tags-string data)
-  (alist-bind data (height framerate duration)
-    (let (tags (compact (list (combined-rating-string height framerate duration))))
-      (string-join tags "." (q suffix)))))
-
-(define (prepend-video-tags paths dry-run)
-  (each
-    (l (path)
-      (and-let* ((data (get-media-info path)) (tags-string (create-tags-string data)))
-        (if (not (string-null? tags-string))
-          (let (new-path (string-append (dirname path) "/" tags-string (basename path)))
-            (if (not (string-equal? path new-path))
-              ((if dry-run rename-dry-run rename-file) path new-path))))))
-    paths))
-
-(let (cli (cli-create #:options (q ((dry-run) ((paths ...))))))
-  (alist-bind (cli) (paths dry-run) (prepend-video-tags paths dry-run)))
+(let (options ((cli-create #:options (q ((dry-run) ((paths ...)))))))
+  (alist-bind options (paths dry-run)
+    (each (l (path) (and-let* ((tag (get-tag path))) (add-tag path tag dry-run))) paths)))
