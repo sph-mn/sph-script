@@ -1,2 +1,3 @@
 #!/bin/sh
-duff -re "$@" |nargs rm
+
+find "$@" | sdupes | nargsp rm

@@ -11,8 +11,7 @@ then
   echo missing argument
 fi
 
-#a="/tmp/$1.$(iso-date)"
-a="/home/nonroot/t/file-list/$1.$(iso-date)"
+a="/home/nonroot/t/file-list/$1"
 
 # disk size/usage header
 df --si --output=size,avail,pcent . > "$a"
