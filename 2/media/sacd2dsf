@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# extract stereo .dsf dsd files from an sacd iso image file.
+
+sacd_extract --2ch-tracks --output-dsf --input="$1"

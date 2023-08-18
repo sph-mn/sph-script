@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# merge any directory with the current one if it contains only one entry.
+
+for path in "$@"
+do
+  # test if directory that contains only one entry.
+  if test -d "$path" -a 1 -eq $(ls "$path" --almost-all | wc -l)
+  then
+    # handle contents with the same name as the directory.
+    tmp="$path-splice-single"
+    mv "$path" "$tmp"
+    mv -t . "$tmp"/*
+    rmdir "$tmp"
+  fi
+done
