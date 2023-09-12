@@ -8,7 +8,7 @@ do
   if test -d "$path" -a 1 -eq $(ls "$path" --almost-all | wc -l)
   then
     # handle contents with the same name as the directory.
-    tmp="$path-splice-single"
+    tmp="$(basename "$path")-splice-single"
     mv "$path" "$tmp"
     mv -t . "$tmp"/*
     rmdir "$tmp"

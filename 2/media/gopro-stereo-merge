@@ -1,0 +1,38 @@
+#!/bin/sh -e
+
+# create a side-by-side image or video from files made with the gopro hero dual hero system sync cable.
+# assumes that the two cameras were positioned unrotated next to each other, which is unlike the default dual hero system configuration. this requires rotation of the left image.
+# accepts left and right files in any order and assumes that the file names have the automatically assigned 3D_L and 3D_R prefixes.
+# usage: path1 path2
+
+# select left and right image
+if test "3D_L" = $(basename "$1" | cut -c 1-4)
+then
+  left="$1"
+  right="$2"
+elif test "3D_L" = $(basename "$2" | cut -c 1-4)
+then
+  left="$2"
+  right="$1"
+else
+  echo error: file names must begin with 3D_ prefix. $@
+  exit 1
+fi
+
+output=$(basename "$left")
+output=$(printf "$output" | cut -c 5-)
+output="$(dirname "$left")/sbs-$output"
+
+extension=$(printf "$left" | tail -c 3)
+
+if test MP4 = $extension
+then
+  # use only "-filter_complex hstack" for merge without any rotation.
+  ffmpeg -y -i "$left" -i "right" -filter_complex "[1]transpose=2,transpose=2[a];[a][0]hstack" -c:v libx264 "$output"
+elif test JPG = $extension
+then
+  convert "$left" -rotate 180 "$right" -gravity North +append "$output"
+else
+  echo error: invalid filename extension
+  exit 1
+fi

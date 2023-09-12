@@ -11,7 +11,7 @@
 
 (define (remove-tags a)
   (let
-    ( (regexp (make-regexp "^[0-9]{1,4}(p|r|hs|q|l|ks)([0-9]+)?(-[0-9]+)?$"))
+    ( (regexp (make-regexp "^[0-9]{1,4}(p|r|hs|q|l|ks)([0-9]+)?-?([0-9]+)?$"))
       (parsed (string-split a #\.)))
     (string-join (filter-map (l (a) (and (not (regexp-exec regexp a)) a)) parsed) ".")))
 

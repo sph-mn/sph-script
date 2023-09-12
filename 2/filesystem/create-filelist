@@ -17,6 +17,6 @@ a="/home/nonroot/t/file-list/$1"
 df --si --output=size,avail,pcent . > "$a"
 
 # file listing
-find >> "$a"
+find . >> "$a"
 
 echo "written to $a"
