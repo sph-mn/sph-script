@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# combine two images into one side-by-side image.
+
+convert "$1" "$2" -gravity North +append "sbs-$1"

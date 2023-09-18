@@ -1,0 +1,8 @@
+#!/bin/sh
+
+for x in "$@"
+do
+  extension="$(printf "$x" | tail -c 4)"
+  output="$(dirname "$x")/$(basename "$x" "$extension")"
+  convert $x -crop 50%x100% +repage "$output-1.jpg" "$output-2.jpg"
+done

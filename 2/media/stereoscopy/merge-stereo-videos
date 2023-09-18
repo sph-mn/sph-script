@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# combine two videos into one side-by-side video.
+# note that re-encoding is unfortunately necessary with this configuration.
+
+ffmpeg -y -i "$1" -i "$2" -filter_complex hstack "sbs-$1"

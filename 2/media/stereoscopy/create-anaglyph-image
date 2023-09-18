@@ -1,0 +1,3 @@
+#!/bin/sh
+
+composite "$1" "$2" -stereo 0 "ag-$1"

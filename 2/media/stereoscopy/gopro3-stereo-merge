@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-# create a side-by-side image or video from files made with the gopro hero dual hero system sync cable.
+# create a side-by-side image or video from files made with the gopro hero3+ dual hero system sync cable.
 # assumes that the two cameras were positioned unrotated next to each other, which is unlike the default dual hero system configuration. this requires rotation of the left image.
 # accepts left and right files in any order and assumes that the file names have the automatically assigned 3D_L and 3D_R prefixes.
 # usage: path1 path2
