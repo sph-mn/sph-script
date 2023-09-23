@@ -22,8 +22,8 @@ fi
 echo "destination: $destination_root, interval: ${interval}s"
 
 day_seconds() {
-  now=$(date --utc '+%s')
-  midnight=$(date --utc -d 'today 00:00:00' '+%s')
+  now=$(date -u '+%s')
+  midnight=$(date -u -d 'today 00:00:00' '+%s')
   echo $((now - midnight))
 }
 
@@ -37,7 +37,7 @@ scale_image() {
 
 while true; do
   # the date may change while this loop is running
-  date=$(date --utc +%Y-%m-%d.%j)
+  date=$(date -u +%Y-%m-%d.%j)
   directory="$destination_root/$date"
   mkdir -p $directory
   full_path="$directory/$(day_seconds).jpg"

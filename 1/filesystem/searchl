@@ -1,15 +1,17 @@
 #!/usr/bin/env guile
 !#
+
 (use-modules (sph) (sph process) (sph process create))
 
 (define (searchl-cli to-search . to-filter)
-  ;(execute "clear")
+  ; (execute "clear")
   (process-chain-finish-success?
     (process-chain #f (current-output-port)
       (list
         (list "grep" "--dereference-recursive"
           "--exclude-dir=node_modules" "--exclude-dir=vendor"
-          "--fixed-strings" "--ignore-case" "--line-number" "--binary-files=without-match" to-search)
+          "--exclude-dir=cache" "--fixed-strings"
+          "--ignore-case" "--line-number" "--binary-files=without-match" to-search)
         (pair "lines-filter" to-filter))
       #:search-path? #t)))
 

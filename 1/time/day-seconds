@@ -1,5 +1,5 @@
 #!/bin/sh
 
-now=$(date --utc '+%s')
+now=$(date -u '+%s')
 midnight=$(date --utc -d 'today 00:00:00' '+%s')
 echo $((now - midnight))
