@@ -1,5 +1,3 @@
-#!/usr/bin/guile
-!#
+#!/usr/bin/sh
 
-(import (sph io))
-(port-lines-map->port string-downcase)
+tr "[:upper:]" "[:lower:]"

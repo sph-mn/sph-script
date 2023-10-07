@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# mount filesystem then search for image and video files and move them into an automatically created directory.
+# prepends the current date to file names and lowercases the file names (this also changes .JPG to .jpg).
+# example: get-photos /dev/sdb1
+
+sudo umount /mnt/photos --quiet
+m="/mnt/photos"
+mkdir -p "$m"
+sudo mount "$1" -o rw,umask=000,errors=continue "$m"
+filename_regexp="(.jpg|.mp4|.rw2)$"
+
+if test 0 = $(find "$m" -type f | grep -iE $filename_regexp | wc -l)
+then
+  echo no files found
+  sudo umount "$m"
+  exit
+fi
+
+year=$(date +%Y)
+year_month=$(date +%Y-%m)
+t="/home/nonroot/nosync/media/$year/0/$year-month"
+mkdir -p "$t"
+cd "$t"
+
+# --no-clobber prevents overwriting existing files
+find "$m" -type f | grep -iE $filename_regexp | nargs mv --no-clobber --target-directory=.
+find -type f | nargs-all prepend-date
+find -type f | nargs-all rename-lowercase
+
+sudo umount "$m"

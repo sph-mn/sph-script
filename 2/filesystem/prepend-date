@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# prepends date to the filename unless it already exists.
+# path -> dirname/yyyy-mm-dd.basename
+
+date=$(date +%Y-%m-%d)
+
+for a in "$@"
+do
+  base="$(basename "$a")"
+  if ! echo "$base" | grep -E "^$date" > /dev/null
+  then
+     dir="$(dirname "$a")"
+     mv "$a" "$dir/$date.$base"
+  fi
+done

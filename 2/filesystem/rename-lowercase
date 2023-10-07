@@ -1,7 +1,12 @@
-#!/usr/bin/guile
-!#
+#!/usr/bin/sh
 
-(import (sph filesystem) (sph hashtable) (sph io) (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph))
-
-(apply (l (program-name . paths) (each (l (e) (rename-file e (string-downcase e))) paths))
-  (program-arguments))
+for a in "$@"
+do
+  base="$(basename "$a")"
+  dir="$(dirname "$a")"
+  b="$dir/$(echo "$base" | tr "[:upper:]" "[:lower:]")"
+  if ! test "$a" = "$b"
+  then
+    mv "$a" "$b"
+  fi
+done
