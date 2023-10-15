@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh
 
 # create a side-by-side image or video from files made with the gopro hero3+ dual hero system sync cable.
 # assumes that the two cameras were positioned unrotated side by side, which is unlike the default dual hero system configuration. this requires rotation of the left image.
@@ -6,11 +6,11 @@
 # usage: path1 path2
 
 # select left and right image
-if test "3D_L" = $(basename "$1" | cut -c 1-4)
+if basename "$1" | grep -i "3d_l"
 then
   left="$2"
   right="$1"
-elif test "3D_L" = $(basename "$2" | cut -c 1-4)
+elif basename "$2" | grep -i "3d_l"
 then
   left="$1"
   right="$2"
@@ -20,16 +20,14 @@ else
 fi
 
 output=$(basename "$left")
-output=$(printf "$output" | cut -c 5-)
-output="$(dirname "$left")/sbs-$output"
-
+output="$(dirname "$left")/sbs.$output"
 extension=$(printf "$left" | tail -c 3)
 
-if test MP4 = $extension
+if test mp4 = $extension
 then
   # use only "-filter_complex hstack" for merge without any rotation.
   ffmpeg -y -i "$left" -i "$right" -filter_complex "[1]transpose=1,transpose=1[a];[0][a]hstack" -c:v libx264 "$output"
-elif test JPG = $extension
+elif test jpg = $extension
 then
   convert "$left" -rotate 180 "$right" -rotate 180 +append "$output"
 else

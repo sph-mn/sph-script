@@ -4,9 +4,11 @@ for a in "$@"
 do
   base="$(basename "$a")"
   dir="$(dirname "$a")"
+  a="$dir/$base"
   b="$dir/$(echo "$base" | tr "[:upper:]" "[:lower:]")"
   if ! test "$a" = "$b"
   then
+    echo "$a -> $b"
     mv "$a" "$b"
   fi
 done

@@ -7,4 +7,4 @@
 #   fig test
 #   fig --regexp "t[a-z]st"
 
-find . | lines-reject /.git/ /node_modules/ /vendor/ | lines-filter "$@"
+find . | lines-reject /.git/ /node_modules/ /vendor/ var/cache/ | lines-filter "$@"

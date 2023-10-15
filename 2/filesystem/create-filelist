@@ -9,6 +9,7 @@
 if test -z $1
 then
   echo missing argument
+  exit
 fi
 
 a="/home/nonroot/t/file-list/$1"
@@ -17,6 +18,6 @@ a="/home/nonroot/t/file-list/$1"
 df --si --output=size,avail,pcent . > "$a"
 
 # file listing
-find . >> "$a"
+find . -xdev >> "$a"
 
 echo "written to $a"
