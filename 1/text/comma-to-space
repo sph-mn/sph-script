@@ -1,0 +1,7 @@
+#!/usr/bin/guile
+!#
+
+(use-modules (sph stream))
+
+(stream-each (lambda (a) (display (string-append (string-trim-both a) " ")) )
+  (port->delimited-stream "," (current-input-port)))

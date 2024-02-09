@@ -4,7 +4,7 @@
 (use-modules (srfi srfi-2) (sph string) (sph) (sph cli) (sph alist) (sph media-info))
 
 (define prepend-video-quality-tags-description
-  "prepend \"{pixel-height}p{frames-per-second}.\" to filenames.
+  "prepend \"{shortest-pixel-side}p{frames-per-second}.\" to filenames.
    usage: prepend-video-tags path ...")
 
 (define (rename-dry-run old new)
@@ -14,13 +14,16 @@
   (let (a (alist-ref media-info key)) (if (string? a) (string->number a) a)))
 
 (define (get-tag path)
-  (and-let* ((media-info (media-info-video path)) (height (alist-ref media-info "height")))
-    (string-append (number->string height) "p"
+  (and-let*
+    ( (media-info (media-info-video path))
+      (resolution (min (alist-ref media-info "height") (alist-ref media-info "width"))))
+    (string-append (number->string resolution) "p"
       (or
         (and-let*
           ( (duration (media-info-get-number media-info "duration"))
             (frames (media-info-get-number media-info "nb_frames")))
-          (number->string (inexact->exact (round (/ frames duration)))))
+          (string-append (number->string (inexact->exact (round (/ frames duration)))) "-"
+            (number->string (inexact->exact (round (/ duration 100))))))
         ""))))
 
 (define (add-tag path tag dry-run)

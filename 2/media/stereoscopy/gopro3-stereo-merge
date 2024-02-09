@@ -6,16 +6,16 @@
 # usage: path1 path2
 
 # select left and right image
-if basename "$1" | grep -i "3d_l"
+if echo "$1" | grep -i "3d_l"
 then
   left="$2"
   right="$1"
-elif basename "$2" | grep -i "3d_l"
+elif echo "$2" | grep -i "3d_l"
 then
   left="$1"
   right="$2"
 else
-  echo error: file names must begin with 3D_ prefix. $@
+  echo error: file names must begin with 3d prefix. $@
   exit 1
 fi
 
@@ -26,7 +26,7 @@ extension=$(printf "$left" | tail -c 3)
 if test mp4 = $extension
 then
   # use only "-filter_complex hstack" for merge without any rotation.
-  ffmpeg -y -i "$left" -i "$right" -filter_complex "[1]transpose=1,transpose=1[a];[0][a]hstack" -c:v libx264 "$output"
+  ffmpeg -y -i "$left" -i "$right" -filter_complex "[1]transpose=1,transpose=1[a];[0][a]hstack" -c:v libx264 -crf 17 -preset slow -c:a copy "$output"
 elif test jpg = $extension
 then
   convert "$left" -rotate 180 "$right" -rotate 180 +append "$output"
