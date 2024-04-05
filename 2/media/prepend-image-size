@@ -1,0 +1,17 @@
+#!/bin/sh
+
+prepend_image_size() {
+  path="$1"
+  size=$(identify -format '%h' "$path")p
+  new_path="$(dirname "$path")/$size.$(basename "$path")"
+
+  if test ! -e "$new_path"
+  then
+    mv "$path" "$new_path"
+  fi
+}
+
+for a in "$@"
+do
+  prepend_image_size "$a"
+done

@@ -1,0 +1,3 @@
+#!/bin/sh
+
+find $@ -type f | nargs md5sum |grep -i $1

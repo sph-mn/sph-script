@@ -23,7 +23,8 @@
           ( (duration (media-info-get-number media-info "duration"))
             (frames (media-info-get-number media-info "nb_frames")))
           (string-append (number->string (inexact->exact (round (/ frames duration)))) "-"
-            (number->string (inexact->exact (round (/ duration 100))))))
+            (number->string (inexact->exact (round (/ duration 100)))))
+          (number->string (inexact->exact (round (/ frames duration)))))
         ""))))
 
 (define (add-tag path tag dry-run)

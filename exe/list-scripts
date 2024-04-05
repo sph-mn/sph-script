@@ -1,4 +1,4 @@
 #!/bin/sh
 echo ~~~
-tree 1 2 -L 2
+tree 1 2 -L 3 | grep -v node_modules
 echo ~~~

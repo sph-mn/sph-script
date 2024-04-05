@@ -1,8 +1,10 @@
-#!/bin/sh
+#!/bin/sh -e
 
-for x in "$@"
+for a in "$@"
 do
-  extension="$(printf "$x" | tail -c 4)"
-  output="$(dirname "$x")/$(basename "$x" "$extension")"
-  convert $x -crop 50%x100% +repage "$output-1.jpg" "$output-2.jpg"
+  extension="$(printf "$a" | tail -c 4)"
+  output_dir="$(dirname "$a")/split"
+  output="$output_dir/$(basename "$a" "$extension")"
+  mkdir -p "$output_dir"
+  convert "$a" -crop 50%x100% +repage "$output-%d.jpg"
 done

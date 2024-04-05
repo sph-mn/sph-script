@@ -2,35 +2,40 @@
 !#
 
 ; depends on guile and sph-lib
-(use-modules (srfi srfi-1) (sph) (sph alist) (sph cli) (sph list) (sph io))
+(use-modules (srfi srfi-1) (sph) (sph cli) (sph list) (sph io))
 
-(define cli-parser
+(define cli
   (cli-create #:options
     (q
       ( (union #:names #\u) (intersection #:names #\i) (difference #:names #\d)
         (complement #:names #\c) ((file-path ...))))
     #:description
-    "applies set operations to the lines of files, where each file is one set, and writes the result to standard output"))
+    "applies set operations to the lines of files. each file representing one set. writes the resulting lines to standard output"))
 
-(define (file-lines-set-operations-cli)
-  (let*
-    ( (a (cli-parser))
-      (set-op
-        (cond
-          ((alist-ref-q a union) union)
-          ((alist-ref-q a intersection) intersection)
-          ((alist-ref-q a difference) difference)
-          ((alist-ref-q a complement) complement)
-          (else #f))))
-    (if set-op
-      (let
-        (r
-          (apply call-with-input-files
-            (l files
-              (fold (l (file r) (set-op (port->lines file) r)) (port->lines (first files))
-                (tail files)))
-            (alist-ref-q a file-path)))
-        (each display-line r))
-      (display-line "no set operation selected"))))
+(define (file-lines-set-operations operation file-paths)
+  (let
+    (operation-f
+      (case operation
+        ((union) union)
+        ((intersection) intersection)
+        ((difference) difference)
+        ((complement) complement)
+        (else #f)))
+    (if operation-f
+      (apply call-with-input-files
+        (l files
+          (fold (l (file result) (operation-f result (port->lines file)))
+            (port->lines (first files)) (tail files)))
+        file-paths)
+      null)))
 
-(file-lines-set-operations-cli)
+(define (file-lines-set-operations-cli options)
+  (let
+    ( (operation
+        (first-or-false
+          (intersection (map first options) (q (union difference intersection complement)))))
+      (file-paths (assq-ref options (q file-path))))
+    (if (and operation file-paths)
+      (each display-line (file-lines-set-operations operation file-paths)) (cli (list "--help")))))
+
+(file-lines-set-operations-cli (cli))

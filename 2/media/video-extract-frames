@@ -1,0 +1,4 @@
+dir="$1-frames"
+
+mkdir -p "$dir"
+ffmpeg -i "$1" -vf "fps=1" "$dir/out-%03d.png"

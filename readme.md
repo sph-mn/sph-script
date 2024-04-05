@@ -13,6 +13,8 @@
 │   ├── list-broken-symlinks
 │   ├── mount-home
 │   ├── mount-sshfs-home
+│   ├── path-directories
+│   ├── path-permissions
 │   ├── search
 │   ├── searchl
 │   └── splice
@@ -24,6 +26,7 @@
 │   └── with-dialog-and-delay
 ├── text
 │   ├── comma-to-newline
+│   ├── comma-to-space
 │   ├── compress-whitespace-columns
 │   ├── file-lines-set-operations
 │   ├── lines-filter
@@ -53,9 +56,11 @@
 ├── filesystem
 │   ├── clone-disk
 │   ├── create-filelist
+│   ├── create-filelist-with-checksums
 │   ├── delete-duplicate-files
 │   ├── fig-full
 │   ├── file-size-sum
+│   ├── find-by-md5sum
 │   ├── format-encrypt
 │   ├── get-unique-path
 │   ├── gui-group
@@ -69,34 +74,45 @@
 │   ├── move-and-link
 │   ├── name-add-date
 │   ├── parent-dir-references
-│   ├── path-directories
-│   ├── path-permissions
 │   ├── prefix-sort
+│   ├── prepend-date
 │   ├── prepend-media-bitrate
 │   ├── prepend-to-filename
 │   ├── rename-lowercase
 │   ├── set-permissions
+│   ├── splice-if-single
 │   ├── tag-add
 │   ├── tag-remove
 │   ├── tag-sort
 │   └── tidyfiles
 ├── media
-│   ├── aac-to-wav
+│   ├── aac2wav
 │   ├── audio-file-loudness
-│   ├── create-video-from-png-images
-│   ├── create-video-thumbnail-preview
 │   ├── get-audio-disc-files
+│   ├── get-photos
 │   ├── media-info-json
 │   ├── media-info-video
 │   ├── media-info-video-bitrate
 │   ├── media-info-video-framerate
 │   ├── media-info-video-resolution
 │   ├── normalize-volume
+│   ├── prepend-image-size
 │   ├── prepend-video-tags
 │   ├── remove-video-tags
+│   ├── sacd2dsf
 │   ├── scale-images
 │   ├── split-flac-cue
+│   ├── stereoscopy
+│   │   ├── create-anaglyph-image
+│   │   ├── gopro3-stereo-merge
+│   │   ├── merge-stereo-images
+│   │   ├── merge-stereo-videos
+│   │   ├── split-stereo-images
+│   │   └── split-stereo-video
 │   ├── video-extract-audio
+│   ├── video-extract-frames
+│   ├── video-from-png-images
+│   ├── video-thumbnail-image
 │   ├── wav32-to-flac
 │   └── youtube-dl-with-date
 ├── other
@@ -119,7 +135,7 @@
 │   ├── http-status
 │   ├── ldd-list-not-found
 │   ├── mariadb-create-user-database-sql
-│   ├── scm-format
+│   ├── nargs-all
 │   ├── show-process-memory-usage-top
 │   ├── ssh-install-key
 │   ├── take-screenshot
@@ -138,6 +154,7 @@
 │   ├── json-to-file
 │   ├── lines-to-quoted-comma-lines
 │   ├── lines-to-scheme-data
+│   ├── scm-format
 │   ├── sql-format
 │   ├── wisp2lisp
 │   ├── xml-format
@@ -147,6 +164,7 @@
 │   ├── camelcase-to-dash
 │   ├── camelcase-to-underscore
 │   ├── decapitalize
+│   ├── first-space-to-semicolon
 │   ├── itpn
 │   ├── itpn-split
 │   ├── randomize-lines
@@ -164,7 +182,7 @@
     ├── uptime-duration-ks
     └── uptime-start-ks
 
-14 directories, 150 files
+16 directories, 167 files
 ~~~
 
 additionally included are:

@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# split a left-right video into two videos. some image degradation seems unavoidable because of necessary re-encoding of the resulting parts
+
+ffmpeg -i "$1" -filter_complex "[0]crop=iw/2:ih:0:0[left];[0]crop=iw/2:ih:ow:0[right]" -map "[left]" -map 0:a "left-$1" -map "[right]" -map 0:a "right-$1"
