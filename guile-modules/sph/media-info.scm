@@ -33,6 +33,6 @@
           (string-trim-right
             (execute->string "ffprobe" "-v" "quiet" "-print_format" "json" "-show_streams" path)))))
     (and data (not (null? data))
-      (first
+      (first-or-false
         (filter (l (a) (string-equal? "video" (alist-ref a "codec_type")))
           (vector->list (alist-ref data "streams")))))))

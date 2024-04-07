@@ -1,0 +1,10 @@
+# like repl but writes the entered line to the standard input of command
+# usage: repl command argument ...
+# examples: "repl-stdin wc -c"
+
+while true
+do
+  echo -n "  $@ "
+  read -r line
+  echo -n $line | $@
+done

@@ -13,24 +13,30 @@
 (define (media-info-get-number media-info key)
   (let (a (alist-ref media-info key)) (if (string? a) (string->number a) a)))
 
-(define (get-tag path)
-  (and-let*
-    ( (media-info (media-info-video path))
-      (resolution (min (alist-ref media-info "height") (alist-ref media-info "width"))))
-    (string-append (number->string resolution) "p"
-      (or
-        (and-let*
-          ( (duration (media-info-get-number media-info "duration"))
-            (frames (media-info-get-number media-info "nb_frames")))
-          (string-append (number->string (inexact->exact (round (/ frames duration)))) "-"
-            (number->string (inexact->exact (round (/ duration 100)))))
-          (number->string (inexact->exact (round (/ frames duration)))))
-        ""))))
+(define (get-duration-string duration)
+  (cond ((< duration 500) "d1") ((> duration 2500) "d3") ((> duration 5000) "d4") (else "d2")))
+
+(define (get-tag path with-duration)
+  (let (media-info (media-info-video path))
+    (and media-info
+      (let
+        ( (resolution (min (alist-ref media-info "height") (alist-ref media-info "width")))
+          (duration (media-info-get-number media-info "duration"))
+          (frames (media-info-get-number media-info "nb_frames")))
+        (string-append
+          (or (and with-duration duration (string-append (get-duration-string duration) "-")) "")
+          (number->string resolution) "p"
+          (or (and frames duration (number->string (inexact->exact (round (/ frames duration)))))
+            ""))))))
 
 (define (add-tag path tag dry-run)
   (let (new-path (string-append (dirname path) "/" tag "." (basename path)))
     (if (not (string-equal? new-path path)) ((if dry-run rename-dry-run rename-file) path new-path))))
 
-(let (options ((cli-create #:options (q ((dry-run) ((paths ...)))))))
-  (alist-bind options (paths dry-run)
-    (each (l (path) (and-let* ((tag (get-tag path))) (add-tag path tag dry-run))) paths)))
+(let (options ((cli-create #:options (q ((dry-run) (with-duration) ((paths ...)))))))
+  (alist-bind options (paths dry-run with-duration)
+    (each
+      (l (path)
+        (if (eq? (q regular) (stat:type (stat path)))
+          (and-let* ((tag (get-tag path with-duration))) (add-tag path tag dry-run))))
+      paths)))

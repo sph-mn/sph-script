@@ -22,6 +22,8 @@
 │   ├── git-log
 │   ├── nargs
 │   ├── nargsp
+│   ├── repl
+│   ├── repl-stdin
 │   ├── restart-on-end
 │   └── with-dialog-and-delay
 ├── text
@@ -336,6 +338,22 @@ path-permissions $PWD
 ~~~
 
 ideal for debugging permission issues
+
+### repl, repl-stdin
+create a prompt and execute a program for each line of input using the entered line as arguments.
+usage: repl command argument ...
+exit with ctrl+c (sigint).
+
+#### examples
+create a file search field in the terminal:
+~~~
+repl find -name
+~~~
+
+display the character count for each entered line:
+~~~
+repl-stdin wc -c
+~~~
 
 ### search
 search for a string inside files in the current directory and display the names of files where it is included

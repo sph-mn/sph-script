@@ -1,0 +1,11 @@
+# create a prompt and execute a program for each line of input, with the entered line as arguments.
+# exit with ctrl+c (sigint).
+# usage: repl command argument ...
+# examples: "repl find -name"
+
+while true
+do
+  echo -n "  $@ "
+  read -r line
+  $@ $line
+done
