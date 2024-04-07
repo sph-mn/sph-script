@@ -311,7 +311,7 @@ options
 * pass each newline separated line read from standard-input as an argument to a command
 * depends on "xargs"
 * equivalent to "xargs -n 1 -d \n"
-* "nargsp" distributes command calls over available cpu cores
+* "nargsp" executes commands in parallel
 
 ### path-directories
 lists all parent directories
@@ -340,9 +340,9 @@ path-permissions $PWD
 ideal for debugging permission issues
 
 ### repl, repl-stdin
-create a prompt and execute a program for each line of input using the entered line as arguments.
-usage: repl command argument ...
-exit with ctrl+c (sigint).
+* create a prompt and execute a program for each line of input using the entered line as arguments.
+* usage: repl command argument ...
+* exit with ctrl+c (sigint).
 
 #### examples
 create a file search field in the terminal:
@@ -386,7 +386,7 @@ this is a test
 usage
   options ... file-path ...
 description
-  applies set operations to the lines of files, where each file is one set, and writes the result to standard output
+  applies set operations to the lines of files. each file representing one set. writes the resulting lines to standard output
 options
   --complement | -c
   --difference | -d
@@ -418,13 +418,13 @@ like "lines-filter" but lists only the lines where none of the given strings mat
 ### lowercase
 convert all uppercase characters in a string read from standard input to lowercase characters
 
-$ echo TeEsT | lowercase
+$ echo TEsT | lowercase
 ~~~
 test
 ~~~
 
 ### newline-to-comma
-like newline-to-space but converts to comma separated entries
+like newline-to-space but converts to comma-separated entries
 
 $ ls / | newline-to-comma
 ~~~
@@ -455,6 +455,7 @@ display the current time in the format hh:mm:ss
 
 ### iso-date
 display the current iso date
+
 $ iso-date
 ~~~
 2015-11-15
