@@ -340,9 +340,12 @@ path-permissions $PWD
 ideal for debugging permission issues
 
 ### repl, repl-stdin
-* create a prompt and execute a program for each line of input using the entered line as arguments.
+creates a prompt and executes the same program for each line of input using user input as additional arguments.
+this way, the same command prefix does not have to be rewritten each time and new arguments can just be pasted in.
+
 * usage: repl command argument ...
-* exit with ctrl+c (sigint).
+* exit with ctrl+d or ctrl+c (sigint)
+* repl-stdin passes the user input to the standard input of the command
 
 #### examples
 create a file search field in the terminal:
