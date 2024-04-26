@@ -1,11 +1,22 @@
-# create a prompt and execute a program for each line of input, with the entered line as arguments.
-# exit with ctrl+c (sigint).
-# usage: repl command argument ...
-# examples: "repl find -name"
+#!/usr/bin/node
 
-while true
-do
-  echo -n "  $@ "
-  read -r line
-  $@ $line
-done
+// create a prompt and execute a program for each line of input, with the newly entered line as arguments.
+// supports basic line editing.
+// exit with ctrl+d or ctrl+c (sigint).
+// usage: repl command argument ...
+// examples: "repl find -name"
+
+const repl = require("node:repl")
+const {argv} = require("node:process")
+const {execSync} = require("node:child_process")
+const command = argv[2] + " " + argv.slice(3).map(a => `"${a}"`).join(" ")
+
+repl.start({
+  eval: (input, context, filename, c) => {
+    c(null, execSync(
+        (command + " " + input).trim(),
+        {encoding: "utf-8", maxBuffer: 2 ** 23}).trim())
+  },
+  prompt: "> ",
+  useColors: false,
+  writer: output => output})

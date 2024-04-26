@@ -1,0 +1,3 @@
+#!/bin/sh
+
+find "$@" | nargs video-thumbnails-preview previews

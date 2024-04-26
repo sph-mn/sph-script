@@ -4,7 +4,7 @@
 
 while true
 do
-  echo -n "  $@ "
+  echo -n "$@ "
   read -r line
   echo -n $line | $@
 done

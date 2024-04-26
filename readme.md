@@ -340,8 +340,8 @@ path-permissions $PWD
 ideal for debugging permission issues
 
 ### repl, repl-stdin
-creates a prompt and executes the same program for each line of input using user input as additional arguments.
-this way, the same command prefix does not have to be rewritten each time and new arguments can just be pasted in.
+creates a prompt and executes the same program for each line of user input. the input is used as additional arguments to the program.
+this way, the same command prefix does not have to be rewritten for each invocation and new arguments can just be pasted in.
 
 * usage: repl command argument ...
 * exit with ctrl+d or ctrl+c (sigint)
@@ -769,8 +769,10 @@ displays the day kiloseconds of when the system has been booted
 download videos from youtube with a filename that includes upload date, video id and title. without a date in the name, it would be tedious to figure out when a video was uploaded.
 depends on [youtube-dl](https://ytdl-org.github.io/youtube-dl), which is also available in some package repositories.
 
-### prepend-video-tags
+### prepend-video-tags, prepend-video-tags-with-duration
 prepend "{pixel-height}p{frames-per-second}." to file names.
+
+using the --with-duration option also prepends a duration clasifier. d1 - under ~8 minutes, d2 - under ~42 minutes, d3 - over ~42 minutes, d4 - over ~83 minutes.
 
 ~~~
 $ prepend-video-tags path ...
@@ -778,13 +780,18 @@ $ prepend-video-tags path ...
 
 remove-video-tags removes the tags.
 
+### prepend-image-size
+prepend "{pixel-height}." to image file names. currently only works with png and jpg
+
 ### create-video-from-png-images
 * create-video-from-png-images :: path-directory [skip-resize?]
 * creates a video from a directory filled with png files
 * if skip-resize? is "true", then it is assumed that the resize-pass has already run and resized pictures are available in the $source/edit directory. this speeds up the compilation process significantly
 
-### create-video-thumbnail-preview
-* create-video-from-png-images :: output-directory video-path ...
+### video-thumbnails-image, video-thumbnails-images, show-video-thumbnails-image
+* video-thumbnails-image output-directory video-path ...
+* video-thumbnails-images output-directory video-path ...
+* show-video-thumbnails-image video-path
 
 creates images with thumbnails as a preview of video contents.
 generates an image for each given file path or all files in given directory paths.

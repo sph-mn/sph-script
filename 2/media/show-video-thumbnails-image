@@ -1,0 +1,15 @@
+#!/bin/sh -e
+
+# display a preview image consisting of thumbnails of the video at equally spaced times.
+
+file_name="$(basename "$1")"
+output_path=/tmp/video-previews
+output_file_path="$output_path/$file_name"_s.jpg
+
+if test ! -f "$output_file_path"
+then
+  mkdir -p "$output_path"
+  video-thumbnails-image "$output_path" "$1"
+fi
+
+mirage "$output_file_path"

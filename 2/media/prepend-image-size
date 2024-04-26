@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# depends on imagemagick.
+
 prepend_image_size() {
   path="$1"
   size=$(identify -format '%h' "$path")p
@@ -13,5 +15,8 @@ prepend_image_size() {
 
 for a in "$@"
 do
-  prepend_image_size "$a"
+  if test -f "$a" -a 1 -eq $(echo "$a" | grep -m 1 -c "\.\(jpg\|png\)$")
+  then
+    prepend_image_size "$a"
+  fi
 done
