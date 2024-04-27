@@ -1,0 +1,11 @@
+#!/bin/sh
+
+nargs() {
+  while read line
+  do
+    "$@" "$line"
+  done
+}
+
+find "$@" -depth -type f -size 0 | nargs unlink
+find "$@" -depth -type d | nargs rmdir 2> /dev/null

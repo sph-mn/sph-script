@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# usage: file ...
+# move given files into their parent directories unless a file with the same name already exists there.
+
+for a in "$@"
+do
+  b="$(dirname "$a")"
+  b="$(dirname "$b")/$(basename "$a")"
+  if ! test -e "$b"
+  then
+    mv "$a" "$b"
+  fi
+done

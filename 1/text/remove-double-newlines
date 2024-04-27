@@ -1,7 +1,0 @@
-#!/usr/bin/guile
-!#
-
-(import (sph io) (sph) (ice-9 rdelim))
-
-(rw-port->port read-line (l (a port) (if (not (string-null? a)) (display-line a)))
-  (current-input-port) (current-output-port))

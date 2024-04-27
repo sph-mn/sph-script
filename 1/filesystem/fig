@@ -1,10 +1,15 @@
 #!/bin/sh
 
 # list all paths under the current working directory that contain all (default) of the given search strings.
-# excludes .git directories.
-# signature: fig :: [lines-filter-options ...] search-string ...
+# excludes the directories node_modules/.git/cache/vendor.
+# arguments: [lines-filter-options ...] search-string ...
 # examples:
 #   fig test
-#   fig --regexp "t[a-z]st"
 
-find . | lines-reject /.git/ /node_modules/ /vendor/ var/cache/ | lines-filter "$@"
+find_files() {
+  find . -type d \( -name node_modules -o -name .git -o -name cache -o -name vendor \) -prune -o -type f -print
+}
+
+for a in "$@"; do pattern="${pattern} \"$a\""; done
+
+find_files | ugrep --color=never -iUI -% "$pattern"

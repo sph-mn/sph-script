@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# displays all but the first argument
+
+shift
+printf ' "%s"' "$@"

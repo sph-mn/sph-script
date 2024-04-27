@@ -1,5 +1,9 @@
 #!/bin/sh
-# xargs, but delimited by newline, calling the command with one argument each per default.
-# simpler alternative to "parallel" with its pesky citation begging.
-# find |nargs echo
-xargs -n 1 -d \\n "$@"
+
+# for each newline separated line, read from standard input and call a command with line as argument.
+# example: find . | nargs echo the argument is:
+
+while read line
+do
+  "$@" "$line"
+done

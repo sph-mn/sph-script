@@ -1,7 +1,3 @@
-#!/usr/bin/guile
-!#
+#!/bin/sh
 
-(use-modules (sph stream))
-
-(let* ((lines (port->line-stream (current-input-port))) (rest (stream-tail lines)))
-  (display (stream-first lines)) (stream-each (lambda (a) (display ", ") (display a)) rest))
+sed 's/\n/, /g'

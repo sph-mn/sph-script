@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# displays only the first argument
+
+printf "$1"

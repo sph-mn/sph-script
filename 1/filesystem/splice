@@ -1,56 +1,33 @@
-#!/usr/bin/guile
-!#
+#!/bin/sh
 
-(use-modules (sph filesystem) (sph hashtable)
-  (sph io) (sph list)
-  (sph number) (sph other)
-  (sph process) (sph string)
-  (sph alist) (sph vector)
-  (sph) (sph cli) (sph stream)
-  (srfi srfi-41))
+# merge directory contents with its parent directory.
+# duplicates are renamed.
 
-; empty directories
-; child files with the same name as parent
-; child files occuring in parents parent
+unique_path() {
+  old="$1"
+  new="$1"
+  counter=0
+  while test -e "$new"
+  do
+    counter=$(($counter + 1))
+    new="$old.$(($counter + 1))"
+  done
+  printf "$new"
+}
 
-(define program-description
-  (string-join
-    (list "move files belonging to directory to the upper directory and"
-      "remove the remaining empty directory. accepts multiple paths and"
-      "renames new files should name conflicts occur")
-    "\n"))
-
-(define (directory-stream a) "directory-handle/string:path -> stream"
-  (port->stream (if (string? a) (opendir a) a) readdir closedir))
-
-(define (splice-one path dry-run)
-  "string boolean ->
-   works only on directories"
-  (if (directory? path)
-    (let
-      ( (path (ensure-trailing-slash path)) (path-dirname (dirname path))
-        (path-basename (basename path)))
-      (let
-        (same-name
-          (stream-fold
-            (l (r e)
-              (let
-                ( (cur-path (string-append path e))
-                  (target-path (get-unique-path (path-append path-dirname e))))
-                (if dry-run (simple-format #t "rename-file ~A ~A\n" cur-path target-path)
-                  (rename-file cur-path target-path))
-                (if (string-equal? e path-basename) target-path r)))
-            #f (stream-filter (negate directory-reference?) (directory-stream path))))
-        (if dry-run
-          (begin (simple-format #t "remove ~A\n" path)
-            (if same-name (simple-format #t "rename-file ~A ~A\n" same-name path)))
-          (begin (rmdir path) (if same-name (rename-file same-name path))))))))
-
-(define (splice options)
-  (alist-bind options (path dry-run)
-    (if path (each (l (e) (splice-one e dry-run)) (map path->full-path path)))))
-
-(let*
-  ( (cli (cli-create #:about program-description #:options (q ((dry-run) ((path ...))))))
-    (options (cli)))
-  (if (null? options) (cli (list "--help")) (splice options)))
+for a in "$@"
+do
+  if test -d "$a"
+  then
+    for b in "$a"/* "$a"/.*
+    do
+      name="$(basename "$b")"
+      if ! echo "$name" | grep -qE '(\.|\.\.|\*)$'
+      then
+        target="$(unique_path "$a/../$name")"
+        mv "$b" "$target"
+      fi
+    done
+    rmdir "$a"
+  fi
+done

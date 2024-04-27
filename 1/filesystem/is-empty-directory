@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# is directory
+if ! test -d "$1"
+then
+  exit 1
+fi
+
+entries="$(ls -1a "$1")"
+
+# ls ran successfully
+if test 0 -ne $?
+then
+  exit 1
+fi
+
+entry_count="$(printf "$entries\n" | wc -l)"
+
+# entries are only "." and ".."
+if test 2 -ne "$entry_count"
+then
+  exit 1
+fi

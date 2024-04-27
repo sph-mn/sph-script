@@ -1,7 +1,20 @@
 #!/bin/sh
-#!/bin/sh
-# like nargs, but parallelises execution to (number-of-available-cores - 1) cores.
-# dependencies: shell, xargs, nproc
-# find |nargsp echo
-pcount=$(nproc --ignore=1)
-xargs --max-args=1 --delimiter=\\n --max-procs="$pcount" "$@"
+
+# like nargs but creates background processes that will be distributed over multiple cpu cores.
+# waits for the first process to finish every $core_count to ease load.
+
+core_count=$(nproc)
+counter=0
+
+while read line
+do
+  "$@" "$line" &
+  if test $core_count -eq $counter
+  then
+    wait $pid
+    pid=$!
+    counter=0
+  else
+    counter=$(($counter + 1))
+  fi
+done
