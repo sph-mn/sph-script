@@ -6,10 +6,8 @@
 # examples:
 #   fig test
 
-find_files() {
-  find . -type d \( -name node_modules -o -name .git -o -name cache -o -name vendor \) -prune -o -type f -print
-}
-
-for a in "$@"; do pattern="${pattern} \"$a\""; done
-
-find_files | ugrep --color=never -iUI -% "$pattern"
+pattern="rg --color=never --no-heading -NFS '$1'"
+shift
+for a in "$@"; do pattern="${pattern} | rg --color=never -FS '$a'"; done
+clear
+find . -type d \( -name node_modules -o -name .git -o -name cache -o -name vendor \) -prune -o -type f -print | /bin/sh -c "$pattern"

@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# displays a variety of statistics for the newline separated values read from standard input.
+# mean, median, standard deviation, minimum, maximum, and more.
+
+gnuplot -e "stats '-' u 1"

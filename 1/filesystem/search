@@ -1,7 +1,10 @@
 #!/bin/sh
 
-pattern="\"$1\""
+# search for a string inside files in the current directory and display the paths of files where it is included.
+# depends on ripgrep.
+
+pattern="rg --color=never --no-heading -NLFS '$1' ."
 shift
-for a in "$@"; do pattern="${pattern} \"$a\""; done
+for a in "$@"; do pattern="${pattern} | rg --color=never -FS '$a'"; done
 clear
-exec ugrep --color=never --format="%f%~" --ignore-files -iUIR -% "$pattern" | uniq
+exec /bin/sh -c "$pattern" | cut -d : -f 1 | uniq
