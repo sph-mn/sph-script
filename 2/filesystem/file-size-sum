@@ -1,12 +1,13 @@
-#!/usr/bin/guile
-!#
+#!/bin/sh
 
-;displays the sum of the number of bits of content of files, from a call to stat. input is a newline separated list of files read from standard input.
-;the number of bits is supposed to be for the actual content and not the space usage in the file system, for example it is not rounded to the block size
-(import (sph) (sph stream) (srfi srfi-41))
+# sum the byte size of files at paths read from standard input.
 
-(display
-  (stream-fold (l (r e) (catch #t (nullary (+ (* 8 (stat:size (stat e))) r)) (const r))) 0
-    (port->line-stream (current-input-port))))
+total=0
 
-(newline)
+while read line
+do
+  set -- $(du "$line")
+  total=$(($total + $1))
+done
+
+echo $total

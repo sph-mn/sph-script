@@ -10,4 +10,4 @@ pattern="rg --color=never --no-heading -NFS '$1'"
 shift
 for a in "$@"; do pattern="${pattern} | rg --color=never -FS '$a'"; done
 clear
-find . -type d \( -name node_modules -o -name .git -o -name cache -o -name vendor \) -prune -o -type f -print | /bin/sh -c "$pattern"
+find . -type d \( -name node_modules -o -name .git -o -name cache -o -name vendor \) -prune -o -print | /bin/sh -c "$pattern"

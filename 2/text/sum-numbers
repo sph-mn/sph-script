@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# read newline separated numbers from standard input and display the sum.
+
+awk '{s+=$1} END {print s}'

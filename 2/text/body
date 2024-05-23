@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# print the nth line or a range of lines from start inclusively to end exclusively.
+
+if test 0 -eq $#
+then
+  echo arguments: from [to]
+fi
+
+if test 2 -eq $#
+then
+  end=$(($2 - 1))
+  sed -n $1,$end'p'
+fi
+
+if test 1 -eq $#
+then
+  sed -n $1p
+fi

@@ -1,3 +1,9 @@
 #!/bin/sh
 
-find "$@" -type l ! -exec test -r {} \; -delete
+find "$@" -type l | while read line
+do
+  if ! test -e "$line"
+  then
+    unlink "$line"
+  fi
+done

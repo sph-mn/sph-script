@@ -1,0 +1,3 @@
+#!/bin/sh
+
+printf "$@" | sed -E 's/\..+$//'
