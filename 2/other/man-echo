@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# display a man page as plaintext.
+
+# col strips out the backspace-underline and backspace-letter sequences
+man $@ | col -bx

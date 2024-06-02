@@ -1,5 +1,6 @@
 #!/bin/sh
+
 # usage: g expression ...
 # short form for grep for insentitive expressions
 
-grep -i $*
+grep -Fi "$@"

@@ -3,7 +3,7 @@
 # search for a string inside files in the current directory and display the paths of files where it is included.
 # depends on ripgrep.
 
-pattern="rg --color=never --no-heading -NLFS '$1' ."
+pattern="rg --no-unicode --color=never --no-heading -NLFS '$1' ."
 shift
 for a in "$@"; do pattern="${pattern} | rg --color=never -FS '$a'"; done
 clear

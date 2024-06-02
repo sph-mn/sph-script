@@ -24,8 +24,8 @@ mkdir -p "$t"
 cd "$t"
 
 # --no-clobber prevents overwriting existing files
-find "$m" -type f | grep -iE $filename_regexp | nargs-all mv --no-clobber --target-directory=.
-find -type f | nargs-all prepend-date
-find -type f | nargs-all rename-lowercase
+find "$m" -type f | grep -iE $filename_regexp | nargs /usr/bin/mv --no-clobber --target-directory=.
+find . -type f | nargs prepend-date
+find . -type f | nargs rename-lowercase
 
 sudo umount "$m"
