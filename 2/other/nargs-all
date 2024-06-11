@@ -1,3 +1,11 @@
 #!/bin/sh
 
-xargs -d \\n "$@"
+IFS="
+"
+args=""
+while read -r line
+do
+  args="$args \"$line\""
+done
+
+eval "$@ $args"
