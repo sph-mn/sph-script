@@ -4,21 +4,26 @@
 (define description
   "remove video tags added by prepend-video-tags. usage: remove-video-tags path ...")
 
-(import (sph filesystem) (sph hashtable)
-  (sph io) (sph list)
-  (srfi srfi-1) (ice-9 regex)
-  (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph media-info))
+(import (sph) (sph alist) (ice-9 regex) (sph string) (srfi srfi-1) (sph filesystem) (sph cli))
+
+(define (rename-dry-run old new)
+  (display-line (string-append (string-quote old) " -> " (string-quote new))))
 
 (define (remove-tags a)
   (let
-    ( (regexp (make-regexp "^(d[0-9]-)?[0-9]{1,4}(p|r|hs|q|l|ks)([0-9]+)?-?([0-9]+)?$"))
+    ( (regexp (make-regexp "^([dpqf][0-9]{1,5})+$"))
+      (old-regexp (make-regexp "^(d[0-9]-)?([0-9]q)?[0-9]{1,4}(p|r|hs|q|l|ks)([0-9]+)?-?([0-9]+)?$"))
       (parsed (string-split a #\.)))
-    (string-join (filter-map (l (a) (and (not (regexp-exec regexp a)) a)) parsed) ".")))
+    (string-join
+      (filter-map (l (a) (and (not (or (regexp-exec regexp a) (regexp-exec old-regexp a))) a))
+        parsed)
+      ".")))
 
-(let (paths (map path->full-path (tail (program-arguments))))
-  (each
-    (l (a)
-      (let*
-        ((new-name (remove-tags (basename a))) (new-name (string-append (dirname a) "/" new-name)))
-        (if (not (string-equal? new-name a)) (rename-file a new-name))))
-    paths))
+(let (options ((cli-create #:options (q ((dry-run) ((paths ...)))))))
+  (alist-bind options (paths dry-run)
+    (each
+      (l (old-name)
+        (let (new-name (string-append (dirname old-name) "/" (remove-tags (basename old-name))))
+          (if (not (string-equal? old-name new-name))
+            ((if dry-run rename-dry-run rename-file) old-name new-name))))
+      (map path->full-path paths))))
