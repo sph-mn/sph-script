@@ -1,0 +1,2 @@
+#!/bin/sh
+while read line; do echo "$1$line$1"; done

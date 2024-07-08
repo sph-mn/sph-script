@@ -1,0 +1,4 @@
+#!/bin/sh
+target="$1-images"
+mkdir -p "$target"
+pdftoppm -jpeg -r 300 "$1" "$target/_"

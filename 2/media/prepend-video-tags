@@ -41,11 +41,12 @@
       (bitdepth-factor (get-delta-factor bitdepth 8 2 1/3))
       (resolution-factor (get-doubling-factor resolution (* 640 480) 1))
       (score
-        (inexact->exact
-          (round (* bitdepth-factor bitrate-factor framerate-factor resolution-factor)))))
+        (max 1
+          (inexact->exact
+            (round (* bitdepth-factor bitrate-factor framerate-factor resolution-factor))))))
     (if (< 0 debug-quality-score-log)
-      (simple-format #t "~Ax~A ~A ~A ~A ~A -> ~A\n"
-        width height framerate bitdepth bitrate codec score))
+      (simple-format #t "~Ax~A ~A ~A ~A ~A ~A -> ~A\n"
+        width height framerate bitdepth (inexact->exact (round datarate)) bitrate codec score))
     (if (< 1 debug-quality-score-log)
       (display-line
         (string-append " "

@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# drops what is written on standard error.
+# usage: command arguments ...
+
+"$@" 2>/dev/null

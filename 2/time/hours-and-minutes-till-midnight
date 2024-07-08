@@ -1,0 +1,8 @@
+#!/bin/sh
+current_hour=$(date +%-H)
+current_minute=$(date +%-M)
+minutes_till_midnight=$(((23 - current_hour) * 60 + (60 - current_minute)))
+hours_left=$((minutes_till_midnight / 60))
+minutes_left=$((minutes_till_midnight % 60))
+printf "$hours_left:"
+printf "%02d\n" $minutes_left

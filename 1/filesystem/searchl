@@ -6,5 +6,6 @@
 pattern="rg --color=never --no-heading -NLFS '$1' ."
 shift
 for a in "$@"; do pattern="${pattern} | rg --color=never -FS '$a'"; done
+pattern="$pattern | tr -s ' '"
 clear
 exec /bin/sh -c "$pattern"
