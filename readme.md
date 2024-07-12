@@ -3,16 +3,17 @@
 ├── filesystem
 │   ├── collect-file
 │   ├── delete-broken-links
-│   ├── delete-if-empty
+│   ├── delete-empty-files
 │   ├── fig
 │   ├── find-leaf-directories
 │   ├── find-recently-changed
 │   ├── full-path
 │   ├── group
+│   ├── is-empty-directory
 │   ├── late-write
 │   ├── list-broken-symlinks
 │   ├── mount-home
-│   ├── mount-sshfs-home
+│   ├── move-up
 │   ├── path-directories
 │   ├── path-permissions
 │   ├── search
@@ -29,14 +30,14 @@
 ├── text
 │   ├── comma-to-newline
 │   ├── comma-to-space
-│   ├── compress-whitespace-columns
+│   ├── compress-newlines
+│   ├── compress-spaces
 │   ├── file-lines-set-operations
 │   ├── lines-filter
 │   ├── lines-reject
 │   ├── lowercase
 │   ├── newline-to-comma
 │   ├── newline-to-space
-│   ├── remove-double-newlines
 │   └── space-to-newline
 └── time
     ├── day-seconds
@@ -58,7 +59,6 @@
 ├── filesystem
 │   ├── clone-disk
 │   ├── create-filelist
-│   ├── create-filelist-with-checksums
 │   ├── delete-duplicate-files
 │   ├── fig-full
 │   ├── file-size-sum
@@ -80,6 +80,7 @@
 │   ├── prepend-date
 │   ├── prepend-media-bitrate
 │   ├── prepend-to-filename
+│   ├── remove-extension
 │   ├── rename-lowercase
 │   ├── set-permissions
 │   ├── splice-if-single
@@ -98,11 +99,13 @@
 │   ├── media-info-video-framerate
 │   ├── media-info-video-resolution
 │   ├── normalize-volume
+│   ├── pdf2images
 │   ├── prepend-image-size
 │   ├── prepend-video-tags
 │   ├── remove-video-tags
 │   ├── sacd2dsf
 │   ├── scale-images
+│   ├── show-video-thumbnails-image
 │   ├── split-flac-cue
 │   ├── stereoscopy
 │   │   ├── create-anaglyph-image
@@ -114,7 +117,8 @@
 │   ├── video-extract-audio
 │   ├── video-extract-frames
 │   ├── video-from-png-images
-│   ├── video-thumbnail-image
+│   ├── video-thumbnails-image
+│   ├── video-thumbnails-images
 │   ├── wav32-to-flac
 │   └── youtube-dl-with-date
 ├── other
@@ -122,8 +126,10 @@
 │   ├── cpioc
 │   ├── cpioe
 │   ├── create-remarkjs-presentation
+│   ├── dwm-show-info
 │   ├── e
 │   ├── emacs-open-in-background
+│   ├── first
 │   ├── g
 │   ├── git-create-stable-branch
 │   ├── git-log-short
@@ -134,12 +140,16 @@
 │   ├── gui-emacs
 │   ├── gui-md5sum
 │   ├── gui-scale-images
+│   ├── hide-stderr
 │   ├── http-status
 │   ├── ldd-list-not-found
+│   ├── man-echo
 │   ├── mariadb-create-user-database-sql
 │   ├── nargs-all
+│   ├── rest
 │   ├── show-process-memory-usage-top
 │   ├── ssh-install-key
+│   ├── statistics
 │   ├── take-screenshot
 │   ├── take-screenshots-in-intervals
 │   └── take-screenshot-window
@@ -163,28 +173,35 @@
 │   └── xml-json-converter
 ├── text
 │   ├── alternate-text-direction
+│   ├── body
 │   ├── camelcase-to-dash
 │   ├── camelcase-to-underscore
 │   ├── decapitalize
+│   ├── drop-long-lines
 │   ├── first-space-to-semicolon
 │   ├── itpn
 │   ├── itpn-split
+│   ├── lines-append
+│   ├── lines-enclose
+│   ├── randomize
 │   ├── randomize-lines
 │   ├── remove-hash-comment-lines
 │   ├── remove-iso-date-prefix-zeros
 │   ├── remove-semicolon-comment-lines
 │   ├── string-bits
+│   ├── sum-numbers
 │   └── tabular-select
 └── time
     ├── d
     ├── hms-to-ks
     ├── hms-to-minutes
+    ├── hours-and-minutes-till-midnight
     ├── ks-time
     ├── ks-to-hms
     ├── uptime-duration-ks
     └── uptime-start-ks
 
-16 directories, 167 files
+16 directories, 186 files
 ~~~
 
 additionally included are:
@@ -195,38 +212,38 @@ additionally included are:
 scripts in `1` are generally more useful and scripts in `2` are more experimental
 
 # dependencies
-varying, but primarily posix shell (/bin/sh) or [guile](https://www.gnu.org/software/guile/) and [sph-lib](https://github.com/sph-mn/sph-lib).
-some scripts depend on other programs as noted in their description
+primarily posix shell (/bin/sh). the goal is to prefer posix shell, and use coreutils and bsd compatible commands.
+however, some scripts currently still have other dependencies, for example [guile](https://www.gnu.org/software/guile/) and [sph-lib](https://github.com/sph-mn/sph-lib).
 
 # installation
-assuming that "$HOME/.exe" is listed in the $PATH environment variable (which it is not by default), you can use the following to symlink all scripts into the path:
+assuming that "$HOME/exe" is listed in the $PATH environment variable (which it is not by default), you can use the following to symlink all scripts into the path (uses the gnu version of cp):
 ~~~
 cd sph-script
-cp -st $HOME/.exe $PWD/{1,2}/*/*
+cp -st $HOME/exe $PWD/{1,2}/*/*
 ~~~
 
 you can add paths to the $PATH environment variable for example in "/etc/profile" like this:
 ~~~
-export PATH="$PATH:$HOME/.exe"
+export PATH="$PATH:$HOME/exe"
 ~~~
 
-which would mean that you can put scripts under a hidden directory named ".exe" in your home directory and they should be found as commands on the command-line.
-
-some programs depend on guile modules found in `sph-script/guile-modules/`. to install these modules, the content of `sph-script/guile-modules` needs to be copied or symlinked into a directory that is in `$GUILE_LOAD_PATH` or any other guile load path.
+which would mean that you can put scripts in a directory named "exe" in your home directory and they should be found as commands on the command-line.
 
 # documentation
 ## filesystem
 ### collect-file
 hardlinks or copies all given source-paths into an automatically chosen target directory. one use case is browsing files with a file manager and using right-click actions to collect specific files
 
-### delete-broken-links
-delete broken links in the current directory and sub-directories
+### delete-empty-files
+delete broken links in the given directory or current directory and sub-directories
 
-### delete-if-empty
-deletes empty files or directories, recursively. for example a directory structure with only empty files or with no files is deleted
+### delete-broken-symlinks
+delete broken symlinks in the given directory or current directory and sub-directories
 
 ### fig
 find files containing all argument strings in the name. the name is a combination of find and grep
+
+depends on [ripgrep](https://github.com/BurntSushi/ripgrep)
 
 ### full-path
 display the full path that starts from the root directory for a given path
@@ -270,48 +287,21 @@ mounts the filesystem to /home/username/mnt/dev/sdd1
 * mount multiple sources in one call
 
 #### command-line interface
-$ mount-home --help
+mount filesystems to $HOME/mnt/{source_basename_or_label}
+benefits: mount paths are automatically chosen, mount paths are predictable, and multiple sources can be mounted in one call.
+
+$ mount-home
 ~~~
-parameters
-  options ... source-path ...
-description
-  mount filesystems to $HOME/mnt/{first-part-of-source-path/second-last-part.last-part}
-options
-  --about | -a
-  --dry-run | -d
-  --help | -h
-  --interface
-  --mount-options=value | -o value
-  --sudo | -s
-  --user=value | -u value
-  --version | -v
+arguments: [options] source ...
+options: -s use sudo, -l interpret sources as disk labels
+mount directory: $HOME/mnt
 ~~~
 
-### mount-sshfs-home
-* mount remote filesystems using sshfs to predictable, automatically chosen paths in the home directory
-* example: "mount-sshfs-home testserver" mounts the root of "testserver" to "$HOME/mnt/testserver"
-
-#### command-line interface
-
-$ mount-sshfs-home  --help
-~~~
-parameters
-  options ... hostname sshfs-argument ...
-description
-  mount remote filesystems using sshfs to $HOME/mnt/{hostname}
-options
-  --about | -a
-  --help | -h
-  --interface
-  --path=value | -p value
-  --user=value | -u value
-~~~
-
-### nargs, nargsp
+### nargs, nargsp, nargs-all
 * pass each newline separated line read from standard-input as an argument to a command
-* depends on "xargs"
 * equivalent to "xargs -n 1 -d \n"
 * "nargsp" executes commands in parallel
+* "nargs-all" passes all arguments at once
 
 ### path-directories
 lists all parent directories
@@ -360,13 +350,14 @@ repl-stdin wc -c
 
 ### search
 search for a string inside files in the current directory and display the names of files where it is included
+multiple search words can be specified, which must all occur in one line.
 
-#### benefits compared to "find | grep"
-multiple search words can be specified, which must all occur somewhere in one line.
-implies the grep arguments --dereference-recursive, --fixed-strings, --ignore-case, --files-with-matches
+depends on [ripgrep](https://github.com/BurntSushi/ripgrep)
 
 ### searchl
 search for a string inside files in the current directory and display the names of files and lines where it is included
+
+depends on [ripgrep](https://github.com/BurntSushi/ripgrep)
 
 ### splice
 * merge contents of a directory into the current directory
@@ -376,9 +367,9 @@ search for a string inside files in the current directory and display the names 
 ### comma-to-newline
 replaces commas with newlines
 
-### compress-whitespace-columns
+### compress-spaces
 ~~~
-$ echo "this  is    a test" | compress-whitespace-columns
+$ echo "this  is    a test" | compress-spaces
 ~~~
 ~~~
 this is a test
@@ -909,7 +900,7 @@ depends on "zenity"
 177 1416 sakura
 176 6957 sakura
 114 4355 /usr/lib/polkit-1/polkitd --no-debug
-108 9149 /usr/bin/guile /home/nonroot/.exec/show-process-memory-usage-top
+108 9149 /usr/bin/guile /home/username/exe/show-process-memory-usage-top
 66 4352 /usr/lib/upower/upowerd
 ~~~
 

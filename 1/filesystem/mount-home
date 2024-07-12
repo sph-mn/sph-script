@@ -1,86 +1,72 @@
-#!/usr/bin/guile
-!#
+#!/bin/sh
 
-(import (ice-9 ftw) (sph filesystem)
-  (sph hashtable) (sph io)
-  (sph list) (sph alist)
-  (only (srfi srfi-1) take-right) (sph number)
-  (sph other) (sph process)
-  (sph string) (sph vector) (sph) (sph cli) (sph process) (sph lang indent-syntax))
+# call without arguments to see usage.
+# mount filesystems to $HOME/mnt/{source_basename_or_label}
+# benefits: mount paths are automatically chosen, mount paths are predictable, multiple sources can be mounted in one call
 
-(define mount-directory (string-append (getenv "HOME") "/mnt/"))
-(define (mountpoint? path) (exit-value-zero? (execute "mountpoint" "--quiet" path)))
-(define (file-system-fold-ignore path stat result) result)
+mount_directory="$HOME/mnt"
+option_label=0
+option_sudo=0
+default_mount_options=""
 
-(define (create-target-path source-path)
-  "string -> string
-   {first-part/last-second-part.last-part/}"
-  (let* ((source-path (delete "" (path->list source-path))) (suffix (tail source-path)))
-    (string-append mount-directory
-      (string-downcase
-        (string-append (first source-path) "/"
-          (string-join (if (null? suffix) suffix (take-right suffix (min 2 (length suffix)))) "."))))))
+while test $# -gt 0
+do
+  case "$1" in
+    -s)
+      option_sudo=1
+      ;;
+    -l)
+      option_label=1
+      ;;
+    -o)
+      shift
+      default_mount_options="$1"
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      exit 1
+      ;;
+    *)
+      break
+      ;;
+  esac
+  shift
+done
 
-(define (display-line-string . a) (display (string-join a " ")) (newline))
+if test $# -eq 0
+then
+  echo arguments: "[options]" source ...
+  echo options: -s use sudo, -l interpret sources as disk labels
+  echo mount directory: "$mount_directory"
+fi
 
-(define (mount-home use-sudo? dry-run? mount-arguments . paths) "boolean boolean (string ...)"
-  (map
-    (l (path)
-      (let
-        ( (target (create-target-path path))
-          (shell-eval-and-check-result
-            (if dry-run? display-line-string shell-eval-and-check-result)))
-        (and (shell-eval-and-check-result (string-append "mkdir -p " (string-quote target)))
-          (shell-eval-and-check-result
-            (string-append (if use-sudo? "sudo " "") "mount "
-              (string-quote path) " "
-              (string-quote target) (if mount-arguments (string-append " " mount-arguments) ""))))))
-    paths))
+rmdir "$mount_directory/*" 2> /dev/null
 
-(define (test-create-target-path) "test the target path creation"
-  (display
-    (string-append "test "
-      (if
-        (and
-          (string-equal? (string-append mount-directory "192.168.1.70/shared")
-            (create-target-path "//192.168.1.70/shared"))
-          (string-equal? (string-append mount-directory "dev/mapper.abc")
-            (create-target-path "/dev/mapper/abc")))
-        "success" "fail")
-      "\n")))
-
-(define (remove-empty-mount-directories) "max depth of mount-home mountpoints is two"
-  (let (mount-directory (remove-trailing-slash mount-directory))
-    (file-system-fold (l (path stat result) (not (mountpoint? path))) file-system-fold-ignore
-      file-system-fold-ignore
-      (l (path stat result)
-        (if (string-equal? mount-directory path) result (false-if-exception (rmdir path))))
-      file-system-fold-ignore (l (name stat error-number result) result) 0 mount-directory)))
-
-(define (run)
-  (let*
-    ( (dependencies (list "sph-lib" "mount" "mkdir" "mountpoint" "[sudo]"))
-      (description
-        "mount filesystems to $HOME/mnt/{first-part-of-source-path/second-last-part.last-part}")
-      (about
-        (qq
-          ( ("description" (unquote description))
-            ("benefits" "paths are automatically chosen" "paths are predictable"
-              "mount multiple sources in one call")
-            ("depends on" (unquote (string-join dependencies " ")))
-            ("maintainer and copyright" "sph@posteo.eu | http://sph.mn") ("license" "gpl3+"))))
-      (options
-        ( (cli-create #:version 1
-            #:description description
-            #:about (prefix-tree->indent-tree about)
-            #:options
-            (q ((user #:names #\u #:value-required? #t) (dry-run #:names #\d)
-                (sudo #:names #\s)
-                (mount-arguments #:names #\o #:value-required? #t)
-                ((source-path ...))))))))
-    (apply mount-home (alist-ref options (q sudo))
-      (alist-ref options (q dry-run)) (alist-ref options (q mount-arguments))
-      (alist-ref options (q source-path) (list)))
-    (remove-empty-mount-directories)))
-
-(run)
+for a in "$@"
+do
+  mount_options="$default_mount_options"
+  if test 1 -eq "$option_label"
+  then
+    b="$mount_directory/$a"
+    mount_options="-L $mount_options"
+  else
+    b="$mount_directory/$(basename "$a")"
+  fi
+  if mountpoint --quiet "$b"
+  then
+    echo "$b already mounted"
+    continue
+  fi
+  if test 1 -eq "$option_sudo"
+  then
+    mount="sudo mount"
+  else
+    mount="mount"
+  fi
+  mkdir -p "$b"
+  $mount $mount_options "$a" "$b"
+done
