@@ -249,15 +249,10 @@ depends on [ripgrep](https://github.com/BurntSushi/ripgrep)
 display the full path that starts from the root directory for a given path
 
 ### late-write
+write to output file only after all data from standard input has been read. allows to overwrite source files when using shell output redirection.
+
 ~~~
-parameters
-  options ... output-file
-description
-  write to output file only after all data from standard input has been read.
-  allows to overwrite source files when using shell output redirection
-options
-  --help | -h
-  --interface
+arguments: output_file
 ~~~
 
 #### example

@@ -1,20 +1,14 @@
-#!/usr/bin/guile
-!#
+#!/bin/sh -e
 
-; depends on sph-lib
+# write to output file only after all data from standard input has been read.
+# allows to overwrite source files when using shell output redirection.
 
-(import (sph filesystem) (sph hashtable)
-  (sph io) (sph list)
-  (sph alist) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph cli))
+if test 1 -neq $#
+then
+   echo "arguments: output_file"
+fi
 
-(define command-line-interface
-  (cli-create #:options (q (((output-file) #:required? #t)))
-    #:description
-    "write to output file only after all data from standard input has been read. allows to overwrite source files when using shell output redirection"))
-
-(define (late-write-cli)
-  (alist-bind (command-line-interface) (output-file)
-    (temp-file-port->file (l (port-output) (port-copy-all (current-input-port) port-output))
-      output-file)))
-
-(late-write-cli)
+a=$(mktemp)
+cat > "$a"
+cat "$a" > "$1"
+rm "$a"

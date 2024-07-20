@@ -1,28 +1,45 @@
-#!/usr/bin/guile
-!#
+#!/bin/sh
 
-(import (sph filesystem) (sph hashtable)
-  (sph io) (sph list) (sph alist)
-  (sph number) (sph other) (sph process) (sph string) (sph vector) (sph) (sph cli))
+# restart command with a short delay after it exits. command is best specified with -- after this programs options. restart-on-end [options] -- command ...
+# arguments: [-n max_restart_times|-d delay_seconds] command ...
+# example: restart-on-end -n 3 -- echo
+# other possible names for this command: call-n-times, repeat
 
-(define description
-  "restart command with a short delay after it exits. command is best specified with -- after this programs options. restart-on-end [options] -- command ...
-   example: restart-on-end -n 3 -- echo")
+max_restart_times="-1"
+delay=1
 
-(define command-line-interface
-  (cli-create #:options
-    (q (((command ...) #:required? #t)
-        (max-restart-times #:names #\n
-          #:value-required? #t #:value-optional? #t #:type integer #:description "default: infinite")
-        (delay #:names #\d
-          #:value-required? #t
-          #:value-optional? #t #:type integer #:description "in seconds. default: 1")))
-    #:description description))
+while test $# -gt 0
+do
+  case "$1" in
+    -n)
+      shift
+      max_restart_times=$1
+      ;;
+    -d)
+      shift
+      delay="$1"
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      exit 1
+      ;;
+    *)
+      break
+      ;;
+  esac
+  shift
+done
 
-(define (shell-command-restart-on-end command max-restart-times delay)
-  (let loop ((restart-counter max-restart-times))
-    (if (> restart-counter 0)
-      (begin (apply execute command) (sleep delay) (loop (- restart-counter 1))))))
-
-(alist-bind (command-line-interface) (command max-restart-times delay)
-  (if command (shell-command-restart-on-end command (or max-restart-times (inf)) (or delay 1))))
+while test "$max_restart_times" -ne 0
+do
+  "$@"
+  if test "$max_restart_times" -gt 0
+  then
+    max_restart_times=$(($max_restart_times - 1))
+  fi
+  sleep $delay
+done
