@@ -1,6 +1,2 @@
-#!/usr/bin/guile
-!#
-
-(import (sph filesystem) (sph hashtable) (sph io) (sph list) (sph number) (sph other) (sph process) (sph string) (sph vector) (sph))
-
-(port-lines-map->port string-camelcase->underscore)
+#!/usr/bin/env ruby
+puts $stdin.gets.chomp.gsub(/([a-z])([A-Z])/, '\1_\2').downcase

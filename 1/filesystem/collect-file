@@ -1,45 +1,55 @@
-#!/usr/bin/guile
-!#
+#!/bin/sh
 
-; depends on guile and sph-lib.
-; see "collect-file --help"
+# symlinks or copies files into an automatically chosen target directory.
 
-(use-modules (srfi srfi-2) (sph)
-  (sph alist) (sph time string) (sph time) (sph string) (sph filesystem) (sph cli))
+always_copy=0
 
-(define destination
-  (string-append (getenv "HOME") "/nosync/collections/collected." (utc->ymd (utc-current)) "/"))
+if test -n "$COLLECT_FILE_TARGET"
+then
+  target="$COLLECT_FILE_TARGET"
+else
+  target="$HOME/collected-$(date +%Y-%m-%d)"
+fi
 
-(define cli
-  (cli-create #:description
-    (string-append "symlinks or copies files into an automatically chosen target directory"
-      "\nthe current destination is " destination)
-    #:options
-    (q
-      ( ( (path ...) #:required? #t)
-        (dry-run #:description "make no changes to the filesystem, only list what would be done")
-        (copy #:description "always copy the file") (symlink #:description "always symlink the file")))))
+if test 0 -eq $#
+then
+  echo "arguments: source_file ..."
+  echo "COLLECT_FILE_TARGET: $target"
+  exit
+fi
 
-(define (collect-files sources destination-directory dry-run always-copy always-symlink)
-  (and (or dry-run (ensure-directory-structure destination-directory))
-    (let (destination-device (stat:dev (stat destination-directory)))
-      (each
-        (l (source)
-          (let
-            ( (collect-file
-                (cond
-                  (always-copy copy-file)
-                  (always-symlink symlink)
-                  (else (if (= destination-device (stat:dev (stat source))) symlink copy-file))))
-              (destination (string-append destination-directory (basename source))))
-            (if (file-exists? destination)
-              (if dry-run (debug-log delete-file destination) (delete-file destination)))
-            (if dry-run (debug-log collect-file source destination)
-              (collect-file source destination))))
-        (map realpath* sources)))))
+while test $# -gt 0
+do
+  case "$1" in
+    -c)
+      always_copy=1
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      exit 1
+      ;;
+    *)
+      break
+      ;;
+  esac
+  shift
+done
 
-(define (collect-file-cli)
-  (alist-bind (cli) (path copy symlink dry-run)
-    (collect-files path destination dry-run copy symlink)))
+mkdir -p "$target"
+target_device="$(stat -c %d "$target")"
 
-(collect-file-cli)
+for a in "$@"
+do
+  a="$(realpath "$a")"
+  device="$(stat -c %d "$a")"
+  if test 1 -eq $always_copy -o $target_device != $device
+  then
+    cp "$a" "$target"
+  else
+    ln -s "$a" "$target"
+  fi
+done

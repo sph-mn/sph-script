@@ -1,8 +1,0 @@
-#!/usr/bin/guile
-!#
-
-(import (rnrs io ports) (rnrs io simple) (sph) (sph other))
-
-(let (port (current-input-port))
-  (let loop ((octet (get-u8 port)))
-    (if (eof-object? octet) #t (begin (display (number->string octet 2)) (loop (get-u8 port))))))

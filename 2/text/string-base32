@@ -1,0 +1,2 @@
+#!/usr/bin/env ruby
+$stdin.each_byte {|byte| printf byte.to_s(32) + " "}; puts

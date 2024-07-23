@@ -188,9 +188,11 @@
 │   ├── remove-hash-comment-lines
 │   ├── remove-iso-date-prefix-zeros
 │   ├── remove-semicolon-comment-lines
-│   ├── string-bits
-│   ├── sum-numbers
-│   └── tabular-select
+│   ├── split-select
+│   ├── string-base16
+│   ├── string-base32
+│   ├── string-binary
+│   └── sum-numbers
 └── time
     ├── d
     ├── hms-to-ks
@@ -201,7 +203,7 @@
     ├── uptime-duration-ks
     └── uptime-start-ks
 
-16 directories, 186 files
+16 directories, 188 files
 ~~~
 
 additionally included are:
@@ -212,8 +214,8 @@ additionally included are:
 scripts in `1` are generally more useful and scripts in `2` are more experimental
 
 # dependencies
-primarily posix shell (/bin/sh). the goal is to prefer posix shell, and use coreutils and bsd compatible commands.
-however, some scripts currently still have other dependencies, for example [guile](https://www.gnu.org/software/guile/) and [sph-lib](https://github.com/sph-mn/sph-lib).
+primarily posix shell (/bin/sh). the goal is to prefer posix shell, and use coreutils and bsd compatible commands. coreutils and other tools are preferred in this order: tr, sed, and ruby.
+however, some scripts currently still have other dependencies, for example on [guile](https://www.gnu.org/software/guile/) and [sph-lib](https://github.com/sph-mn/sph-lib).
 
 # installation
 assuming that "$HOME/exe" is listed in the $PATH environment variable (which it is not by default), you can use the following to symlink all scripts into the path (uses the gnu version of cp):
@@ -232,7 +234,7 @@ which would mean that you can put scripts in a directory named "exe" in your hom
 # documentation
 ## filesystem
 ### collect-file
-hardlinks or copies all given source-paths into an automatically chosen target directory. one use case is browsing files with a file manager and using right-click actions to collect specific files
+symlink or copies all given source-paths into an automatically chosen target directory. one use case is browsing files with a file manager and using right-click actions to collect specific files
 
 ### delete-empty-files
 delete broken links in the given directory or current directory and sub-directories
@@ -432,8 +434,13 @@ bin boot dev etc home lib lib64 lost+found mnt opt proc root run sbin srv sys tm
 ### remove-double-newlines
 $ cat textfile | remove-double-newlines
 
-### tabular-select
-select whitespace separated columns of newline separated lines by index
+### split-select
+select whitespace separated columns of newline separated lines by index. indices start at 0.
+other delimiters than whitespace can be used with the -d option.
+
+~~~
+arguments: [-d delimiter] index ..."
+~~~
 
 ## time
 ### day-seconds
@@ -719,13 +726,15 @@ $ echo 2015-05-03 | remove-iso-date-prefix-zeros
 2015-5-3
 ~~~
 
-### string-bits
-displays the bits a string read from standard input is encoded in
+### string-binary
+displays the bits a string read from standard input is encoded in.
 
-$ echo abc |string-bits
+$ echo abc | string-binary
 ~~~
-1100001110001011000111010
+1100001 1100010 1100011 1010
 ~~~
+
+string-base16 and string-base32 work similarly.
 
 ## time-display
 ### ks-time
