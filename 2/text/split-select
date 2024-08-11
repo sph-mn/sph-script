@@ -1,24 +1,10 @@
 #!/usr/bin/ruby
 
-# split at column-splitting character, default being spaces, and select a part by index.
-# indices starting from one. ignores the tab character.
+# arguments: delimiter index ...
+# split each line at delimiter character and only display selected parts. displayed parts are separated by spaces.
 
-require "optparse"
-
-delimiter = / +/
-
-OptionParser.new {|opts|
-  opts.on("-d", "--delimiter delimiter") {|a|
-    delimiter = Regexp.new "#{a}+"
-  }
-}.parse!
-
-if ARGV.empty?
-  puts "arguments: [-d delimiter] index ..."
-  exit
-end
-
-indices = ARGV.map &:to_i
+delimiter = Regexp.new Regexp.escape(ARGV[0]) + "+"
+indices = ARGV[1..-1].map &:to_i
 
 $stdin.each_line {|a|
   a = a.split delimiter

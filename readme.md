@@ -33,6 +33,7 @@
 │   ├── compress-newlines
 │   ├── compress-spaces
 │   ├── file-lines-set-operations
+│   ├── generate-password
 │   ├── lines-filter
 │   ├── lines-reject
 │   ├── lowercase
@@ -94,10 +95,7 @@
 │   ├── get-audio-disc-files
 │   ├── get-photos
 │   ├── media-info-json
-│   ├── media-info-video
 │   ├── media-info-video-bitrate
-│   ├── media-info-video-framerate
-│   ├── media-info-video-resolution
 │   ├── normalize-volume
 │   ├── pdf2images
 │   ├── prepend-image-size
@@ -203,7 +201,7 @@
     ├── uptime-duration-ks
     └── uptime-start-ks
 
-16 directories, 188 files
+16 directories, 186 files
 ~~~
 
 additionally included are:
