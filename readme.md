@@ -268,12 +268,16 @@ list broken symlinks in the current directory
 
 ### mount-home
 * mount filesystems to automatically chosen paths under ~/mnt
-* mount filesystems to $HOME/mnt/{first-part-of-source-path/last-second-part.last-part/}
+* mount filesystems to $HOME/mnt/{last-part-of-source}
 
-#### example
+#### examples
 $ mount-home /dev/sdd1
 
 mounts the filesystem to /home/username/mnt/dev/sdd1
+
+$ mount-home -s -l label1 label2
+
+mounts with sudo and by partition label
 
 #### benefits
 * paths are automatically chosen
