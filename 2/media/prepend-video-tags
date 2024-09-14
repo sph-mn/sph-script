@@ -5,7 +5,7 @@
 
 (define prepend-video-quality-tags-description
   "prepend \"p{shortest-pixel-side}f{frames-per-second}.\" to filenames.
-  usage: prepend-video-tags path ...")
+   usage: prepend-video-tags path ...")
 
 (define (rename-dry-run old new)
   (display-line (string-append (string-quote old) " -> " (string-quote new))))
@@ -25,42 +25,50 @@
 (define (get-doubling-factor a base step) "factor to scale by 'step' for each doubling of 'step'"
   (+ 1 (* step (/ (log (/ a base)) (log 2)))))
 
+(define (log2 b) (/ (log b) (log 2)))
 (define debug-quality-score-table #f)
 (define debug-quality-score-log 0)
 
+(define
+  (debug-quality-score-display width height framerate bitdepth datarate bitrate codec score
+    codec-factor
+    framerate-factor
+    bitdepth-factor
+    bitrate-factor
+    resolution-factor)
+  (when (< 0 debug-quality-score-log)
+    (simple-format #t "~Ax~A ~A ~A ~A ~A ~A -> ~A\n"
+      width height framerate bitdepth (inexact->exact (round datarate)) bitrate codec score))
+  (when (< 1 debug-quality-score-log)
+    (display-line
+      (string-append " "
+        (string-join
+          (map (lambda (a) (string-append (car a) " " (number->string (exact->inexact (cdr a)))))
+            (list (cons "codec-factor" codec-factor) (cons "framerate-factor" framerate-factor)
+              (cons "bitdepth-factor" bitdepth-factor) (cons "bitrate-factor" bitrate-factor)
+              (cons "resolution-factor" resolution-factor)
+              (cons "optimal-bitrate" (round (exact->inexact datarate)))))
+          "\n  ")))))
+
 (define (get-quality-score width height framerate bitdepth bitrate codec)
   (let*
-    ( (codec-factor
-        (/
-          (string-case codec ("av1" 1/3)
-            ("h264" 1) ("h266" 1/4) ("hevc" 1/2) ("vp8" 1) ("vp9" 2/3) (else 1.5))
-          79))
-      (resolution (* width height)) (datarate (* resolution bitdepth framerate codec-factor))
-      (bitrate-factor (+ 0.5 (get-range-factor bitrate 1 (* datarate 0.5) (* datarate 1.5))))
-      (framerate-factor (get-doubling-factor framerate 30 1/3))
-      (bitdepth-factor (get-delta-factor bitdepth 8 2 1/3))
-      (resolution-factor (get-doubling-factor resolution (* 320 240) 1))
+    ( (codec-efficiencies
+        (quote (("av1" . 1.5) ("h264" . 1) ("h266" . 2) ("hevc" . 1.7) ("vp8" . 0.9) ("vp9" . 1.3))))
+      (codec-factor (/ 1 (or (assoc-ref codec codec-efficiencies) 0.8)))
+      (resolution (* width height)) (optimal-bitrate (* resolution bitdepth framerate codec-factor))
+      (bitrate-factor (* 2 (/ 1 (+ 1 (exp (* -0.001 (- bitrate optimal-bitrate)))))))
+      (resolution-factor (log2 (+ (/ resolution (* 640 480)) 1)))
+      (framerate-factor (log2 (+ (/ framerate 30) 1))) (bitdepth-factor (log2 (/ (- bitdepth 6) 2)))
       (score
-        (max 1
-          (inexact->exact
-            (round (* bitdepth-factor bitrate-factor framerate-factor resolution-factor))))))
-    (if (< 0 debug-quality-score-log)
-      (simple-format #t "~Ax~A ~A ~A ~A ~A ~A -> ~A\n"
-        width height framerate bitdepth (inexact->exact (round datarate)) bitrate codec score))
-    (if (< 1 debug-quality-score-log)
-      (display-line
-        (string-append " "
-          (string-join
-            (map-slice 2
-              (l a (string-append (first a) " " (number->string (exact->inexact (second a)))))
-              (list "codec-factor" codec-factor
-                "framerate-factor" framerate-factor
-                "bitdepth-factor" bitdepth-factor
-                "bitrate-factor" bitrate-factor
-                "resolution-factor" resolution-factor
-                "optimal-bitrate" (round (exact->inexact datarate))))
-            "\n  "))))
-    score))
+        (+ (* 0.4 resolution-factor) (* 0.3 framerate-factor)
+          (* 0.2 bitdepth-factor) (* 0.1 bitrate-factor)))
+      (final-score (inexact->exact (round (* score 10)))))
+    (debug-quality-score-display width height
+      framerate bitdepth
+      optimal-bitrate bitrate
+      codec final-score
+      codec-factor framerate-factor bitdepth-factor bitrate-factor resolution-factor)
+    final-score))
 
 (define (ffprobe path entries)
   (let
@@ -90,11 +98,9 @@
               ( (bitdepth (or (and bitdepth (string->number bitdepth)) 8))
                 (bitrate (or (and bitrate (string->number bitrate)) 1000))
                 (framerate (or (and framerate (string->number framerate)) 15)))
-              (string-append
-                "q"
+              (string-append "q"
                 (if (and width height codec)
-                  (number->string
-                    (get-quality-score width height framerate bitdepth bitrate codec))
+                  (number->string (get-quality-score width height framerate bitdepth bitrate codec))
                   "0")
                 duration-string))
             (string-append duration-string
@@ -117,13 +123,21 @@
   (let
     ( (codecs (list "h264" "av1"))
       (resolutions
-        (q ((320 . 240) (640 . 480) (1280 . 720) (1920 . 1080) (2560 . 1440) (3840 . 2160) (7680 . 4320))))
+        (q
+          ( (320 . 240) (640 . 480) (1280 . 720)
+            (1920 . 1080) (2560 . 1440) (3840 . 2160) (7680 . 4320))))
       (bitrates (list 9000000 25000000 75000000 100000000 200000000)) (bitdepths (list 8 10))
       (framerates (list 30 60 120)))
-    (produce
-      (l (resolution codec framerate bitdepth bitrate)
-        (get-quality-score (first resolution) (tail resolution) framerate bitdepth bitrate codec))
-      resolutions codecs framerates bitdepths bitrates)))
+    (each
+      (l (resolution)
+        (display-line "~~~")
+        (produce
+          (l (codec framerate bitdepth bitrate)
+            (get-quality-score (first resolution) (tail resolution)
+              framerate bitdepth bitrate codec))
+          codecs framerates bitdepths bitrates)
+        (display-line "~~~"))
+      resolutions)))
 
 (define (prepend-video-tags-cli)
   (let
