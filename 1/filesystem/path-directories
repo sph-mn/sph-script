@@ -1,13 +1,24 @@
-#!/usr/bin/guile
-!#
+#!/bin/sh
 
-;displays all parent directories except root as full-paths on one line per path
-;takes only one argument which must be a full-path like in $PWD
-(import (sph string) (srfi srfi-1) (sph))
+split_directories() {
+  dir="$1"
+  while test "$dir" != "/" -a "$dir" != "."; do
+    printf "%s\n" "$dir"
+    dir=$(dirname "$dir")
+  done
+}
 
-(define (split-directories a)
-  (unfold (l (e) (or (string-equal? "/" e) (string-equal? "." e)))
-    (l (e) (display (string-append e "\n"))) dirname a))
-
-(let (a (tail (program-arguments)))
-  (if (null? a) (split-directories (getcwd)) (apply split-directories a)))
+if test -z "$1"; then
+  split_directories "$(pwd)"
+else
+  for dir in "$@"; do
+    case "$dir" in
+      /*)  # Absolute path
+        split_directories "$dir"
+        ;;
+      *)  # Relative path
+        split_directories "$(pwd)/$dir"
+        ;;
+    esac
+  done
+fi
