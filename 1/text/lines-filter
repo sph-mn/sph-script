@@ -1,42 +1,59 @@
-#!/usr/bin/guile
-!#
+#!/bin/sh
 
-(use-modules (sph) (sph io) (sph alist) (sph string) (sph cli))
+negate=0
+mode="-a"
 
-(define lines-filter-cli
-  (let
-    (cli
-      (cli-create #:description
-        "read from standard input and filter lines case-insensitively by given strings or regular expressions"
-        #:options
-        (q
-          ( (negate) (or #:description "matching lines must contain at least one of the strings")
-            (regexp #:names #\r
-              #:description "interpret strings as posix extended regular expressions")
-            (case-sensitive #:names #\c)
-            (and #:description "matching lines must contain all strings. the default")
-            ((strings ...))))))
-    (nullary
-      (let*
-        ( (arguments (cli)) (regexp? (alist-ref-q arguments regexp))
-          (case-sensitive? (alist-ref-q arguments case-sensitive))
-          (patterns
-            (map
-              (if regexp? (if case-sensitive? make-regexp (l (a) (make-regexp a regexp/icase)))
-                (if case-sensitive? identity string-downcase))
-              (alist-ref-q arguments strings (list))))
-          (negate? (alist-ref-q arguments negate)) (or? (alist-ref-q arguments or))
-          (and? (alist-ref-q arguments and)))
-        (if (null? patterns) (port-copy-all (current-input-port) (current-output-port))
-          (let*
-            ( (match?
-                (if regexp? (if or? string-matches-any-regexp? string-matches-every-regexp?)
-                  (if or? string-contains-some? string-contains-all?)))
-              (match-line?
-                (if case-sensitive? (l (line) (match? line patterns))
-                  (l (line) (match? (string-downcase line) patterns)))))
-            (port-lines-each
-              (if negate? (l (line) (if (not (match-line? line)) (display-line line)))
-                (l (line) (if (match-line? line) (display-line line)))))))))))
+# Process options
+while test $# -gt 0 && test "${1#-}" != "$1"; do
+  case "$1" in
+    -n)
+      negate=1
+      ;;
+    -a)
+      mode="-a"
+      ;;
+    -o)
+      mode="-o"
+      ;;
+    *)
+      echo "Invalid option: $1"
+      echo "usage: [options] arguments ..."
+      echo "  -a  matching lines must contain all strings. the default"
+      echo "  -n  negate"
+      echo "  -o  matching lines must contain at least one of the strings"
+      exit 1
+      ;;
+  esac
+  shift
+done
 
-(lines-filter-cli)
+# Ensure that patterns are provided
+if test $# -eq 0; then
+  echo "No patterns provided."
+  exit 1
+fi
+
+# Build the regex based on the mode
+case "$mode" in
+  -a)
+    # Build regex with positive lookaheads for all patterns
+    regex=""
+    for pat in "$@"; do
+      regex="${regex}(?=.*${pat})"
+    done
+    rg_opts="-P"
+    ;;
+  -o)
+    # Build an OR regex for any of the patterns
+    regex=$(printf '%s|' "$@" | sed 's/|$//')
+    rg_opts=""
+    ;;
+esac
+
+# Add the negate option if needed
+if test $negate -eq 1; then
+  rg_opts="$rg_opts -v"
+fi
+
+# Run ripgrep with the constructed options and regex
+rg -S --color=never $rg_opts "$regex"
