@@ -1,153 +1,148 @@
-#!/usr/bin/guile
-!#
+#!/usr/bin/env ruby
 
-(use-modules (srfi srfi-1) (sph string) (sph) (sph cli) (sph alist) (sph list) (sph process))
+dry_run = false
+quality_score = false
+with_duration = false
+paths = []
 
-(define prepend-video-quality-tags-description
-  "prepend \"p{shortest-pixel-side}f{frames-per-second}.\" to filenames.
-   usage: prepend-video-tags path ...")
+while !ARGV.empty? && ARGV[0].start_with?("-")
+  arg = ARGV.shift
+  if arg == "-d" then dry_run = true
+  elsif arg == "-q" then quality_score = true
+  elsif arg == "-t" then with_duration = true
+  else
+    puts "Unknown option: #{arg}"
+    exit 1
+  end
+end
 
-(define (rename-dry-run old new)
-  (display-line (string-append (string-quote old) " -> " (string-quote new))))
+paths = ARGV
 
-(define (get-duration-string duration)
-  (if duration
-    (cond ((< duration 500) "d1") ((> duration 2500) "d3") ((> duration 5000) "d4") (else "d2")) "d0"))
+if paths.empty?
+  puts "usage: [options] files ..."
+  puts "options"
+  puts "  -d  dry-run"
+  puts "  -q  add quality score"
+  puts "  -t  add duration tag"
+  exit 1
+end
 
-(define (get-range-factor a range min max)
-  "scales 'a' into range (0..range) if between min and max, otherwise returns either min or max"
-  (if (<= a min) 0 (if (>= a max) range (* range (/ (- a min) (- max min))))))
+def ffprobe_properties(path, entries)
+  require "open3"
+  entries_str = entries.join(",")
+  cmd = ["ffprobe", "-v", "quiet", "-select_streams", "v:0",
+         "-show_entries", "stream=#{entries_str}", "-of", "default=noprint_wrappers=1", path]
+  stdout_str, stderr_str, status = Open3.capture3(*cmd)
+  return {} unless status.success?
+  data = {}
+  stdout_str.lines.each do |line|
+    key, value = line.strip.split("=")
+    data[key] = value
+  end
+  data
+end
 
-(define (get-delta-factor a base delta step)
-  "factor to scale by 'step' for each 'delta' difference to 'base'"
-  (+ 1 (* step (/ (abs (- a base)) delta))))
+def get_duration_string(duration)
+  if duration
+    duration = duration.to_f
+    if duration < 500 then "d1"
+    elsif duration > 5000 then "d4"
+    elsif duration > 2500 then "d3"
+    else "d2" end
+  else "d0" end
+end
 
-(define (get-doubling-factor a base step) "factor to scale by 'step' for each doubling of 'step'"
-  (+ 1 (* step (/ (log (/ a base)) (log 2)))))
+def parse_frame_rate(r_frame_rate)
+  if r_frame_rate
+    nums = r_frame_rate.split("/")
+    if nums.length == 2
+      nums[0].to_f / nums[1].to_f
+    else
+      r_frame_rate.to_f
+    end
+  else nil end
+end
 
-(define (log2 b) (/ (log b) (log 2)))
-(define debug-quality-score-table #f)
-(define debug-quality-score-log 0)
+def get_quality_score width, height, framerate, bitdepth, bitrate, codec
+  codec_efficiencies = {
+    "av1" => 1.5,
+    "h264" => 1.0,
+    "h266" => 2.0,
+    "hevc" => 1.7,
+    "vp8" => 0.9,
+    "vp9" => 1.3
+  }
+  codec_factor = 1.0 / (codec_efficiencies[codec] || 0.8)
+  resolution = width * height
+  optimal_bitrate = resolution * bitdepth * framerate * codec_factor
+  bitrate_factor = 2.0 / (1 + Math.exp(-0.001 * (bitrate - optimal_bitrate)))
+  resolution_factor = Math.log2((resolution / (640.0 * 480.0)) + 1)
+  framerate_factor = Math.log2((framerate / 30.0) + 1)
+  bitdepth_factor = Math.log2((bitdepth - 6.0) / 2.0)
+  score = 0.4 * resolution_factor + 0.3 * framerate_factor + 0.2 * bitdepth_factor + 0.1 * bitrate_factor
+  (score * 10).round.to_i
+end
 
-(define
-  (debug-quality-score-display width height framerate bitdepth datarate bitrate codec score
-    codec-factor
-    framerate-factor
-    bitdepth-factor
-    bitrate-factor
-    resolution-factor)
-  (when (< 0 debug-quality-score-log)
-    (simple-format #t "~Ax~A ~A ~A ~A ~A ~A -> ~A\n"
-      width height framerate bitdepth (inexact->exact (round datarate)) bitrate codec score))
-  (when (< 1 debug-quality-score-log)
-    (display-line
-      (string-append " "
-        (string-join
-          (map (lambda (a) (string-append (car a) " " (number->string (exact->inexact (cdr a)))))
-            (list (cons "codec-factor" codec-factor) (cons "framerate-factor" framerate-factor)
-              (cons "bitdepth-factor" bitdepth-factor) (cons "bitrate-factor" bitrate-factor)
-              (cons "resolution-factor" resolution-factor)
-              (cons "optimal-bitrate" (round (exact->inexact datarate)))))
-          "\n  ")))))
+def get_tag(path, with_duration, quality_score)
+  entries = ["bits_per_raw_sample", "bit_rate", "codec_name", "duration", "height", "r_frame_rate", "width"]
+  props = ffprobe_properties(path, entries)
 
-(define (get-quality-score width height framerate bitdepth bitrate codec)
-  (let*
-    ( (codec-efficiencies
-        (quote (("av1" . 1.5) ("h264" . 1) ("h266" . 2) ("hevc" . 1.7) ("vp8" . 0.9) ("vp9" . 1.3))))
-      (codec-factor (/ 1 (or (assoc-ref codec codec-efficiencies) 0.8)))
-      (resolution (* width height)) (optimal-bitrate (* resolution bitdepth framerate codec-factor))
-      (bitrate-factor (* 2 (/ 1 (+ 1 (exp (* -0.001 (- bitrate optimal-bitrate)))))))
-      (resolution-factor (log2 (+ (/ resolution (* 640 480)) 1)))
-      (framerate-factor (log2 (+ (/ framerate 30) 1))) (bitdepth-factor (log2 (/ (- bitdepth 6) 2)))
-      (score
-        (+ (* 0.4 resolution-factor) (* 0.3 framerate-factor)
-          (* 0.2 bitdepth-factor) (* 0.1 bitrate-factor)))
-      (final-score (inexact->exact (round (* score 10)))))
-    (debug-quality-score-display width height
-      framerate bitdepth
-      optimal-bitrate bitrate
-      codec final-score
-      codec-factor framerate-factor bitdepth-factor bitrate-factor resolution-factor)
-    final-score))
+  def parse_numeric(value, default)
+    if value.is_a?(String) && value.match?(/\A[-+]?\d*\.?\d+\Z/)
+      value.include?('.') ? value.to_f : value.to_i
+    else
+      default
+    end
+  end
 
-(define (ffprobe path entries)
-  (let
-    (data
-      (map (l (line) (let (a (string-split line #\=)) (pair (first a) (second a))))
-        (string-split
-          (string-trim-right
-            (execute->string "ffprobe" "-v"
-              "quiet" "-select_streams"
-              "v:0" "-show_entries"
-              (string-append "stream=" (string-join entries ",")) "-of"
-              "default=noprint_wrappers=1" path))
-          #\newline)))
-    (map (l (entry) (alist-ref data entry)) entries)))
+  duration_string = ""
+  if with_duration
+    duration = props["duration"] ? parse_numeric(props["duration"], 0.0) : 0.0
+    duration_string = get_duration_string(duration)
+  end
 
-(define (get-tag path with-duration quality-score)
-  (apply
-    (l (bitdepth bitrate codec duration height framerate width)
-      (let
-        (duration-string
-          (if with-duration (get-duration-string (if duration (string->number duration) 0)) ""))
-        (let
-          ( (height (or (and height (string->number height)) 320))
-            (width (or (and width (string->number width)) 240)))
-          (if quality-score
-            (let
-              ( (bitdepth (or (and bitdepth (string->number bitdepth)) 8))
-                (bitrate (or (and bitrate (string->number bitrate)) 1000))
-                (framerate (or (and framerate (string->number framerate)) 15)))
-              (string-append "q"
-                (if (and width height codec)
-                  (number->string (get-quality-score width height framerate bitdepth bitrate codec))
-                  "0")
-                duration-string))
-            (string-append duration-string
-              (string-append "p"
-                (if (and width height)
-                  (number->string (min (string->number width) (string->number height))) "0"))
-              (if framerate
-                (string-append "f"
-                  (number->string (inexact->exact (round (string->number framerate)))))
-                ""))))))
-    (ffprobe path
-      (list "bits_per_raw_sample" "bit_rate"
-        "codec_name" "duration" "height" "r_frame_rate" "width"))))
+  height = props["height"] ? parse_numeric(props["height"], 320) : 320
+  width = props["width"] ? parse_numeric(props["width"], 240) : 240
 
-(define (add-tag path tag dry-run)
-  (let (new-path (string-append (dirname path) "/" tag "." (basename path)))
-    (if (not (string-equal? new-path path)) ((if dry-run rename-dry-run rename-file) path new-path))))
+  if quality_score
+    bitdepth = props["bits_per_raw_sample"] ? parse_numeric(props["bits_per_raw_sample"], 8) : 8
+    bitrate = props["bit_rate"] ? parse_numeric(props["bit_rate"], 1000) : 1000
+    framerate = parse_frame_rate(props["r_frame_rate"]) || 15.0
+    codec = props["codec_name"]
+    if width && height && codec
+      quality = get_quality_score width, height, framerate, bitdepth, bitrate, codec
+      tag = "q#{quality}#{duration_string}"
+    else tag = "q0#{duration_string}" end
+  else
+    shortest_side = [width, height].min
+    framerate = parse_frame_rate(props["r_frame_rate"])
+    tag = "#{duration_string}p#{shortest_side}"
+    tag += "f#{framerate.round}" if framerate
+  end
 
-(define (show-quality-score-table)
-  (let
-    ( (codecs (list "h264" "av1"))
-      (resolutions
-        (q
-          ( (320 . 240) (640 . 480) (1280 . 720)
-            (1920 . 1080) (2560 . 1440) (3840 . 2160) (7680 . 4320))))
-      (bitrates (list 9000000 25000000 75000000 100000000 200000000)) (bitdepths (list 8 10))
-      (framerates (list 30 60 120)))
-    (each
-      (l (resolution)
-        (display-line "~~~")
-        (produce
-          (l (codec framerate bitdepth bitrate)
-            (get-quality-score (first resolution) (tail resolution)
-              framerate bitdepth bitrate codec))
-          codecs framerates bitdepths bitrates)
-        (display-line "~~~"))
-      resolutions)))
+  tag
+end
 
-(define (prepend-video-tags-cli)
-  (let
-    (options ((cli-create #:options (q ((dry-run) (with-duration) (quality-score) ((paths ...)))))))
-    (alist-bind options (paths dry-run with-duration quality-score)
-      (each
-        (l (path)
-          (if (eq? (q regular) (stat:type (stat path)))
-            (let (tag (get-tag path with-duration quality-score))
-              (if tag (add-tag path tag dry-run)))))
-        paths))))
+def add_tag(path, tag, dry_run)
+  require "fileutils"
 
-(if debug-quality-score-table (show-quality-score-table) (prepend-video-tags-cli))
+  dirname = File.dirname(path)
+  basename = File.basename(path)
+  new_basename = "#{tag}.#{basename}"
+  new_path = File.join(dirname, new_basename)
+
+  if new_path != path
+    if dry_run
+      puts "\"#{path}\" -> \"#{new_path}\""
+    else
+      FileUtils.mv(path, new_path)
+    end
+  end
+end
+
+paths.each do |path|
+  if File.file?(path)
+    tag = get_tag path, with_duration, quality_score
+    add_tag(path, tag, dry_run) if tag
+  end
+end

@@ -1,11 +1,11 @@
-#!/usr/bin/guile
-!#
+#!/usr/bin/env ruby
 
-(import (sph) (sph cli) (rnrs io ports))
+binary_data = STDIN.read
+binary_output = []
 
-(define (rw-port->port read write port port-2)
-  (let loop ((e (read port))) (if (eof-object? e) e (begin (write e port-2) (loop (read port))))))
+binary_data.each_byte do |byte|
+  binary_string = byte.to_s(2).rjust 8, "0"
+  binary_output << binary_string
+end
 
-(let (options ((cli-create #:help "prints input data in binary representation")))
-  (rw-port->port get-u8 (l (e port) (display (number->string e 2) port) (display " " port))
-    (current-input-port) (current-output-port)))
+puts binary_output.join ""

@@ -1,5 +1,2 @@
-#!/usr/bin/guile
-!#
-;randomize the order of newline separated lines read from standard input
-(import (sph) (sph io) (sph list one))
-(each (l (e) (display-line e)) (randomize (port->lines (current-input-port))))
+#!/bin/sh
+shuf

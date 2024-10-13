@@ -1,54 +1,52 @@
-#!/usr/bin/guile
-!#
+#!/bin/sh
 
-(use-modules (srfi srfi-2) (sph filesystem)
-  (sph alist) (sph io)
-  (sph list) (ice-9 pretty-print)
-  (sph number) (sph other)
-  (sph process) (sph string) (sph vector) (sph) (sph lang indent-syntax) (sph cli) (json))
+# Script to extract the first audio streams from video files without quality loss.
 
-(define description "depends on ffmpeg, guile, guile-json and sph-lib")
+for input_file in "$@"
+do
+  # Check if the file exists
+  if test ! -f "$input_file"; then
+    echo "File not found: $input_file"
+    continue
+  fi
 
-(define (ffprobe-audio-codec path)
-  (catch #t
-    (nullary
-      (let*
-        ( (json
-            (json-string->scm
-              (execute->string "ffprobe" "-v"
-                "quiet" "-print_format" "json" "-show_streams" "-select_streams" "a" path)))
-          (codec-names
-            (map (l (a) (alist-ref a "codec_name")) (vector->list (alist-ref json "streams")))))
-        (if (null? codec-names) codec-names (first codec-names))))
-    (l exc (pretty-print exc) #f)))
+  # Get the codec name of the first audio stream
+  codec_name=`ffprobe -v error -select_streams a:0 -show_entries stream=codec_name \
+    -of default=noprint_wrappers=1:nokey=1 "$input_file"`
 
-(define (ffmpeg-extract-audio path-source format)
-  (and-let*
-    ( (audio-codec (or format (ffprobe-audio-codec path-source)))
-      (path-destination (string-append path-source "." audio-codec)))
-    (apply execute "ffmpeg"
-      "-i" path-source "-map" "0:a" path-destination (if format (list) (list "-c" "copy")))))
+  # Map codec_name to file extension
+  case "$codec_name" in
+    mp3)
+      extension="mp3"
+      ;;
+    aac)
+      extension="aac"
+      ;;
+    ac3)
+      extension="ac3"
+      ;;
+    flac)
+      extension="flac"
+      ;;
+    vorbis)
+      extension="ogg"
+      ;;
+    opus)
+      extension="opus"
+      ;;
+    pcm_s16le)
+      extension="wav"
+      ;;
+    *)
+      echo "Unsupported codec ($codec_name) in file: $input_file"
+      continue
+      ;;
+  esac
 
-(define (run)
-  (let*
-    ( (description
-        "extract audio streams from video files, by default without quality loss\n  filenames will be \"{source-path}.{audio-filename-extension}\"")
-      (dependencies (q ("sph-lib" "guile-json" "ffmpeg" "ffprobe")))
-      (about
-        (qq
-          ( ("description" (unquote description))
-            ("depends on" (unquote (string-join dependencies " ")))
-            ("maintainer and copyright" "sph@posteo.eu | http://sph.mn") ("license" "gpl3+"))))
-      (options
-        ( (cli-create #:description description
-            #:about (prefix-tree->indent-tree about)
-            #:options
-            (q
-              ( (format #:value-required? #t
-                  #:description "filename extension of the output format")
-                ((source-path ...)))))))
-      (format (alist-ref options (q format))))
-    (map (l (source) (ffmpeg-extract-audio source format))
-      (alist-ref options (q source-path) (list)))))
+  # Construct the output file name
+  output_file="${input_file}.${extension}"
 
-(run)
+  # Extract the audio stream without re-encoding
+  ffmpeg -i "$input_file" -vn -acodec copy "$output_file"
+
+done

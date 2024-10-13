@@ -67,16 +67,11 @@
 │   ├── format-encrypt
 │   ├── get-unique-path
 │   ├── gui-group
-│   ├── gui-tag-add
-│   ├── gui-tag-remove
 │   ├── hardlink-to-copy
-│   ├── lf
 │   ├── list-file-size
 │   ├── merge-files
-│   ├── mkdir-wrap
 │   ├── move-and-link
 │   ├── name-add-date
-│   ├── parent-dir-references
 │   ├── prefix-sort
 │   ├── prepend-date
 │   ├── prepend-media-bitrate
@@ -85,9 +80,6 @@
 │   ├── rename-lowercase
 │   ├── set-permissions
 │   ├── splice-if-single
-│   ├── tag-add
-│   ├── tag-remove
-│   ├── tag-sort
 │   └── tidyfiles
 ├── media
 │   ├── aac2wav
@@ -123,7 +115,6 @@
 │   ├── backup
 │   ├── cpioc
 │   ├── cpioe
-│   ├── create-remarkjs-presentation
 │   ├── dwm-show-info
 │   ├── e
 │   ├── emacs-open-in-background
@@ -159,7 +150,6 @@
 │   ├── compress-js
 │   ├── guile-display-documentation
 │   ├── guile-module-dependencies
-│   ├── javascript-format-add-function-spacing
 │   ├── javascript-remove-semicolons
 │   ├── json-to-file
 │   ├── lines-to-quoted-comma-lines
@@ -181,7 +171,6 @@
 │   ├── itpn-split
 │   ├── lines-append
 │   ├── lines-enclose
-│   ├── randomize
 │   ├── randomize-lines
 │   ├── remove-hash-comment-lines
 │   ├── remove-iso-date-prefix-zeros
@@ -201,19 +190,14 @@
     ├── uptime-duration-ks
     └── uptime-start-ks
 
-16 directories, 186 files
+16 directories, 175 files
 ~~~
 
-additionally included are:
-* other/take-website-screenshots
-* other/xml-json-converter
-* other/web-search
-
-scripts in `1` are generally more useful and scripts in `2` are more experimental
+scripts in `1` are generally more useful and scripts in `2` are more experimental.
 
 # dependencies
-primarily posix shell (/bin/sh). the goal is to prefer posix shell, and use coreutils and bsd compatible commands. coreutils and other tools are preferred in this order: tr, sed, and ruby.
-however, some scripts currently still have other dependencies, for example on [guile](https://www.gnu.org/software/guile/) and [sph-lib](https://github.com/sph-mn/sph-lib).
+primarily posix shell (/bin/sh). the goal is to prefer posix shell, and use coreutils and bsd compatible commands. tools are currently preferred in this order: shell, tr, sed, ruby.
+however, some scripts currently still have other dependencies, for example on [guile](https://www.gnu.org/software/guile/).
 
 # installation
 assuming that "$HOME/exe" is listed in the $PATH environment variable (which it is not by default), you can use the following to symlink all scripts into the path (uses the gnu version of cp):

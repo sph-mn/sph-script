@@ -1,41 +1,81 @@
-#!/usr/bin/guile
-!#
+#!/usr/bin/env ruby
 
-; depends on guile and sph-lib
-(use-modules (srfi srfi-1) (sph) (sph cli) (sph list) (sph io))
+require 'set'
 
-(define cli
-  (cli-create #:options
-    (q
-      ( (union #:names #\u) (intersection #:names #\i) (difference #:names #\d)
-        (complement #:names #\c) ((file-path ...))))
-    #:description
-    "applies set operations to the lines of files. each file representing one set. writes the resulting lines to standard output"))
+# Initialize variables
+operation = :union
+complement = false
+files = []
 
-(define (file-lines-set-operations operation file-paths)
-  (let
-    (operation-f
-      (case operation
-        ((union) union)
-        ((intersection) intersection)
-        ((difference) difference)
-        ((complement) complement)
-        (else #f)))
-    (if operation-f
-      (apply call-with-input-files
-        (l files
-          (fold (l (file result) (operation-f result (port->lines file)))
-            (port->lines (first files)) (tail files)))
-        file-paths)
-      null)))
+# Process options
+while arg = ARGV.shift
+  if arg.start_with?('-')
+    case arg
+    when '-c'
+      complement = true
+    when '-d'
+      operation = :difference
+    when '-i'
+      operation = :intersection
+    when '-u'
+      operation = :union
+    else
+      puts "Invalid option: #{arg}"
+      puts "usage: [options] file ..."
+      puts "options"
+      puts "  -c  complement"
+      puts "  -d  difference"
+      puts "  -i  intersection"
+      puts "  -u  union"
+      exit 1
+    end
+  else
+    files << arg
+  end
+end
 
-(define (file-lines-set-operations-cli options)
-  (let
-    ( (operation
-        (first-or-false
-          (intersection (map first options) (q (union difference intersection complement)))))
-      (file-paths (assq-ref options (q file-path))))
-    (if (and operation file-paths)
-      (each display-line (file-lines-set-operations operation file-paths)) (cli (list "--help")))))
+# Ensure at least one file is provided
+if files.empty?
+  puts "No files provided."
+  exit 1
+end
 
-(file-lines-set-operations-cli (cli))
+# Read files into sets
+sets = []
+
+files.each do |filename|
+  begin
+    lines = File.readlines(filename).map(&:chomp)
+    sets << Set.new(lines)
+  rescue Errno::ENOENT
+    puts "File not found: #{filename}"
+    exit 1
+  end
+end
+
+# Compute the universe (union of all sets)
+universe = sets.reduce(Set.new, :|)
+
+# Compute result_set based on the operation
+case operation
+when :union
+  result_set = sets.reduce(Set.new, :|)
+when :intersection
+  result_set = sets.reduce { |a, b| a & b }
+when :difference
+  # Subtract all subsequent sets from the first set
+  result_set = sets[0].dup
+  sets[1..-1].each do |s|
+    result_set -= s
+  end
+end
+
+# Apply complement if specified
+if complement
+  result_set = universe - result_set
+end
+
+# Output the result
+result_set.each do |line|
+  puts line
+end

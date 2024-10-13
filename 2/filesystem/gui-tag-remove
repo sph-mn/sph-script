@@ -1,7 +1,0 @@
-#!/usr/bin/guile
-!#
-
-(import (sph process) (sph))
-
-(apply execute "tag-remove"
-  (string-trim-right (shell-eval->string "zenity --entry")) (tail (program-arguments)))

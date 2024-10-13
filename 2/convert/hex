@@ -1,12 +1,3 @@
-#!/usr/bin/guile
-!#
+#!/usr/bin/env ruby
 
-(import (sph) (sph cli) (sph io) (rnrs io ports) (sph string))
-
-(define (rw-port->port read write port port-2)
-  (let loop ((e (read port))) (if (eof-object? e) e (begin (write e port-2) (loop (read port))))))
-
-(let (options ((cli-create #:help "prints input data in hexadecimal representation")))
-  (rw-port->port get-u8
-    (l (e port) (display (string-fill-left (number->string e 16) 2 #\0) port) (display " " port))
-    (current-input-port) (current-output-port)))
+puts STDIN.read.unpack('H*').first
