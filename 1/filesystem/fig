@@ -1,12 +1,3 @@
 #!/bin/sh
 
-# list all paths under the current working directory that contain all (default) of the given search strings.
-# excludes the directories node_modules/.git/cache/vendor.
-# arguments: [lines-filter-options ...] search-string ...
-# examples:
-#   fig test
-
-pattern="rg --color=never --no-heading -NFS '$1'"
-shift
-for a in "$@"; do pattern="${pattern} | rg --color=never -FS '$a'"; done
-find . -type d \( -name node_modules -o -name .git -o -name cache -o -name vendor \) -prune -o -print | /bin/sh -c "$pattern"
+find . -type d \( -name node_modules -o -name .git -o -name cache -o -name vendor \) -prune -o -print | lines-filter "$@"

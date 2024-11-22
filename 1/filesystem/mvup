@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# usage: [-n integer] file ...
+# move given files into their parent directories unless a file with the same name already exists there.
+# if the "-n" option for the count of parent directories to skip is given, it must be the first argument.
+
+n=1
+test "$1" = "-n" && { n=$2; shift 2; }
+
+for a in "$@"; do
+  abs=$(realpath "$a") || continue
+  dir=$(dirname "$abs")
+  base=$(basename "$abs")
+  i=0
+  while test "$i" -lt "$n" && test "$dir" != "/"; do
+    dir=$(dirname "$dir")
+    i=$((i + 1))
+  done
+  test "$dir" = "/" && dir=""
+  target="$dir/$base"
+  test ! -e "$target" && mv "$a" "$target"
+done

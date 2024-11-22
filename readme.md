@@ -13,7 +13,7 @@
 │   ├── late-write
 │   ├── list-broken-symlinks
 │   ├── mount-home
-│   ├── move-up
+│   ├── mvup
 │   ├── path-directories
 │   ├── path-permissions
 │   ├── search
@@ -226,6 +226,16 @@ delete broken symlinks in the given directory or current directory and sub-direc
 
 ### fig
 find files containing all argument strings in the name. the name is a combination of find and grep
+list all paths under the current working directory that contain all (default) of the given search strings.
+excludes the directories node_modules/.git/cache/vendor.
+
+~~~
+arguments: [lines-filter-options ...] search-string ...
+~~~
+
+~~~
+fig test1 test2
+~~~
 
 depends on [ripgrep](https://github.com/BurntSushi/ripgrep)
 
@@ -285,6 +295,14 @@ mount directory: $HOME/mnt
 * equivalent to "xargs -n 1 -d \n"
 * "nargsp" executes commands in parallel
 * "nargs-all" passes all arguments at once
+
+### mvup
+move given files into their parent directories, unless a file with the same name already exists there.
+if the "-n" option for the count of parent directories to skip is given, it must be the first argument; the default is 1.
+
+~~~
+usage: [-n integer] file ...
+~~~
 
 ### path-directories
 lists all parent directories
