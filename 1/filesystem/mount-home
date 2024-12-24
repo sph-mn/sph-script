@@ -40,7 +40,10 @@ done
 if test $# -eq 0
 then
   echo arguments: "[options]" source ...
-  echo options: -s use sudo, -l interpret sources as disk labels
+  echo options
+  echo "  -s use sudo"
+  echo "  -l interpret sources as disk labels"
+  echo "  -o string  custom mount options"
   echo mount directory: "$mount_directory"
 fi
 

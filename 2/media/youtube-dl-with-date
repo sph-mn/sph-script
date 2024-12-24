@@ -6,5 +6,5 @@ if test -z $1
 then
   echo missing argument
 else
-  exec youtube-dl --no-playlist -o "%(upload_date)s.%(id)s.%(title)s.%(ext)s" $@
+  exec yt-dlp --no-playlist -o "%(upload_date)s.%(id)s.%(title)s.%(ext)s" $@
 fi
