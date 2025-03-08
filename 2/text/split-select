@@ -1,13 +1,24 @@
 #!/usr/bin/ruby
 
-# arguments: delimiter index ...
-# split each line at delimiter character and only display selected parts. displayed parts are separated by spaces.
+# arguments: delimiter column ...
+# split each line at delimiter character and only display selected parts.
+# column can be an integer or a range. examples: 1..3, ..2, 1..
+# selected parts are displayed separated by spaces.
 
 delimiter = Regexp.new Regexp.escape(ARGV[0]) + "+"
-indices = ARGV[1..-1].map &:to_i
+ranges = ARGV[1..-1].map {|a|
+  if a.include?("..")
+    start, stop = a.split("..").map {|v| v.empty? ? nil : v.to_i}
+    {start: start || 0, stop: stop}
+  else
+    {start: a.to_i, stop: a.to_i}
+  end
+}
 
-$stdin.each_line {|a|
-  a = a.split delimiter
-  b = indices.map {|i| a[i] || ""}
-  puts b.join(" ").strip
+$stdin.each_line {|line|
+  parts = line.split(delimiter)
+  selected = ranges.flat_map {|r|
+    (r[:start]..(r[:stop] || parts.size - 1)).map {|i| parts[i] || ""}
+  }
+  puts selected.join(" ").strip
 }
