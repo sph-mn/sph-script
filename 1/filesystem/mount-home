@@ -1,75 +1,48 @@
 #!/bin/sh
-
-# call without arguments to see usage.
-# mount filesystems to $HOME/mnt/{source_basename_or_label}
-# benefits: mount paths are automatically chosen, mount paths are predictable, multiple sources can be mounted in one call
-
-mount_directory="$HOME/mnt"
-option_label=0
+# mount filesystems to $HOME/mnt/{basename_or_label}
 option_sudo=0
-default_mount_options=""
-
+option_label=0
+default_opts=
+mount_dir="$HOME/mnt"
 while test $# -gt 0
 do
   case "$1" in
-    -s)
-      option_sudo=1
-      ;;
-    -l)
-      option_label=1
-      ;;
-    -o)
-      shift
-      default_mount_options="$1"
-      ;;
-    --)
-      shift
-      break
-      ;;
-    -*)
-      echo "Unknown option: $1" >&2
-      exit 1
-      ;;
-    *)
-      break
-      ;;
+    -s) option_sudo=1;;
+    -l) option_label=1;;
+    -o) shift; default_opts="$1";;
+    --) shift; break;;
+    -*) echo "Unknown option: $1" >&2; exit 1;;
+    *) break;;
   esac
   shift
 done
-
 if test $# -eq 0
 then
-  echo arguments: "[options]" source ...
-  echo options
-  echo "  -s use sudo"
-  echo "  -l interpret sources as disk labels"
-  echo "  -o string  custom mount options"
-  echo mount directory: "$mount_directory"
+  echo "usage: $0 [-s] [-l] [-o opts] source ..."
+  echo "mount_dir: $mount_dir"
+  exit
 fi
-
-rmdir "$mount_directory/*" 2> /dev/null
-
-for a in "$@"
+mkdir -p "$mount_dir"
+for src in "$@"
 do
-  mount_options="$default_mount_options"
-  if test 1 -eq "$option_label"
+  if test "$option_label" -eq 1
   then
-    b="$mount_directory/$a"
-    mount_options="-L $mount_options"
+    tgt="$mount_dir/$src"
+    opts="-L $default_opts"
   else
-    b="$mount_directory/$(basename "$a")"
+    tgt="$mount_dir/$(basename "$src")"
+    opts="$default_opts"
   fi
-  if mountpoint --quiet "$b"
+  if mountpoint --quiet "$tgt"
   then
-    echo "$b already mounted"
+    echo "$tgt already mounted"
     continue
   fi
-  if test 1 -eq "$option_sudo"
+  mkdir -p "$tgt"
+  if test "$option_sudo" -eq 1
   then
-    mount="sudo mount"
+    sudo mount $opts "$src" "$tgt"
   else
-    mount="mount"
+    mount $opts "$src" "$tgt"
   fi
-  mkdir -p "$b"
-  $mount $mount_options "$a" "$b"
 done

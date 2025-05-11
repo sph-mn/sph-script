@@ -1,55 +1,49 @@
 #!/bin/sh
-
-# symlinks or copies files into an automatically chosen target directory.
-
+# symlinks, hardlinks or copies files into an automatically chosen target directory.
 always_copy=0
-
+always_link=0
 if test -n "$COLLECT_FILE_TARGET"
 then
   target="$COLLECT_FILE_TARGET"
 else
   target="$HOME/collections/$(date +%Y-%m-%d)"
 fi
-
-if test 0 -eq $#
+if test $# -eq 0
 then
-  echo "arguments: source_file ..."
-  echo "COLLECT_FILE_TARGET: $target"
-  exit
+  echo "arguments: source_file ..." >&2
+  exit 1
 fi
-
 while test $# -gt 0
 do
   case "$1" in
-    -c)
-      always_copy=1
-      ;;
-    --)
-      shift
-      break
-      ;;
-    -*)
-      echo "Unknown option: $1" >&2
-      exit 1
-      ;;
-    *)
-      break
-      ;;
+    -c) always_copy=1;;
+    -l) always_link=1;;
+    --) shift; break;;
+    -*) echo "Unknown option: $1" >&2; exit 1;;
+    *) break;;
   esac
   shift
 done
-
+if test $always_copy -eq 1 -a $always_link -eq 1
+then
+  echo "Cannot use -c and -l together" >&2
+  exit 1
+fi
 mkdir -p "$target"
 target_device="$(stat -c %d "$target")"
-
-for a in "$@"
+for src in "$@"
 do
-  a="$(realpath "$a")"
-  device="$(stat -c %d "$a")"
-  if test 1 -eq $always_copy -o $target_device != $device
+  src="$(realpath "$src")"
+  device="$(stat -c %d "$src")"
+  if test $always_copy -eq 1 -o "$target_device" != "$device"
   then
-    cp "$a" "$target"
+    cp "$src" "$target"
   else
-    ln -s "$a" "$target"
+    if test $always_link -eq 1
+    then
+      ln "$src" "$target"
+    else
+      ln -s "$src" "$target"
+    fi
   fi
 done
