@@ -1,7 +1,5 @@
-#!/bin/sh
-
-for path in "$@"; do
-  printf "%s\n~~~\n" "$path"
-  cat "$path"
-  printf "\n~~~\n\n"
-done
+#!/usr/bin/env ruby
+ARGV.each_with_index{|a, i|
+  puts a, "~~~", File.read(a).rstrip, "~~~"
+  puts if i < ARGV.size - 1
+}
