@@ -1,0 +1,7 @@
+#!/bin/sh
+
+for path in "$@"; do
+  printf "%s\n~~~\n" "$path"
+  cat "$path"
+  printf "\n~~~\n\n"
+done

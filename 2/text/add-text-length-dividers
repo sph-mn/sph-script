@@ -1,0 +1,14 @@
+#!/usr/bin/ruby
+
+# add --- dividers on a single line before every n chars
+
+limit = 700
+char_count = 0
+STDIN.each_line do |line|
+  if char_count + line.length > limit
+    print "\n---\n"
+    char_count = 0
+  end
+  print line
+  char_count += line.length
+end

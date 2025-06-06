@@ -2,7 +2,7 @@
 
 while true
 do
-  text=$(date "+%H:%M:%S %a %Y-%m-%d")
+  text="$(TZ='Asia/Shanghai' date "+%H:%M:%S") $(date "+%H:%M:%S %a %Y-%m-%d")"
   text="-$(hours-and-minutes-till-midnight) $text"
   xsetroot -name "$text"
   sleep 50

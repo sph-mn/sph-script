@@ -1,0 +1,32 @@
+#!/usr/bin/ruby
+
+# just replace strings in files. only shows changes unless -g was given as the first argument.
+# no regexp nonsense - escapes do not have to be considered.
+
+inplace = ARGV[0] == "-g" ? ARGV.shift : false
+pat = ARGV.shift.to_s
+rep = ARGV.shift.to_s
+files = ARGV.empty? ? ["./"] : ARGV
+paths = files.flat_map { |f| File.directory?(f) ? Dir["#{f}/**/*"] : [f] }
+paths.select { |f| File.file?(f) }.each do |f|
+  begin
+    head = File.read(f, 1024)
+    next if head && head.include?("\0")
+    src = File.read(f)
+    dst = src.gsub(pat, rep)
+    if inplace
+      File.write(f, dst) if dst != src
+    else
+      src.lines.each do |line|
+        changed = line.gsub(pat, rep)
+        unless changed == line
+          puts f
+          puts "#{line.chomp}"
+          puts "#{changed.chomp}"
+          puts
+        end
+      end
+    end
+  rescue
+  end
+end
