@@ -1,0 +1,140 @@
+#!/usr/bin/env ruby
+
+# backup-disk: configurable disk-based rsync backup manager
+#
+# This script synchronizes specified source directories to mount points
+# on external drives, using per-disk configuration files located in:
+#   ~/.config/backup-disk/*.rb
+#
+# Each config file returns a hash mapping disk UUIDs to arrays of backup
+# definitions. Includes, excludes, and regex-based filters can be applied.
+# The script auto-resolves mount points using /dev/disk/by-uuid/<uuid>.
+#
+# Usage:
+#   backup-disk                  # process all configs
+#   backup-disk work home        # process only work.rb and home.rb
+#   backup-disk --dry-run        # simulate syncs (no changes)
+#
+# For LUKS-encrypted devices, ensure the volume is unlocked and mounted.
+# UUID detection depends on proper udev initialization.
+
+require "tmpdir"
+require "shellwords"
+require "open3"
+require "time"
+
+config_directory = File.expand_path "~/.config/backup-disk"
+dry_run = ARGV.delete "--dry-run"
+
+config_files =
+  if ARGV.empty?
+    Dir.glob("#{config_directory}/*.rb").sort
+  else
+    ARGV.map {|name| File.join(config_directory, "#{name}.rb")}
+  end
+
+disk_entries = Hash.new {|h, uuid| h[uuid] = []}
+
+config_files.each do |file_path|
+  raise "config not found: #{file_path}" unless File.exist?(file_path)
+  file_mapping = eval(File.read(file_path), binding, file_path)
+  file_mapping.each { |disk_uuid, entries| disk_entries[disk_uuid].concat(entries) }
+end
+
+def mount_point_for_uuid disk_uuid
+  device = "/dev/disk/by-uuid/#{disk_uuid}"
+  `findmnt -n -o TARGET #{device}`.strip
+end
+
+def collapse_prefixes(paths)
+  sorted = paths.sort
+  collapsed = []
+  prev = nil
+  sorted.each do |p|
+    if prev.nil? || !p.start_with?(prev + "/")
+      collapsed << p
+      prev = p
+    end
+  end
+  collapsed
+end
+
+def eligible_relative_paths source_path, entry
+  output = `find #{Shellwords.escape(source_path)} -xdev -type d 2>/dev/null`
+  return [] if output.empty?
+
+  paths = []
+  output.each_line do |line|
+    rel = line.strip.sub(/^#{Regexp.escape(source_path)}\/?/, "")
+    next if rel.empty?
+
+    inc_literal = !entry[:includes] || entry[:includes].any? { |i| rel.start_with?(i) }
+    inc_regex = !entry[:include_filter] || entry[:include_filter].any? { |r| rel.match?(r) }
+    exc_literal = !entry[:excludes] || entry[:excludes].none? { |x| rel.include?(x) }
+    exc_regex = !entry[:exclude_filter] || entry[:exclude_filter].none? { |r| rel.match?(r) }
+
+    paths << rel if inc_literal && inc_regex && exc_literal && exc_regex
+  end
+  collapse_prefixes paths
+end
+
+def rsync_patterns_from_token(token)
+  t = token.gsub(%r{^/+}, "") # drop leading /
+  t = t.chomp("/") # drop trailing /
+  [
+    "--exclude=**/*#{t}*/**", # directory + subtree
+    "--exclude=**/*#{t}*" # single file / dir hit
+  ]
+end
+
+def run_rsync(source_path, destination_path, relative_paths, entry, dry_run:)
+  Dir.mktmpdir do |tmpdir|
+    list_file = File.join(tmpdir, "rsync_list")
+    File.write(list_file, relative_paths.join("\n"))
+
+    args = %w[
+      rsync --recursive --sparse --links --ignore-errors --one-file-system
+      --delete --delete-before --size-only --itemize-changes
+    ]
+    (entry[:excludes] || []).each { |tok| rsync_patterns_from_token(tok).each { |p| args << p } }
+    args << "--files-from=#{list_file}"
+    args << "--dry-run" if dry_run
+    args += [source_path, destination_path]
+
+    Open3.popen3(*args) do |_in, out, err, _|
+      out.each_line { |ln| puts ln; log_rsync_change(source_path, destination_path, ln) unless dry_run }
+      err.each_line { |ln| warn ln }
+    end
+  end
+end
+
+def log_rsync_change(source_path, destination_path, line)
+  change = line.strip
+  return if change.empty?
+
+  kind =
+    if change.start_with?("*deleting ")
+      "delete"
+    elsif change =~ /^([<>ch\.])([fdLDS])\S{8} /
+      "change"
+    end
+  return unless kind
+
+  File.open("/var/log/backup-disk-sync.log", "a") do |f|
+    f.puts "[#{Time.now.iso8601}] #{kind} #{source_path} -> #{destination_path}: #{change}"
+  end
+end
+
+system "udevadm trigger --subsystem-match=block"
+system "blkid -p -o export /dev/mapper/* > /dev/null 2>&1"
+
+disk_entries.each do |disk_uuid, entries|
+  mount_point = mount_point_for_uuid(disk_uuid)
+  next if mount_point.empty?
+  entries.each do |entry|
+    source_path = entry[:source]
+    destination_path = entry[:target].start_with?("/") ? entry[:target] : File.join(mount_point, entry[:target])
+    rel_paths = eligible_relative_paths(source_path, entry)
+    run_rsync(source_path, destination_path, rel_paths, entry, dry_run: dry_run) unless rel_paths.empty?
+  end
+end
