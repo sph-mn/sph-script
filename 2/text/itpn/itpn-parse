@@ -1,0 +1,28 @@
+#!/usr/bin/env ruby
+indent_width = 2
+def canonicalize(input_io, indent_width)
+  raw_lines = input_io.readlines
+  raw_lines.each_with_index do |raw_line, index|
+    trimmed_line = raw_line.chomp.rstrip
+    raise "syntax error line #{index + 1}" if trimmed_line.empty?
+    leading_space_count = trimmed_line[/\A */].size
+    raise "syntax error line #{index + 1}" unless leading_space_count % indent_width == 0
+  end
+  raw_lines.map do |raw_line|
+    trimmed_line = raw_line.chomp.rstrip
+    leading_space_count = trimmed_line[/\A */].size
+    indent_depth = leading_space_count / indent_width
+    " " * indent_depth * indent_width + trimmed_line.lstrip
+  end
+end
+file_paths = ARGV.empty? ? ["-"] : ARGV
+begin
+  file_paths.each do |path|
+    input_io = path == "-" ? STDIN : File.open(path, "r")
+    canonicalize(input_io, indent_width).each { |line| puts line }
+    input_io.close unless path == "-"
+  end
+rescue RuntimeError => e
+  STDERR.puts e.message
+  exit 1
+end

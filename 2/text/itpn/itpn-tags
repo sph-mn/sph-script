@@ -1,0 +1,118 @@
+#!/usr/bin/env ruby
+require "optparse"
+
+options = {
+  replace_specs: [],
+  replace_file:  nil,
+  sort_tags:     false,
+  deduplicate:   false,
+  unique_tags:   false,
+  count_only:    false
+}
+
+parser = OptionParser.new do |p|
+  p.on("--replace SPEC", String,
+       "Format: \"old1,old2 new1,new2\". New list may be omitted for deletion.") do |v|
+    options[:replace_specs] << v
+  end
+  p.on("--replace-file PATH", String,
+       "File with lines: \"old new1 new2 ...\".") { |v| options[:replace_file] = v }
+  p.on("--sort-tags") { options[:sort_tags] = true }
+  p.on("--deduplicate") { options[:deduplicate] = true }
+  p.on("--unique-tags") { options[:unique_tags] = true }
+  p.on("--count") { options[:count_only] = true }
+end
+parser.parse!(ARGV)
+
+INDENT_WIDTH = 2
+
+def read_packets(io)
+  packets   = []
+  current   = []
+  io.each_line do |raw|
+    line = raw.chomp
+    next if line.empty?
+    leading_spaces = line[/\A */].size
+    if leading_spaces.zero?
+      packets << current unless current.empty?
+      current = [line]
+    else
+      current << line
+    end
+  end
+  packets << current unless current.empty?
+  packets
+end
+
+def build_replacement_table(specs, file_path)
+  table = Hash.new { |h, k| h[k] = nil }
+  specs.each do |spec|
+    parts = spec.strip.split(" ", 2)
+    old_tags = parts[0].split(",")
+    new_tags = parts[1] ? parts[1].split(",") : []
+    old_tags.each { |tag| table[tag] = new_tags }
+  end
+  if file_path
+    File.readlines(file_path).each do |line|
+      tokens = line.strip.split(/\s+/)
+      next if tokens.empty?
+      old_tag = tokens[0]
+      new_tags = tokens[1..] || []
+      table[old_tag] = new_tags
+    end
+  end
+  table
+end
+
+def transform_prefix(prefix_line, table, sort_tags)
+  tags = prefix_line.strip.split(/\s+/)
+  transformed = []
+  tags.each do |tag|
+    if table.key?(tag)
+      transformed.concat(table[tag])
+    else
+      transformed << tag
+    end
+  end
+  transformed = ["other"] if transformed.empty?
+  transformed.uniq!
+  transformed.sort! if sort_tags
+  transformed.join(" ")
+end
+
+replacement_table = build_replacement_table(options[:replace_specs], options[:replace_file])
+
+all_packets = []
+input_files = ARGV.empty? ? ["-"] : ARGV
+input_files.each do |path|
+  io = path == "-" ? STDIN : File.open(path, "r")
+  all_packets.concat(read_packets(io))
+  io.close unless path == "-"
+end
+
+all_packets.map! do |packet|
+  new_prefix = transform_prefix(packet.first, replacement_table, options[:sort_tags])
+  packet[0]  = new_prefix
+  packet
+end
+
+if options[:deduplicate]
+  seen = {}
+  all_packets.select! do |pkt|
+    key = pkt.join("\n")
+    next false if seen[key]
+    seen[key] = true
+    true
+  end
+end
+
+if options[:unique_tags]
+  tag_set = all_packets.flat_map { |pkt| pkt.first.split(/\s+/) }.uniq
+  if options[:count_only]
+    puts tag_set.size
+  else
+    tag_set.sort.each { |t| puts t }
+  end
+else
+  all_packets.each { |pkt| puts pkt.join("\n") }
+end
