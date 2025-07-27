@@ -1,15 +1,15 @@
 #!/usr/bin/env ruby
 
 dry_run = false
-quality_score = false
-with_duration = false
+quality_score = true
+with_duration = true
 paths = []
 
 while !ARGV.empty? && ARGV[0].start_with?("-")
   arg = ARGV.shift
   if arg == "-d" then dry_run = true
-  elsif arg == "-q" then quality_score = true
-  elsif arg == "-t" then with_duration = true
+  elsif arg == "-p" then quality_score = false
+  elsif arg == "-t" then with_duration = false
   else
     puts "Unknown option: #{arg}"
     exit 1
@@ -22,8 +22,8 @@ if paths.empty?
   puts "usage: [options] files ..."
   puts "options"
   puts "  -d  dry-run"
-  puts "  -q  add quality score"
-  puts "  -t  add duration tag"
+  puts "  -p  use pixel format (e.g. 720p30) instead of quality score"
+  puts "  -t  without duration tag"
   exit 1
 end
 

@@ -1,0 +1,98 @@
+#!/usr/bin/env ruby
+indent_width = 2
+limit = 120
+
+def flush(packets, current)
+  packets << current if current && !current.empty?
+end
+
+def emit(node, depth, out, indent_width, limit)
+  if node[:children].size == 1 && node[:children][0][:children].empty?
+    combined = "#{node[:text]}: #{node[:children][0][:text]}"
+    if depth * indent_width + combined.size <= limit
+      out << [depth, combined]
+      return
+    end
+  end
+  out << [depth, node[:text]]
+  node[:children].each { |ch| emit(ch, depth + 1, out, indent_width, limit) }
+end
+
+def collapse_packet(lines, indent_width, limit)
+  stack = []
+  root = nil
+  lines.each do |depth, text|
+    while stack.size > depth
+      stack.pop
+    end
+    node = {text: text, children: []}
+    if stack.empty?
+      root = node
+    else
+      stack[-1][:children] << node
+    end
+    stack << node
+  end
+  out = []
+  emit(root, 0, out, indent_width, limit)
+  out
+end
+
+def md_to_itpn(io, indent_width, limit)
+  packets = []
+  current = []
+  current_heading_depth = -1
+  root_from_bullet = false
+  io.each_line do |raw|
+    line = raw.chomp
+    next if line.empty?
+    if m = line.match(/\A(#+) +(.*)\z/)
+      level = m[1].size
+      text = m[2].strip
+      if level == 1
+        flush(packets, collapse_packet(current, indent_width, limit)) unless current.empty?
+        current = [[0, text]]
+        current_heading_depth = 0
+        root_from_bullet = false
+      else
+        depth = level - 1
+        current << [depth, text]
+        current_heading_depth = depth
+        root_from_bullet = false
+      end
+      next
+    end
+    if m = line.match(/\A( *)[*-] +(.*)\z/)
+      lspaces = m[1].size
+      depth_md = lspaces / indent_width
+      text = m[2].strip
+      if current.empty?
+        current << [0, text]
+        current_heading_depth = 0
+        root_from_bullet = true
+        next
+      end
+      if root_from_bullet && depth_md == 0
+        flush(packets, collapse_packet(current, indent_width, limit))
+        current = [[0, text]]
+        current_heading_depth = 0
+        root_from_bullet = true
+        next
+      end
+      eff = current_heading_depth >= 0 ? current_heading_depth + 1 + depth_md : depth_md
+      current << [eff, text]
+      next
+    end
+  end
+  flush(packets, collapse_packet(current, indent_width, limit)) unless current.empty?
+  packets
+end
+
+input_files = ARGV.empty? ? ["-"] : ARGV
+input_files.each do |path|
+  io = path == "-" ? STDIN : File.open(path, "r")
+  md_to_itpn(io, indent_width, limit).each do |packet|
+    packet.each { |depth, text| puts "#{" " * (depth * indent_width)}#{text}" }
+  end
+  io.close unless path == "-"
+end

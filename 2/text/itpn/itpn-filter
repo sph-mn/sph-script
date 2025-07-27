@@ -1,0 +1,106 @@
+#!/usr/bin/env ruby
+require "optparse"
+
+indent_width = 2
+mode_all = true
+negate = false
+depth_min = 0
+depth_max = Float::INFINITY
+subtree = false
+
+op = OptionParser.new
+op.on("-a"){ mode_all = true }
+op.on("-o"){ mode_all = false }
+op.on("-n"){ negate = true }
+op.on("-c"){ subtree = true }
+op.on("-d VAL"){|v|
+  if v =~ /\A(\d+)-(\d+)\z/
+    depth_min = $1.to_i
+    depth_max = $2.to_i
+  elsif v =~ /\A\d+\z/
+    depth_min = v.to_i
+    depth_max = v.to_i
+  else
+    abort "invalid -d"
+  end
+}
+patterns = []
+op.parse!(ARGV){|p| patterns << p }
+patterns = ARGV if patterns.empty?
+
+lines = STDIN.each_line.map{|raw| raw.chomp }
+n = lines.size
+depths = Array.new(n){0}
+texts = Array.new(n){""}
+n.times do |i|
+  l = lines[i]
+  s = l[/\A */].size
+  d = s / indent_width
+  depths[i] = d
+  texts[i] = l.lstrip
+end
+
+heading = Array.new(n,false)
+(n - 1).times{|i| heading[i] = depths[i + 1] > depths[i] }
+ends = Array.new(n,n)
+stack = []
+n.times do |i|
+  while !stack.empty? && depths[i] <= depths[stack[-1]]
+    k = stack.pop
+    ends[k] = i
+  end
+  stack << i
+end
+while !stack.empty?
+  k = stack.pop
+  ends[k] = n
+end
+
+def match_text(text, patterns, mode_all)
+  return true if patterns.empty?
+  if mode_all
+    patterns.all?{|p| text.include?(p) }
+  else
+    patterns.any?{|p| text.include?(p) }
+  end
+end
+
+ranges = []
+n.times do |i|
+  next unless heading[i]
+  next unless depths[i] >= depth_min && depths[i] <= depth_max
+  m = match_text(texts[i], patterns, mode_all)
+  m = !m if negate
+  next unless m
+  if subtree
+    ranges << [i, ends[i]]
+  else
+    anc = i
+    d = depths[anc]
+    j = i - 1
+    while j >= 0
+      if depths[j] < d && i < ends[j]
+        anc = j
+        d = depths[j]
+      end
+      j -= 1
+    end
+    ranges << [anc, ends[anc]]
+  end
+end
+
+ranges.sort_by!{|r| r[0] }
+merged = []
+ranges.each do |r|
+  if merged.empty? || r[0] > merged[-1][1]
+    merged << r.dup
+  else
+    merged[-1][1] = [merged[-1][1], r[1]].max
+  end
+end
+
+out_idx = Array.new(n,false)
+merged.each do |s,e|
+  (s...e).each{|k| out_idx[k] = true }
+end
+n.times{|i| puts lines[i] if out_idx[i] }

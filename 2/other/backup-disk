@@ -128,13 +128,15 @@ end
 system "udevadm trigger --subsystem-match=block"
 system "blkid -p -o export /dev/mapper/* > /dev/null 2>&1"
 
-disk_entries.each do |disk_uuid, entries|
-  mount_point = mount_point_for_uuid(disk_uuid)
-  next if mount_point.empty?
-  entries.each do |entry|
-    source_path = entry[:source]
-    destination_path = entry[:target].start_with?("/") ? entry[:target] : File.join(mount_point, entry[:target])
-    rel_paths = eligible_relative_paths(source_path, entry)
-    run_rsync(source_path, destination_path, rel_paths, entry, dry_run: dry_run) unless rel_paths.empty?
+disk_entries.each do |uuid_or_uuids, entries|
+  Array(uuid_or_uuids).each do |disk_uuid|
+    mount_point = mount_point_for_uuid(disk_uuid)
+    next if mount_point.empty?
+    entries.each do |entry|
+      source_path = entry[:source]
+      destination_path = entry[:target].start_with?("/") ? entry[:target] : File.join(mount_point, entry[:target])
+      rel_paths = eligible_relative_paths(source_path, entry)
+      run_rsync(source_path, destination_path, rel_paths, entry, dry_run: dry_run) unless rel_paths.empty?
+    end
   end
 end
