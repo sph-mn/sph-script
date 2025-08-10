@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+
+input_paths = STDIN.each_line.map(&:chomp).reject(&:empty?)
+
+input_paths.each do |file_path|
+  begin
+    lines = File.readlines(file_path, chomp: true)
+  rescue
+    next
+  end
+
+  next unless lines.size >= 4
+  next unless lines[0].start_with?("#!")
+  next unless lines[1].strip.empty?
+
+  i = 2
+  description_lines = []
+  while i < lines.size && lines[i].start_with?("# ")
+    description_lines << lines[i][2..-1]
+    i += 1
+  end
+
+  next if description_lines.empty?
+  next unless i < lines.size && lines[i].strip.empty?
+
+  basename = File.basename(file_path)
+  if description_lines.length == 1
+    puts "#{basename}: #{description_lines[0]}"
+  else
+    puts basename
+    description_lines.each { |line| puts "  #{line}" }
+  end
+end

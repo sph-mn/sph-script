@@ -1,15 +1,17 @@
 #!/usr/bin/env ruby
-# convert indented itpn packets (validated/canonical form) to markdown
-indent_width = 2
 
-def read_packets(io, indent_width)
+# convert indented itpn packets (validated/canonical form) to markdown
+
+indent_width = 2
+heading_depth = 0
+
+def read_packets(io)
   packets = []
   current = []
   io.each_line do |raw|
     line = raw.chomp
     next if line.empty?
-    leading_spaces = line[/\A */].size
-    if leading_spaces.zero? && !current.empty?
+    if line[/\A */].size == 0 && !current.empty?
       packets << current
       current = []
     end
@@ -19,21 +21,24 @@ def read_packets(io, indent_width)
   packets
 end
 
-def packet_to_markdown(packet, indent_width)
-  heading = "# #{packet.first.strip}"
-  body = packet[1..].map do |line|
+def packet_to_markdown(packet, indent_width, heading_depth)
+  packet.map do |line|
     spaces = line[/\A */].size
-    depth = (spaces / indent_width) - 1
-    "  " * depth + "* " + line.lstrip
-  end
-  ([heading] + body).join("\n")
+    level = spaces / indent_width
+    text = line.lstrip
+    if level < heading_depth
+      "#" * (level + 1) + " " + text
+    else
+      ("  " * (level - heading_depth)) + "* " + text
+    end
+  end.join("\n")
 end
 
-input_files = ARGV.empty? ? ["-"] : ARGV
-input_files.each do |path|
+files = ARGV.empty? ? ["-"] : ARGV
+files.each do |path|
   io = path == "-" ? STDIN : File.open(path, "r")
-  read_packets(io, indent_width).each do |packet|
-    puts packet_to_markdown(packet, indent_width)
+  read_packets(io).each do |packet|
+    puts packet_to_markdown(packet, indent_width, heading_depth)
     puts
   end
   io.close unless path == "-"

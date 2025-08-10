@@ -1,4 +1,9 @@
 #!/bin/sh
-echo ~~~
-tree 1 2 -L 3 | grep -v node_modules
-echo ~~~
+
+list_cwd_files() {
+  find "$@" -type f | lines-reject node_modules | cut -c3- | sort | ./exe/itpn-from-paths
+}
+
+list_cwd_files 1
+echo
+list_cwd_files 2

@@ -1,3 +1,5 @@
 #!/bin/sh
 
+# collapse runs of spaces on stdin to single spaces.
+
 tr -s '[:blank:]'

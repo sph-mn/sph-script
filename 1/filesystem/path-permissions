@@ -1,6 +1,12 @@
 #!/bin/sh
 
 # display filesystem permissions for all directories above the current or given one.
-# namei -m might be an alternative
+# ideal for debugging permission issues.
+# arguments: path ...
+# example output:
+#   700 /srv/http/test
+#   700 /srv/http
+#   700 /srv
+# alternative tool: namei -m
 
 path-directories "$@" |xargs -d \\n -n 1 stat --format "%a %n"

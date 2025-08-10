@@ -1,3 +1,5 @@
 #!/usr/bin/env ruby
 
+# encode stdin bytes as hexadecimal octets separated by spaces.
+
 puts STDIN.read.unpack('H*').first

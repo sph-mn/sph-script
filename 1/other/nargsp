@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# like nargs but creates background processes that will be distributed over multiple cpu cores.
-# waits for the first process to finish every $core_count to ease load.
+# parallel variant of nargs: execute command concurrently per stdin line.
+# waits for the first process to finish every $core_count to limit load.
 
 core_count=$(nproc)
 counter=0

@@ -1,3 +1,5 @@
 #!/bin/sh
 
+# list broken symlinks in the current directory.
+
 find . -type l ! -exec test -r {} \; -print

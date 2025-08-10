@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# display seconds elapsed in the current day utc+0.
+
 now=$(date -u '+%s')
 midnight=$(date --utc -d 'today 00:00:00' '+%s')
 echo $((now - midnight))

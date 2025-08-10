@@ -1,5 +1,11 @@
 #!/bin/sh
-# mount filesystems to $HOME/mnt/{basename_or_label}
+
+# mount filesystems to $HOME/mnt/{basename_or_label} with auto-created, predictable paths.
+# arguments: [options] source ...
+# options:
+#   -s  use sudo
+#   -l  treat sources as disk labels
+
 option_sudo=0
 option_label=0
 default_opts=

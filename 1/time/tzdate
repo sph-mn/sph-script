@@ -1,6 +1,7 @@
 #!/bin/sh
-# show date and time in filtered time zones.
-# tzdate :: timezone-name
+
+# show date and time for all time zones matching string; all listed by default.
+# arguments: string
 
 search=$1
 zoneinfo=/usr/share/zoneinfo/posix/

@@ -1,5 +1,8 @@
 #!/usr/bin/sh
 
+# rename files to lowercase; overwrites existing paths.
+# arguments: path ...
+
 for a in "$@"
 do
   base="$(basename "$a")"

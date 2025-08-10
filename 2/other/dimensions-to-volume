@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+
+# parse numbers from command line arguments and sum.
+
+a = ARGV.join(" ").scan(/[0-9.]+/)
+puts a.join(" ") + " -> " + a.map(&:to_f).sum.to_s

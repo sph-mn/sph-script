@@ -1,2 +1,5 @@
 #!/bin/sh
+
+# shuffle stdin lines.
+
 shuf

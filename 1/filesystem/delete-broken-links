@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# arguments: path ...
+# works on the current directory if no path was given.
+
 find "$@" -type l | while read line
 do
   if ! test -e "$line"

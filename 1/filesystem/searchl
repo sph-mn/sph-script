@@ -1,6 +1,7 @@
 #!/bin/sh
 
-# search for a string inside files in the current directory and display the paths of files and lines where it is included.
+# recursively in ".", output "path: line" for each line containing all input strings.
+# arguments: string ...
 # depends on ripgrep.
 
 pattern="rg --color=never --no-heading -NLFS '$1' ."

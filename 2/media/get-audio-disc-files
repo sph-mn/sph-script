@@ -1,6 +1,7 @@
 #!/bin/sh
 
-# copy all tracks from an audio disc as separate files to the current, or a specified, directory and eject the disc.
+# rip audio cd tracks to wav in "." or a specified directory.
+# depends on "cdparanoia".
 
 if test -n "$1" -a "$PWD" != "$1"
 then

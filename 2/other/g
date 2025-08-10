@@ -1,6 +1,6 @@
 #!/bin/sh
 
+# short alias for grep for case-insentitive expressions.
 # usage: g expression ...
-# short form for grep for insentitive expressions
 
 grep -Fi "$@"

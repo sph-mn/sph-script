@@ -1,5 +1,10 @@
 #!/usr/bin/env ruby
 
+# prepend a video quality and duration score to filenames.
+# if option -p was given, prepend "{height}p{fps}." to video filenames.
+# call without arguments for more options.
+# video quality estimation: https://sph.mn/computer/designs/video-quality-score.html
+
 dry_run = false
 quality_score = true
 with_duration = true

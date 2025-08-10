@@ -1,0 +1,81 @@
+#!/usr/bin/env ruby
+
+# this script moves given paths to another central directoriy,
+# for example a versioning repository, and then links the files back to the original place.
+# it uses hardlinks if possible, symlinks if necessary.
+
+require "fileutils"
+
+def do_cmd(cmd, run)
+  if run then system cmd
+  else puts cmd end
+end
+
+def move_and_link(src, repo_root, host, run)
+  path = File.expand_path(src)
+  return unless File.file?(path)
+  rel = path.sub(%r{^/}, "")
+  dest = File.join(repo_root, "data", host, rel)
+
+  need_copy = true
+  if File.exist?(dest)
+    begin
+      need_copy = !FileUtils.compare_file(path, dest)
+    rescue
+      need_copy = true
+    end
+  end
+
+  if need_copy
+    dir = File.dirname(dest)
+    do_cmd "mkdir -p #{dir}", run unless Dir.exist?(dir)
+    do_cmd "cp #{path} #{dest}", run
+  end
+
+  begin
+    identical = File.identical?(path, dest)
+  rescue
+    identical = false
+  end
+
+  unless identical
+    if File.symlink?(path)
+      do_cmd "rm #{path}", run
+    elsif run
+      begin
+        copied = File.exist?(dest) && FileUtils.compare_file(path, dest)
+      rescue
+        copied = false
+      end
+      if copied
+        do_cmd "rm #{path}", run
+      else
+        warn "skipping removal of #{path}; backup not verified"
+        return
+      end
+    end
+
+    begin
+      do_cmd "ln #{dest} #{path}", run
+    rescue Errno::EXDEV
+      do_cmd "ln -s #{dest} #{path}", run
+    end
+  end
+end
+
+run = ARGV.delete("-r")
+abort "usage: collect-config [-r] file..." if ARGV.empty?
+repo_root = "/opt/myrepo"
+host = `hostname`.strip
+
+ARGV.each do |arg|
+  p = File.expand_path(arg)
+  if File.directory?(p)
+    Dir.glob("#{p}/**/*", File::FNM_DOTMATCH).each do |f|
+      next if File.directory?(f)
+      move_and_link(f, repo_root, host, run)
+    end
+  else
+    move_and_link(p, repo_root, host, run)
+  end
+end

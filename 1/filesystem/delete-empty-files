@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# arguments: path ...
+# works on the current directory if no path was given.
+
 nargs() {
   while read line
   do

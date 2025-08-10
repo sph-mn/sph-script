@@ -1,3 +1,5 @@
 #!/bin/sh
 
+# replace commas with newlines on stdin.
+
 sed 's/, \|,/\n/g'

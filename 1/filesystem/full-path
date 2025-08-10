@@ -1,2 +1,6 @@
 #!/bin/sh
+
+# display the full path that starts from the root directory for a given path.
+# arguments: path ...
+
 echo $PWD/$1

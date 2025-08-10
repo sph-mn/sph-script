@@ -1,5 +1,7 @@
+#!/bin/sh
+
 # like repl but writes the entered line to the standard input of command.
-# usage: repl command argument ...
+# arguments: command argument ...
 # examples: "repl-stdin wc -c"
 
 while true

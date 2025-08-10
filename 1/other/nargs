@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# for each newline separated line, read from standard input and call a command with line as argument.
+# For each newline-delimited line from stdin, execute: command line.
 # example: find . | nargs echo the argument is:
 
 while read line

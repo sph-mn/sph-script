@@ -24,7 +24,22 @@ require "open3"
 require "time"
 
 config_directory = File.expand_path "~/.config/backup-disk"
-dry_run = ARGV.delete "--dry-run"
+
+if ARGV.include?("--help") || ARGV.include?("-h")
+  config_dir = File.expand_path("~/.config/backup-disk")
+  configs = Dir.glob("#{config_dir}/*.rb").map { |f| File.basename(f, ".rb") }.sort
+
+  puts <<~USAGE
+    usage: backup-disk [options] [name...]
+      --run  perform sync (default is dry-run)
+      --help, -h  show this help
+    available configs in #{config_dir}:
+      #{configs.join(", ")}
+  USAGE
+  exit 0
+end
+
+dry_run = !ARGV.delete("--run")
 
 config_files =
   if ARGV.empty?

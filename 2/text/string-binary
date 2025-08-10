@@ -1,2 +1,5 @@
 #!/usr/bin/env ruby
+
+# show bit representation of stdin bytes; base16/base32 variants exist.
+
 $stdin.each_byte {|byte| printf byte.to_s(2) + " "}; puts

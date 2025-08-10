@@ -1,6 +1,7 @@
 #!/bin/sh
 
-# usage: with-dialog-and-delay command ...
+# prompt y/n and, only after entering y, delay 5 seconds and execute the given command.
+# arguments: command ...
 
 read -p "are you sure? [y/N]" -r reply
 if [ "$reply" = "y" ]

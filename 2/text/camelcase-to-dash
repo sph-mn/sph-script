@@ -1,2 +1,5 @@
 #!/usr/bin/env ruby
+
+# convert camelcase identifiers to dash-separated.
+
 puts $stdin.gets.chomp.gsub(/([a-z])([A-Z])/, '\1-\2').downcase

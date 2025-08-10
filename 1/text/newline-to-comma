@@ -1,3 +1,5 @@
 #!/bin/sh
 
+# convert newline-delimited items on stdin to comma-separated.
+
 sed ':a;N;$!ba;s/\n/, /g'

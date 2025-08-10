@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# pass all newline-delimited stdin tokens as one argument vector to a single command invocation.
+
 IFS="
 "
 args=""

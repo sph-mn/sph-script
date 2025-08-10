@@ -1,5 +1,12 @@
 #!/bin/sh
 
+# lists all parent directories.
+# arguments: path ...
+# example output
+#   /srv/http/test
+#   /srv/http
+#   /srv
+
 split_directories() {
   dir="$1"
   while test "$dir" != "/" -a "$dir" != "."; do

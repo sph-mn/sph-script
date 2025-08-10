@@ -1,8 +1,17 @@
-#!/usr/bin/guile
-!#
+#!/usr/bin/env ruby
 
-; modify the given path string until no file exists with the path which is returned.
-; depends on guile and sph-lib.
-;
-(import (sph) (sph filesystem))
-(display (apply get-unique-path (tail (program-arguments))))
+# print a non-existing path variant by appending numeric suffixes.
+
+def get_unique_path(path, suffix=nil)
+  suffix ||= ""
+  cand = "#{path}#{suffix}"
+  return cand unless File.exist?(cand)
+  i = 1
+  loop do
+    cand = "#{path}.#{i.to_s(32)}#{suffix}"
+    return cand unless File.exist?(cand)
+    i += 1
+  end
+end
+
+ARGV.each { |p| puts get_unique_path(p, suffix) }

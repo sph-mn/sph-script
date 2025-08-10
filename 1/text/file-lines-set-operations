@@ -1,5 +1,13 @@
 #!/usr/bin/env ruby
 
+# set operations over file lines by file: union, intersection, difference, complement.
+# writes result lines to stdout.
+# options:
+#   -u  union
+#   -i  intersection
+#   -d  difference
+#   -c  complement
+
 require 'set'
 
 # Initialize variables

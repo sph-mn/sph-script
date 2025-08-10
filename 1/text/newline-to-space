@@ -1,2 +1,5 @@
 #!/bin/sh
+
+# convert newline-delimited items on stdin to space-separated.
+
 tr '\n' ' '

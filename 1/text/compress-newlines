@@ -1,3 +1,5 @@
 #!/bin/sh
 
+# compress multiple consecutive newlines on stdin.
+
 tr -s '\n'

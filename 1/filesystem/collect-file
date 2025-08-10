@@ -1,5 +1,8 @@
 #!/bin/sh
+
 # symlinks, hardlinks or copies files into an automatically chosen target directory.
+# example use case: browsing files with a file manager and using right-click actions to collect.
+
 always_copy=0
 always_link=0
 if test -n "$COLLECT_FILE_TARGET"

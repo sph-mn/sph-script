@@ -1,5 +1,6 @@
 #!/bin/sh
 
+# prepend "{height}." to png/jpg filenames.
 # depends on imagemagick.
 
 prepend_image_size() {

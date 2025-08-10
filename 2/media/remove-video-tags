@@ -1,29 +1,37 @@
-#!/usr/bin/env guile
-!#
+#!/usr/bin/env ruby
 
-(define description
-  "remove video tags added by prepend-video-tags. usage: remove-video-tags path ...")
+# remove tags previously prepended by prepend-video-tags.
+# arguments: [options] path ...
+# options
+#   --dry-run
 
-(import (sph) (sph alist) (ice-9 regex) (sph string) (srfi srfi-1) (sph filesystem) (sph cli))
+#!/usr/bin/env ruby
+require "optparse"
 
-(define (rename-dry-run old new)
-  (display-line (string-append (string-quote old) " -> " (string-quote new))))
+dry_run = false
+OptionParser.new { |o| o.on("--dry-run") { dry_run = true } }.parse!
 
-(define (remove-tags a)
-  (let
-    ( (regexp (make-regexp "^([dpqf][0-9]{1,5})+$"))
-      (old-regexp (make-regexp "^(d[0-9]-)?([0-9]q)?[0-9]{1,4}(p|r|hs|q|l|ks)([0-9]+)?-?([0-9]+)?$"))
-      (parsed (string-split a #\.)))
-    (string-join
-      (filter-map (l (a) (and (not (or (regexp-exec regexp a) (regexp-exec old-regexp a))) a))
-        parsed)
-      ".")))
+RX = /\A(?:[dpqf][0-9]{1,5})+\z/
+OLD_RX = /\A(?:d[0-9]-)?(?:[0-9]q)?[0-9]{1,4}(?:p|r|hs|q|l|ks)(?:[0-9]+)?-?(?:[0-9]+)?\z/
 
-(let (options ((cli-create #:options (q ((dry-run) ((paths ...)))))))
-  (alist-bind options (paths dry-run)
-    (each
-      (l (old-name)
-        (let (new-name (string-append (dirname old-name) "/" (remove-tags (basename old-name))))
-          (if (not (string-equal? old-name new-name))
-            ((if dry-run rename-dry-run rename-file) old-name new-name))))
-      (map path->full-path paths))))
+def remove_tags(name)
+  name.split(".").reject { |s| s.match?(RX) || s.match?(OLD_RX) }.join(".")
+end
+
+def q(s)
+  s.inspect
+end
+
+ARGV.each do |path|
+  old = File.expand_path(path)
+  dir = File.dirname(old)
+  base = File.basename(old)
+  new_base = remove_tags(base)
+  next if new_base == base || new_base.empty?
+  new_path = File.join(dir, new_base)
+  if dry_run
+    puts "#{q(old)} -> #{q(new_path)}"
+  else
+    File.rename(old, new_path)
+  end
+end

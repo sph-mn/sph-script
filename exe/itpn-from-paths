@@ -1,0 +1,24 @@
+#!/usr/bin/env ruby
+
+# print paths read from standard input as an indented tree structure.
+
+root = {}
+
+ARGF.each_line do |line|
+  path = line.strip
+  next if path.empty?
+  node = root
+  path.split("/").each do |part|
+    node[part] ||= {}
+    node = node[part]
+  end
+end
+
+def print_tree node, depth = 0
+  node.each_key do |name|
+    puts "  " * depth + name
+    print_tree node[name], depth + 1
+  end
+end
+
+print_tree root

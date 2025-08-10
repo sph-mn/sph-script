@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # merge directory contents with its parent directory.
-# duplicates are renamed.
+# automatically renames duplicates.
 
 unique_path() {
   old="$1"

@@ -1,2 +1,5 @@
 #!/bin/sh
+
+# display current iso date "yyyy-mm-dd".
+
 date +%Y-%m-%d

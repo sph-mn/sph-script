@@ -1,5 +1,12 @@
 #!/bin/sh
 
+# filter stdin lines by strings or regexps; default case-insensitive.
+# arguments: [options ...] string ...
+# options
+#   -a  all strings must match, the default
+#   -o  any string must match
+#   -n  no string must match
+
 negate=0
 mode="-a"
 

@@ -1,3 +1,5 @@
 #!/bin/sh
 
+# convert unix timestamp to "yyyy-m-d hh:mm:ss".
+
 date -d @$1 +"%-Y-%-m-%-d %H:%M:%S"

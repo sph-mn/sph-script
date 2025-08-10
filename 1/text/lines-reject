@@ -1,2 +1,5 @@
 #!/bin/sh
+
+# inverse of lines-filter: keep lines where none of the strings match.
+
 lines-filter -n -o "$@"
