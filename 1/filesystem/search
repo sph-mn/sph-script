@@ -8,4 +8,4 @@ pattern="rg --no-unicode --color=never --no-heading -NLFS '$1' ."
 shift
 for a in "$@"; do pattern="${pattern} | rg --color=never -FS '$a'"; done
 clear
-exec /bin/sh -c "$pattern" | cut -d : -f 1 | uniq
+exec /bin/sh -c "$pattern" | cut -d : -f 1 | uniq | xargs -r ls -1td

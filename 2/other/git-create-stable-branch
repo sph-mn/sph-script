@@ -1,2 +1,0 @@
-#!/bin/sh
-git checkout -b stable && git push --set-upstream origin stable && git checkout master
