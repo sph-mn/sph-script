@@ -135,7 +135,7 @@ def log_rsync_change(source_path, destination_path, line)
     end
   return unless kind
 
-  File.open("/var/log/backup-disk-sync.log", "a") do |f|
+  File.open("/tmp/backup-disk-sync.log", "a") do |f|
     f.puts "[#{Time.now.iso8601}] #{kind} #{source_path} -> #{destination_path}: #{change}"
   end
 end
