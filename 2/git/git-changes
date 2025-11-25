@@ -1,0 +1,139 @@
+#!/usr/bin/env node
+const child_process = require("node:child_process");
+
+function write_error(message_text, exit_code) {
+  process.stderr.write(message_text + "\n");
+  process.exit(exit_code);
+}
+
+function git_output(argument_list) {
+  const result = child_process.spawnSync("git", argument_list, { encoding: "utf8" });
+  if (result.status !== 0) {
+    return "";
+  }
+  return result.stdout;
+}
+
+function git_is_ancestor(ancestor_hash, descendant_hash) {
+  const result = child_process.spawnSync("git", ["merge-base", "--is-ancestor", ancestor_hash, descendant_hash]);
+  return result.status === 0;
+}
+
+function resolve_merge(commit_reference) {
+  const text = git_output(["rev-list", "--parents", "-n1", commit_reference]);
+  const parts = text.trim().split(/\s+/);
+  if (parts.length < 3) {
+    return null;
+  }
+  return parts[0];
+}
+
+function find_by_ancestry(argument_commit, revision_set) {
+  const text = git_output(["rev-list", "--merges"].concat(revision_set));
+  if (!text) {
+    return null;
+  }
+  const merge_list = text.trim().split(/\s+/).filter(function (item) { return item.length > 0; });
+  for (let index = 0; index < merge_list.length; index += 1) {
+    const merge_hash = merge_list[index];
+    const line_text = git_output(["rev-list", "--parents", "-n1", merge_hash]);
+    const parts = line_text.trim().split(/\s+/);
+    if (parts.length < 3) {
+      continue;
+    }
+    const parent_list = parts.slice(2);
+    for (let parent_index = 0; parent_index < parent_list.length; parent_index += 1) {
+      const parent_hash = parent_list[parent_index];
+      if (git_is_ancestor(parent_hash, argument_commit)) {
+        return merge_hash;
+      }
+    }
+  }
+  return null;
+}
+
+function find_by_grep(needle_text, revision_set) {
+  const pattern_list = [
+    "Merge branch '" + needle_text + "' ",
+    "Merge branch '" + needle_text + "'",
+    "Merge remote-tracking branch 'origin/" + needle_text + "'",
+    "Merge branch \"" + needle_text + "\"",
+    "Merge branch " + needle_text
+  ];
+  for (let index = 0; index < pattern_list.length; index += 1) {
+    const pattern_text = pattern_list[index];
+    const argument_list = ["log"]
+      .concat(revision_set)
+      .concat(["--merges", "--pretty=%H", "--fixed-strings", "--grep", pattern_text, "-n1"]);
+    const text = git_output(argument_list);
+    if (!text) {
+      continue;
+    }
+    const first_line = text.split("\n")[0].trim();
+    if (first_line.length > 0) {
+      return first_line;
+    }
+  }
+  return null;
+}
+
+function run_diff(base_hash, head_hash) {
+  const result = child_process.spawnSync("git", ["diff", "--binary", base_hash, head_hash], {
+    stdio: "inherit"
+  });
+  if (result.status !== 0) {
+    process.exit(5);
+  }
+}
+
+function main() {
+  const argument_list = process.argv.slice(2);
+  const argument_value = argument_list[0] || "";
+  const target_branch = argument_list[1] || "";
+  if (!argument_value) {
+    write_error("usage: git-changes <branch-or-commit-or-fragment> [target-branch]", 1);
+  }
+
+  let merge_hash = resolve_merge(argument_value);
+
+  let revision_set;
+  if (target_branch && target_branch.length > 0) {
+    const verify_text = git_output(["rev-parse", "--verify", target_branch + "^{commit}"]).trim();
+    if (!verify_text) {
+      write_error("no such target: " + target_branch, 2);
+    }
+    revision_set = [target_branch];
+  } else {
+    revision_set = ["--all"];
+  }
+
+  if (!merge_hash) {
+    const argument_commit = git_output(["rev-parse", "--verify", argument_value + "^{commit}"]).trim();
+    if (argument_commit) {
+      merge_hash = find_by_ancestry(argument_commit, revision_set);
+    }
+    if (!merge_hash) {
+      merge_hash = find_by_grep(argument_value, revision_set);
+    }
+    if (!merge_hash) {
+      if (!argument_commit) {
+        write_error("could not resolve commit for '" + argument_value + "'", 3);
+      }
+      const parent_hash = git_output(["rev-parse", argument_commit + "^"]).trim();
+      if (!parent_hash) {
+        write_error("could not resolve parent of " + argument_commit, 4);
+      }
+      run_diff(parent_hash, argument_commit);
+      return;
+    }
+  }
+
+  const first_parent_hash = git_output(["rev-parse", merge_hash + "^1"]).trim();
+  if (!first_parent_hash) {
+    write_error("could not resolve first parent of " + merge_hash, 4);
+  }
+
+  run_diff(first_parent_hash, merge_hash);
+}
+
+main();

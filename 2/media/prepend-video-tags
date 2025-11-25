@@ -15,11 +15,21 @@ while !ARGV.empty? && ARGV[0].start_with?("-")
   if arg == "-d" then dry_run = true
   elsif arg == "-p" then quality_score = false
   elsif arg == "-t" then with_duration = false
-  elsif arg == "-i" then comparison_listing = true
   else
     puts "Unknown option: #{arg}"
     exit 1
   end
+end
+
+paths = ARGV
+
+if paths.empty?
+  puts "usage: [options] files ..."
+  puts "options"
+  puts "  -d  dry-run"
+  puts "  -p  use pixel format (e.g. 720p30) instead of quality score"
+  puts "  -t  without duration tag"
+  exit 1
 end
 
 def ffprobe_properties(path, entries)
@@ -58,9 +68,8 @@ def parse_frame_rate(r_frame_rate)
   else nil end
 end
 
-def get_quality_score video_width, video_height, frame_rate, bit_depth, bit_rate, codec_name
-  # v2025-10
-  codec_efficiency = {
+def get_quality_score width, height, framerate, bitdepth, bitrate, codec
+  codec_efficiencies = {
     "av1" => 1.5,
     "h264" => 1.0,
     "h266" => 2.0,
@@ -68,39 +77,15 @@ def get_quality_score video_width, video_height, frame_rate, bit_depth, bit_rate
     "vp8" => 0.9,
     "vp9" => 1.3
   }
-  codec_relative_efficiency = codec_efficiency[codec_name] || 0.8
-
-  bit_depth = [bit_depth.to_f, 6.0].max
-  frame_rate = [frame_rate.to_f, 0.1].max
-  bit_rate = [bit_rate.to_f, 1.0].max
-  pixel_count = [(video_width.to_f * video_height.to_f), 1e-9].max
-
-  base_resolution = 640.0 * 480.0
-  base_frame_rate = 30.0
-  base_bit_depth = 8.0
-
-  resolution_factor = Math.log2(1.0 + pixel_count / base_resolution)
-  frame_rate_factor = Math.log2(1.0 + frame_rate / base_frame_rate)
-  bit_depth_factor = Math.log2(bit_depth / base_bit_depth) + 1.0
-
-  bits_per_pixel_per_frame = bit_rate / (pixel_count * frame_rate)
-  optimal_bppf = 0.12 * bit_depth / base_bit_depth / codec_relative_efficiency
-
-  sigmoid_slope = 8.0
-  bitrate_ratio = bits_per_pixel_per_frame / optimal_bppf
-  bitrate_factor = 1.0 / (1.0 + Math.exp(-sigmoid_slope * (bitrate_ratio - 1.0)))
-
-  weight_resolution = 0.25
-  weight_frame_rate = 0.15
-  weight_bit_depth = 0.10
-  weight_bitrate = 0.50
-
-  quality_score = weight_resolution * resolution_factor +
-    weight_frame_rate * frame_rate_factor +
-    weight_bit_depth * bit_depth_factor +
-    weight_bitrate * bitrate_factor
-
-  (quality_score * 10).round.to_i
+  codec_factor = 1.0 / (codec_efficiencies[codec] || 0.8)
+  resolution = width * height
+  optimal_bitrate = resolution * bitdepth * framerate * codec_factor
+  bitrate_factor = 2.0 / (1 + Math.exp(-0.001 * (bitrate - optimal_bitrate)))
+  resolution_factor = Math.log2((resolution / (640.0 * 480.0)) + 1)
+  framerate_factor = Math.log2((framerate / 30.0) + 1)
+  bitdepth_factor = Math.log2((bitdepth - 6.0) / 2.0)
+  score = 0.4 * resolution_factor + 0.3 * framerate_factor + 0.2 * bitdepth_factor + 0.1 * bitrate_factor
+  (score * 10).round.to_i
 end
 
 def get_tag(path, with_duration, quality_score)
@@ -160,42 +145,9 @@ def add_tag(path, tag, dry_run)
   end
 end
 
-def print_comparison_listing(sizes: [[320,240],[640,480],[1280,720],[1920,1080],[2560,1440],[3840,2160],[7680,4320]], framerates: [30,60,120], bitdepths: [8,10], bitrates: [15_000_000, 75_000_000, 150_000_000, 300_000_000, 900_000_000], codecs: ["h264","av1"], io: $stdout)
-  sizes.each do |w,h|
-    puts "~~~"
-    codecs.each do |codec|
-      framerates.each do |fps|
-        bitdepths.each do |bd|
-          bitrates.each do |br|
-            score = get_quality_score w, h, fps, bd, br, codec
-            base = (w * h * fps * bd)
-            io.puts "#{w}x#{h} #{fps} #{bd} #{base} #{br} #{codec} -> #{score}"
-          end
-        end
-      end
-    end
-    puts "~~~"
-  end
-end
-
-if comparison_listing
-  print_comparison_listing()
-else
-  paths = ARGV
-
-  if paths.empty?
-    puts "usage: [options] files ..."
-    puts "options"
-    puts "  -d  dry-run"
-    puts "  -p  use pixel format (e.g. 720p30) instead of quality score"
-    puts "  -t  without duration tag"
-    puts "  -i  print comparison table"
-    exit 1
-  end
-  paths.each do |path|
-    if File.file?(path)
-      tag = get_tag path, with_duration, quality_score
-      add_tag(path, tag, dry_run) if tag
-    end
+paths.each do |path|
+  if File.file?(path)
+    tag = get_tag path, with_duration, quality_score
+    add_tag(path, tag, dry_run) if tag
   end
 end

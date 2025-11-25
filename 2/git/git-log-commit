@@ -1,0 +1,84 @@
+#!/usr/bin/env node
+
+const child_process = require("node:child_process");
+const max_buffer_size = 1024 * 1024 * 1024;
+
+function parse_options(argument_list, option_config) {
+  const options = {};
+  const rest = [];
+  const length = argument_list.length;
+  let index = 0;
+
+  while (index < length) {
+    const value = argument_list[index];
+    if (value === "--") {
+      index += 1;
+      break;
+    }
+    if (value.length < 2 || value.charCodeAt(0) !== 45) {
+      break;
+    }
+    if (!option_config[value]) {
+      break;
+    }
+    const option_data = option_config[value];
+    if (option_data.requires_value) {
+      index += 1;
+      options[value] = argument_list[index];
+      index += 1;
+    } else {
+      options[value] = true;
+      index += 1;
+    }
+  }
+
+  for (; index < length; index += 1) {
+    rest.push(argument_list[index]);
+  }
+
+  return {
+    options,
+    rest
+  };
+}
+
+function main() {
+  const argument_list = process.argv.slice(2);
+  const option_config = {
+    "-n": {
+      requires_value: true
+    }
+  };
+  const parsed = parse_options(argument_list, option_config);
+  const option_values = parsed.options;
+  const keywords = parsed.rest;
+  const limit_value = option_values["-n"] || "16";
+
+  let command_text = "git --no-pager log --decorate --format=format:'%ae %ad %s %h' --name-status --date=short --reverse -n " + limit_value;
+
+  const log_text = child_process.execSync(command_text, {
+    encoding: "utf8",
+    maxBuffer: max_buffer_size
+  });
+
+  const trimmed_text = log_text.trim();
+  if (trimmed_text.length === 0) {
+    process.exit(0);
+  }
+
+  const commit_blocks = trimmed_text.split(/\n\s*\n/);
+
+  const result_blocks = commit_blocks.filter(function(block_text) {
+    if (keywords.length === 0) return true;
+    const header_line = block_text.split("\n")[0] || "";
+    return keywords.every(function(word_text) {
+      return header_line.indexOf(word_text) !== -1;
+    });
+  });
+
+  if (result_blocks.length > 0) {
+    process.stdout.write(result_blocks.join("\n\n") + "\n");
+  }
+}
+
+main();

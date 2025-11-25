@@ -484,6 +484,31 @@ tantalum@online.de 2014-08-15 - f472c3f
 M    sph/cli.scm
 ~~~
 
+## git-log-file
+like git-log but takes keywords to search for in changed file names. searches on the most recent 16 commits by default.
+
+~~~
+git-log-file keyword ...
+git-log-file -n 200 keyword ...
+~~~
+
+## git-log-commit
+like git-log but takes keywords to search for in commit messages. searches on the most recent 16 commits by default.
+
+~~~
+git-log-commit keyword ...
+git-log-commit -n 200 keyword ...
+~~~
+
+## git-changes
+display the diff that a commit or merge request merge created. similar to the gitlab changes.
+
+~~~
+git-changes git-changes single-commit-or-branch [target-branch]
+~~~
+
+by default, target-branch is the parent commit of the given commit or branch.
+
 ## with-dialog-and-delay
 show a yes/no dialog on the command-line and only execute command when the answer is yes.
 can be used to wrap highly consequential system commands, to prevent them from being executed accidentally.
