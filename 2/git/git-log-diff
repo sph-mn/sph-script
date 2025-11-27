@@ -1,0 +1,87 @@
+#!/usr/bin/env node
+
+const child_process = require("node:child_process");
+const max_buffer_size = 1024 * 1024 * 1024;
+
+function main() {
+  const argument_list = process.argv.slice(2);
+
+  if (argument_list.length === 0) {
+    process.stderr.write("args: <search string>\n");
+    process.exit(1);
+  }
+
+  const search_text = argument_list.join(" ");
+
+  let log_text;
+  try {
+    log_text = child_process.execFileSync(
+      "git",
+      [
+        "log",
+        "-S",
+        search_text,
+        "--regexp-ignore-case",
+        "--all",
+        "--date=short",
+        "--pretty=format:%ad %s %H"
+      ],
+      {
+        encoding: "utf8",
+        maxBuffer: max_buffer_size
+      }
+    );
+  } catch (error) {
+    process.stderr.write(String(error) + "\n");
+    process.exit(1);
+  }
+
+  const trimmed_log_text = log_text.trim();
+  if (trimmed_log_text.length === 0) {
+    process.exit(0);
+  }
+
+  const line_list = trimmed_log_text.split("\n");
+
+  line_list.forEach(function(line_text) {
+    const trimmed_line_text = line_text.trim();
+    if (trimmed_line_text.length === 0) {
+      return;
+    }
+
+    const part_list = trimmed_line_text.split(/\s+/);
+    const commit_hash_text = part_list[part_list.length - 1];
+
+    process.stdout.write(trimmed_line_text + "\n");
+
+    let show_text;
+    try {
+      show_text = child_process.execFileSync(
+        "git",
+        [
+          "show",
+          "--pretty=",
+          "--name-status",
+          commit_hash_text
+        ],
+        {
+          encoding: "utf8",
+          maxBuffer: max_buffer_size
+        }
+      );
+    } catch (error) {
+      process.stderr.write(String(error) + "\n");
+      return;
+    }
+
+    const show_line_list = show_text.trimEnd().split("\n");
+    show_line_list.forEach(function(file_line_text) {
+      if (file_line_text.length === 0) {
+        return;
+      }
+      process.stdout.write("    " + file_line_text + "\n");
+    });
+  });
+}
+
+main();

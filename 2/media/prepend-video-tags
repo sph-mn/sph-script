@@ -1,153 +1,192 @@
-#!/usr/bin/env ruby
+#!/usr/bin/env node
 
-# prepend a video quality and duration score to filenames.
-# if option -p was given, prepend "{height}p{fps}." to video filenames.
-# call without arguments for more options.
-# video quality estimation: https://sph.mn/computer/designs/video-quality-score.html
+"use strict"
 
-dry_run = false
-quality_score = true
-with_duration = true
-paths = []
+const fs = require("fs")
+const path = require("path")
+const child_process = require("child_process")
 
-while !ARGV.empty? && ARGV[0].start_with?("-")
-  arg = ARGV.shift
-  if arg == "-d" then dry_run = true
-  elsif arg == "-p" then quality_score = false
-  elsif arg == "-t" then with_duration = false
-  else
-    puts "Unknown option: #{arg}"
-    exit 1
-  end
-end
+let dry_run = false
+let listing_only = false
+let args = process.argv.slice(2)
 
-paths = ARGV
+if (args.length > 0 && args[0] === "-d") {
+  dry_run = true
+  args = args.slice(1)
+} else if (args.length > 0 && args[0] === "-l") {
+  listing_only = true
+  args = args.slice(1)
+}
 
-if paths.empty?
-  puts "usage: [options] files ..."
-  puts "options"
-  puts "  -d  dry-run"
-  puts "  -p  use pixel format (e.g. 720p30) instead of quality score"
-  puts "  -t  without duration tag"
-  exit 1
-end
+function ffprobe_properties(file_path, entries) {
+  const entries_str = entries.join(",")
+  const cmd = [
+    "-v", "quiet",
+    "-select_streams", "v:0",
+    "-show_entries", "stream=" + entries_str,
+    "-of", "default=noprint_wrappers=1",
+    file_path
+  ]
+  const result = child_process.spawnSync("ffprobe", cmd, {
+    encoding: "utf8"
+  })
+  if (result.status !== 0 || typeof result.stdout !== "string") return {}
+  const data = {}
+  result.stdout.split("\n").forEach(line => {
+    const trimmed = line.trim()
+    if (!trimmed) return
+    const parts = trimmed.split("=")
+    if (parts.length >= 2) {
+      const key = parts[0]
+      const value = parts.slice(1).join("=")
+      data[key] = value
+    }
+  })
+  return data
+}
 
-def ffprobe_properties(path, entries)
-  require "open3"
-  entries_str = entries.join(",")
-  cmd = ["ffprobe", "-v", "quiet", "-select_streams", "v:0",
-         "-show_entries", "stream=#{entries_str}", "-of", "default=noprint_wrappers=1", path]
-  stdout_str, stderr_str, status = Open3.capture3(*cmd)
-  return {} unless status.success?
-  data = {}
-  stdout_str.lines.each do |line|
-    key, value = line.strip.split("=")
-    data[key] = value
-  end
-  data
-end
-
-def get_duration_string(duration)
-  if duration
-    duration = duration.to_f
-    if duration < 500 then "d1"
-    elsif duration > 5000 then "d4"
-    elsif duration > 2500 then "d3"
-    else "d2" end
-  else "d0" end
-end
-
-def parse_frame_rate(r_frame_rate)
-  if r_frame_rate
-    nums = r_frame_rate.split("/")
-    if nums.length == 2
-      nums[0].to_f / nums[1].to_f
-    else
-      r_frame_rate.to_f
-    end
-  else nil end
-end
-
-def get_quality_score width, height, framerate, bitdepth, bitrate, codec
-  codec_efficiencies = {
-    "av1" => 1.5,
-    "h264" => 1.0,
-    "h266" => 2.0,
-    "hevc" => 1.7,
-    "vp8" => 0.9,
-    "vp9" => 1.3
+function parse_numeric(value, default_value) {
+  if (typeof value === "string" && /^[-+]?\d*\.?\d+$/.test(value)) {
+    return value.indexOf(".") >= 0 ? parseFloat(value) : parseInt(value, 10)
   }
-  codec_factor = 1.0 / (codec_efficiencies[codec] || 0.8)
-  resolution = width * height
-  optimal_bitrate = resolution * bitdepth * framerate * codec_factor
-  bitrate_factor = 2.0 / (1 + Math.exp(-0.001 * (bitrate - optimal_bitrate)))
-  resolution_factor = Math.log2((resolution / (640.0 * 480.0)) + 1)
-  framerate_factor = Math.log2((framerate / 30.0) + 1)
-  bitdepth_factor = Math.log2((bitdepth - 6.0) / 2.0)
-  score = 0.4 * resolution_factor + 0.3 * framerate_factor + 0.2 * bitdepth_factor + 0.1 * bitrate_factor
-  (score * 10).round.to_i
-end
+  return default_value
+}
 
-def get_tag(path, with_duration, quality_score)
-  entries = ["bits_per_raw_sample", "bit_rate", "codec_name", "duration", "height", "r_frame_rate", "width"]
-  props = ffprobe_properties(path, entries)
+function get_duration_string(duration) {
+  if (duration == null) return "d0"
+  const d = parseFloat(duration)
+  if (d < 500) return "d1"
+  if (d > 5000) return "d4"
+  if (d > 2500) return "d3"
+  return "d2"
+}
 
-  def parse_numeric(value, default)
-    if value.is_a?(String) && value.match?(/\A[-+]?\d*\.?\d+\Z/)
-      value.include?('.') ? value.to_f : value.to_i
-    else
-      default
-    end
-  end
+function parse_frame_rate(r_frame_rate) {
+  if (!r_frame_rate) return null
+  const nums = r_frame_rate.split("/")
+  if (nums.length === 2) {
+    const a = parseFloat(nums[0])
+    const b = parseFloat(nums[1])
+    if (!isNaN(a) && !isNaN(b) && b !== 0) return a / b
+    return null
+  }
+  const v = parseFloat(r_frame_rate)
+  return isNaN(v) ? null : v
+}
 
-  duration_string = ""
-  if with_duration
-    duration = props["duration"] ? parse_numeric(props["duration"], 0.0) : 0.0
-    duration_string = get_duration_string(duration)
-  end
+function get_quality_score(width, height, framerate, bitdepth, bitrate, codec) {
+  const codec_efficiencies = {
+    "av1": 1.5,
+    "h264": 1.0,
+    "h266": 2.0,
+    "hevc": 1.7,
+    "vp8": 0.9,
+    "vp9": 1.3
+  }
+  const codec_factor = 1.0 / (codec_efficiencies[codec] || 0.8)
+  const resolution = width * height
+  const optimal_bitrate = resolution * bitdepth * framerate * codec_factor
+  const bitrate_factor = 2.0 / (1 + Math.exp(-0.001 * (bitrate - optimal_bitrate)))
+  const resolution_factor = Math.log2(resolution / (1920 * 1080) + 1)
+  const framerate_factor = Math.log2(framerate / 30.0 + 1)
+  const bitdepth_factor = Math.log2((bitdepth - 6.0) / 2.0)
+  const score = 0.4 * resolution_factor + 0.3 * framerate_factor + 0.2 * bitdepth_factor + 0.1 * bitrate_factor
+    return Math.max(0, Math.round((score * 10) - 1))
+}
 
-  height = props["height"] ? parse_numeric(props["height"], 320) : 320
-  width = props["width"] ? parse_numeric(props["width"], 240) : 240
+function get_tag(file_path) {
+  const entries = ["bits_per_raw_sample", "bit_rate", "codec_name", "duration", "height", "r_frame_rate", "width"]
+  const props = ffprobe_properties(file_path, entries)
+  const duration = props.duration ? parse_numeric(props.duration, 0.0) : 0.0
+  const duration_string = get_duration_string(duration)
+  const height = props.height ? parse_numeric(props.height, 320) : 320
+  const width = props.width ? parse_numeric(props.width, 240) : 240
+  const bitdepth = props.bits_per_raw_sample ? parse_numeric(props.bits_per_raw_sample, 8) : 8
+  const bitrate = props.bit_rate ? parse_numeric(props.bit_rate, 1000) : 1000
+  const framerate = parse_frame_rate(props.r_frame_rate) || 15.0
+  const codec = props.codec_name
+  let tag
+  if (width && height && codec) {
+    const quality = get_quality_score(width, height, framerate, bitdepth, bitrate, codec)
+    tag = "q" + String(quality) + duration_string
+  } else {
+    tag = "q0" + duration_string
+  }
+  return tag
+}
 
-  if quality_score
-    bitdepth = props["bits_per_raw_sample"] ? parse_numeric(props["bits_per_raw_sample"], 8) : 8
-    bitrate = props["bit_rate"] ? parse_numeric(props["bit_rate"], 1000) : 1000
-    framerate = parse_frame_rate(props["r_frame_rate"]) || 15.0
-    codec = props["codec_name"]
-    if width && height && codec
-      quality = get_quality_score width, height, framerate, bitdepth, bitrate, codec
-      tag = "q#{quality}#{duration_string}"
-    else tag = "q0#{duration_string}" end
-  else
-    shortest_side = [width, height].min
-    framerate = parse_frame_rate(props["r_frame_rate"])
-    tag = "#{duration_string}p#{shortest_side}"
-    tag += "f#{framerate.round}" if framerate
-  end
+function add_tag(file_path, tag, dry_run_flag) {
+  const dirname = path.dirname(file_path)
+  const basename = path.basename(file_path)
+  const new_basename = tag + "." + basename
+  const new_path = path.join(dirname, new_basename)
+  if (new_path === file_path) return
+  if (dry_run_flag) {
+    console.log('"' + file_path + '" -> "' + new_path + '"')
+  } else {
+    fs.renameSync(file_path, new_path)
+  }
+}
 
-  tag
-end
+function generate_listings(resolutions, framerates, bitdepths, bitrates, codecs) {
+  resolutions.forEach(resolution => {
+    let width
+    let height
+    if (typeof resolution === "string") {
+      const parts = resolution.split("x")
+      width = parseInt(parts[0], 10)
+      height = parseInt(parts[1], 10)
+    } else {
+      width = resolution[0]
+      height = resolution[1]
+    }
+    framerates.forEach(framerate => {
+      bitdepths.forEach(bitdepth => {
+        codecs.forEach(codec => {
+          bitrates.forEach(bitrate => {
+            const score = get_quality_score(width, height, framerate, bitdepth, bitrate, codec)
+            console.log(
+              String(width) + "x" + String(height) + " " +
+              String(framerate) + " " +
+              String(bitdepth) + " " +
+              String(bitrate) + " " +
+              String(codec) + " -> " +
+              String(score)
+            )
+          })
+        })
+      })
+    })
+  })
+}
 
-def add_tag(path, tag, dry_run)
-  require "fileutils"
+if (listing_only) {
+  const resolutions = ["640x480", "1920x1080", "3840x2160", "7680x4320"]
+  const framerates = [30, 60, 120]
+  const bitdepths = [8, 10]
+  const bitrates = [9000000, 25000000, 75000000, 100000000, 200000000]
+  const codecs = ["h264", "av1"]
+  generate_listings(resolutions, framerates, bitdepths, bitrates, codecs)
+  process.exit(0)
+}
 
-  dirname = File.dirname(path)
-  basename = File.basename(path)
-  new_basename = "#{tag}.#{basename}"
-  new_path = File.join(dirname, new_basename)
+if (args.length === 0) {
+  console.log("usage: [-d|-l] files ...")
+  console.log("options")
+  console.log("  -d  dry-run")
+  console.log("  -l  list quality scores for predefined combinations")
+  process.exit(1)
+}
 
-  if new_path != path
-    if dry_run
-      puts "\"#{path}\" -> \"#{new_path}\""
-    else
-      FileUtils.mv(path, new_path)
-    end
-  end
-end
-
-paths.each do |path|
-  if File.file?(path)
-    tag = get_tag path, with_duration, quality_score
-    add_tag(path, tag, dry_run) if tag
-  end
-end
+args.forEach(p => {
+  let stat
+  try {
+    stat = fs.statSync(p)
+  } catch (e) {
+    return
+  }
+  if (!stat.isFile()) return
+  const tag = get_tag(p)
+  if (!tag) return
+  add_tag(p, tag, dry_run)
+})
