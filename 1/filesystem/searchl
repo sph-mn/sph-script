@@ -1,12 +1,4 @@
 #!/bin/sh
-
-# recursively in ".", output "path: line" for each line containing all input strings.
+# recursively in ".", output "path: line" for each line containing all input strings. depends on files-filter from sph-utils.
 # arguments: string ...
-# depends on ripgrep.
-
-pattern="rg --color=never --no-heading -NLFS '$1' ."
-shift
-for a in "$@"; do pattern="${pattern} | rg --color=never -FS '$a'"; done
-pattern="$pattern | tr -s ' '"
-clear
-exec /bin/sh -c "$pattern"
+find . -type d \( -name node_modules -o -name .git -o -name cache -o -name vendor \) -prune -o -type f -print | files-filter -l "$@"

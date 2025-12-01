@@ -342,13 +342,13 @@ which would mean that you can put scripts in a directory named "exe" in your hom
   * works on the current directory if no path was given.
 * list-broken-symlinks: list broken symlinks in the current directory.
 * search
-  * recursively in ".", output "path" for each file containing at least one line containing all input strings.
+  * recursively in ".", output "path" for each file with a line containing all input strings.
   * arguments: string ...
-  * depends on ripgrep.
+  * depends on files-filter from [sph-utils](https://github.com/sph-mn/sph-utils).
 * searchl
   * recursively in ".", output "path: line" for each line containing all input strings.
   * arguments: string ...
-  * depends on ripgrep.
+  * depends on files-filter from [sph-utils](https://github.com/sph-mn/sph-utils).
 * group
   * move files into target directory.
   * the directory is created if it does not exist.
