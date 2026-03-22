@@ -1,166 +1,283 @@
 #!/usr/bin/env node
 
-const {
-  readdirSync,
-  readFileSync,
-  mkdtempSync,
-  writeFileSync,
-  rmSync,
-  existsSync
-} = require("fs")
-const {
-  homedir,
-  tmpdir
-} = require("os")
-const {
-  join
-} = require("path")
-const {
-  execFileSync,
-  spawn
-} = require("child_process")
+/*
+Copies selected directory subsets to mounted backup disks identified by UUID.
 
-const configuration_directory = join(homedir(), ".config", "backup-disk")
-const argument_values = process.argv.slice(2)
-const run_requested = argument_values.includes("--run")
-const trigger_requested = argument_values.includes("--trigger")
-const requested_names = argument_values.filter(x => !x.startsWith("--"))
+Configuration files define source paths, target locations, and inclusion or exclusion rules.
+Eligible subdirectories are discovered via filesystem traversal, filtered, and collapsed to minimal prefixes.
 
-if (trigger_requested) {
-  execFileSync("udevadm", ["trigger", "--subsystem-match=block"], {
-    stdio: "ignore"
-  })
-  execFileSync("sh", ["-lc", "blkid -p -o export /dev/mapper/* >/dev/null 2>&1"], {
-    stdio: "ignore"
-  })
-  process.exit(0)
-}
+For each available disk, rsync is invoked with a generated file list to perform incremental synchronization.
+Supports dry-run mode by default, explicit execution via "-r", and udev trigger via "-t".
+Tasks are grouped per disk and executed concurrently across disks.
+*/
 
-const configuration_files = requested_names.length > 0 ?
-  requested_names.map(x => join(configuration_directory, x + ".json")) :
-  readdirSync(configuration_directory).filter(x => x.endsWith(".json")).map(x => join(configuration_directory, x)).sort()
+const fs = require("fs")
+const os = require("os")
+const path = require("path")
+const child_process = require("child_process")
 
-const configuration_groups = []
-for (const file_path of configuration_files) {
-  const parsed = JSON.parse(readFileSync(file_path, "utf8"))
-  for (const group of parsed) configuration_groups.push(group)
-}
-
-const mount_point_for_uuid = disk_uuid => {
-  try {
-    return execFileSync("findmnt", ["-n", "-o", "TARGET", `/dev/disk/by-uuid/${disk_uuid}`], {
-      encoding: "utf8"
-    }).trim()
-  } catch {
-    return ""
-  }
-}
-
-const collapse_prefixes = paths => {
-  const sorted = paths.slice().sort()
-  const output = []
-  let previous = null
-  for (const p of sorted)
-    if (previous === null || !p.startsWith(previous + "/")) {
-      output.push(p);
-      previous = p
+function simple_option_parser(argument_list, option_config) {
+  const options = {};
+  const rest = [];
+  const length = argument_list.length;
+  let index = 0;
+  while (index < length) {
+    const value = argument_list[index];
+    if (value === "--") {
+      index += 1;
+      break;
     }
-  return output
+    if (value.length !== 2) break;
+    if (value.charCodeAt(0) !== 45) break;
+    if (value.charCodeAt(1) === 45) break;
+    const option_data = option_config[value];
+    if (!option_data) return {
+      error: 1,
+      options: {},
+      rest: []
+    };
+    if (option_data.requires_value) {
+      if (index + 1 >= length) return {
+        error: 1,
+        options: {},
+        rest: []
+      };
+      index += 1;
+      options[value] = argument_list[index];
+      index += 1;
+    } else {
+      options[value] = true;
+      index += 1;
+    }
+  }
+  for (; index < length; index += 1) rest.push(argument_list[index]);
+  return {
+    error: 0,
+    options,
+    rest
+  };
 }
 
-const escape_re = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+class backup_disk_class {
+  constructor() {
+    this.configuration_directory = path.join(os.homedir(), ".config", "backup-disk")
+    this.max_buffer_size = Math.floor(os.totalmem() * 0.5)
+  }
 
-const eligible_relative_paths = (source_path, entry) => {
-  let stdout_text = ""
-  try {
-    stdout_text = execFileSync("find", [source_path, "-xdev", "-type", "d"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"]
+  mount_point_for_uuid(disk_uuid) {
+    try {
+      return child_process.execFileSync("findmnt", ["-n", "-o", "TARGET", `/dev/disk/by-uuid/${disk_uuid}`], {
+        encoding: "utf8"
+      }).trim()
+    } catch {
+      return ""
+    }
+  }
+
+  collapse_prefixes(paths_list) {
+    const sorted = paths_list.slice().sort()
+    const output = []
+    let previous = null
+    for (const p of sorted)
+      if (previous === null || !p.startsWith(previous + "/")) {
+        output.push(p)
+        previous = p
+      }
+    return output
+  }
+
+  escape_re(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  }
+
+  eligible_relative_paths(source_path, entry) {
+    let stdout_text = ""
+    try {
+      stdout_text = child_process.execFileSync("find", [source_path, "-xdev", "-type", "d"], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+        maxBuffer: this.max_buffer_size
+      })
+    } catch (err) {
+      if (typeof err.stdout === "string" && err.stdout.length > 0) stdout_text = err.stdout
+      else stdout_text = ""
+    }
+    if (!stdout_text || stdout_text.length === 0) return []
+    const root_re = new RegExp("^" + this.escape_re(source_path) + "/?")
+    const include_literals = entry.includes || null
+    const exclude_literals = entry.excludes || null
+    const include_regexes = entry.include_filter ? entry.include_filter.map(p => new RegExp(p)) : null
+    const exclude_regexes = entry.exclude_filter ? entry.exclude_filter.map(p => new RegExp(p)) : null
+    const relative_paths = []
+    for (const line of stdout_text.split(/\r?\n/)) {
+      const relative = line.trim().replace(root_re, "")
+      if (!relative) continue
+      const literal_included = !include_literals || include_literals.some(x => relative.startsWith(x))
+      const regex_included = !include_regexes || include_regexes.some(r => r.test(relative))
+      const literal_excluded = exclude_literals && exclude_literals.some(x => relative.includes(x))
+      const regex_excluded = exclude_regexes && exclude_regexes.some(r => r.test(relative))
+      if (literal_included && regex_included && !literal_excluded && !regex_excluded) relative_paths.push(relative)
+    }
+    return this.collapse_prefixes(relative_paths)
+  }
+
+  rsync_patterns_from_token(token) {
+    const t = token.replace(/^\/+/, "").replace(/\/$/, "")
+    return [`--exclude=**/*${t}*/**`, `--exclude=**/*${t}*`]
+  }
+
+  run_rsync(source_path, destination_path, relative_paths, entry, dry_run_flag) {
+    return new Promise((resolve, reject) => {
+      const temporary_directory = fs.mkdtempSync(path.join(os.tmpdir(), "backup-disk-"))
+      const list_file_path = path.join(temporary_directory, "rsync_list")
+      fs.writeFileSync(list_file_path, relative_paths.join("\n"))
+      const rsync_arguments = ["--recursive", "--sparse", "--links", "--ignore-errors", "--one-file-system", "--delete", "--delete-before", "--size-only", "--itemize-changes"]
+      if (entry.excludes)
+        for (const token of entry.excludes)
+          for (const pattern of this.rsync_patterns_from_token(token)) rsync_arguments.push(pattern)
+      rsync_arguments.push(`--files-from=${list_file_path}`)
+      if (dry_run_flag) rsync_arguments.push("--dry-run")
+      rsync_arguments.push(source_path, destination_path)
+      const child = child_process.spawn("rsync", rsync_arguments, {
+        stdio: ["ignore", "inherit", "inherit"]
+      })
+      child.on("close", code => {
+        fs.rmSync(temporary_directory, {
+          recursive: true,
+          force: true
+        })
+        if (code === 0) resolve()
+        else reject(new Error("rsync failed"))
+      })
+      child.on("error", err => {
+        fs.rmSync(temporary_directory, {
+          recursive: true,
+          force: true
+        })
+        reject(err)
+      })
     })
-  } catch {
-    return []
   }
-  if (stdout_text.length === 0) return []
-  const root_re = new RegExp("^" + escape_re(source_path) + "/?")
-  const include_literals = entry.includes || null
-  const exclude_literals = entry.excludes || null
-  const include_regexes = entry.include_filter ? entry.include_filter.map(p => new RegExp(p)) : null
-  const exclude_regexes = entry.exclude_filter ? entry.exclude_filter.map(p => new RegExp(p)) : null
-  const relative_paths = []
-  for (const line of stdout_text.split(/\r?\n/)) {
-    const relative = line.trim().replace(root_re, "")
-    if (!relative) continue
-    const literal_included = !include_literals || include_literals.some(x => relative.startsWith(x))
-    const regex_included = !include_regexes || include_regexes.some(r => r.test(relative))
-    const literal_excluded = exclude_literals && exclude_literals.some(x => relative.includes(x))
-    const regex_excluded = exclude_regexes && exclude_regexes.some(r => r.test(relative))
-    if (literal_included && regex_included && !literal_excluded && !regex_excluded) relative_paths.push(relative)
+
+  read_configuration_groups(configuration_files) {
+    const configuration_groups = []
+    for (const file_path of configuration_files) {
+      const parsed = JSON.parse(fs.readFileSync(file_path, "utf8"))
+      for (const group of parsed) configuration_groups.push(group)
+    }
+    return configuration_groups
   }
-  return collapse_prefixes(relative_paths)
-}
 
-const rsync_patterns_from_token = token => {
-  const t = token.replace(/^\/+/, "").replace(/\/$/, "")
-  return [`--exclude=**/*${t}*/**`, `--exclude=**/*${t}*`]
-}
+  run_trigger() {
+    child_process.execFileSync("udevadm", ["trigger", "--subsystem-match=block"], {
+      stdio: "ignore"
+    })
+    child_process.execFileSync("sh", ["-lc", "blkid -p -o export /dev/mapper/* >/dev/null 2>&1"], {
+      stdio: "ignore"
+    })
+  }
 
-const run_rsync = (source_path, destination_path, relative_paths, entry, dry_run_flag) => new Promise((resolve, reject) => {
-  const temporary_directory = mkdtempSync(join(tmpdir(), "backup-disk-"))
-  const list_file_path = join(temporary_directory, "rsync_list")
-  writeFileSync(list_file_path, relative_paths.join("\n"))
-  const rsync_arguments = ["--recursive", "--sparse", "--links", "--ignore-errors", "--one-file-system", "--delete", "--delete-before", "--size-only", "--itemize-changes"]
-  if (entry.excludes)
-    for (const token of entry.excludes)
-      for (const pattern of rsync_patterns_from_token(token)) rsync_arguments.push(pattern)
-  rsync_arguments.push(`--files-from=${list_file_path}`)
-  if (dry_run_flag) rsync_arguments.push("--dry-run")
-  rsync_arguments.push(source_path, destination_path)
-  const child = spawn("rsync", rsync_arguments, {
-    stdio: ["ignore", "inherit", "inherit"]
-  })
-  child.on("close", code => {
-    rmSync(temporary_directory, {
-      recursive: true,
-      force: true
-    });
-    code === 0 ? resolve() : reject(new Error("rsync failed"))
-  })
-  child.on("error", err => {
-    rmSync(temporary_directory, {
-      recursive: true,
-      force: true
-    });
-    reject(err)
-  })
-})
+  async run_tasks_grouped(tasks_by_uuid, run_requested) {
+    const run_one_uuid = async (uuid, tasks) => {
+      let failed = false
+      for (const [source_path, destination_path, relative_paths, entry] of tasks) {
+        try {
+          await this.run_rsync(
+            source_path,
+            destination_path,
+            relative_paths,
+            entry,
+            !run_requested
+          )
+        } catch (e) {
+          failed = true
+          process.stderr.write(e.message + "\n")
+        }
+      }
+      return failed
+    }
 
-function main() {
-  const tasks = []
-  for (const group of configuration_groups) {
-    const uuid_list = group.uuids
-    const entry_list = group.entries
-    for (const disk_uuid of uuid_list) {
-      const mount_point = mount_point_for_uuid(disk_uuid)
-      if (!mount_point) continue
-      for (const entry of entry_list) {
-        const source_path = entry.source
-        if (!existsSync(source_path)) continue
-        const destination_path = entry.target.startsWith("/") ? entry.target : join(mount_point, entry.target)
-        if (!existsSync(destination_path)) continue
-        const relative_paths = eligible_relative_paths(source_path, entry)
-        if (relative_paths.length === 0) continue
-        tasks.push([source_path, destination_path, relative_paths, entry])
+    const per_uuid_promises = []
+    for (const [uuid, tasks] of tasks_by_uuid.entries()) {
+      per_uuid_promises.push(run_one_uuid(uuid, tasks))
+    }
+
+    const results = await Promise.all(per_uuid_promises)
+    return results.some(x => x)
+  }
+
+  async main(argument_values) {
+    const option_config = {
+      "-r": {},
+      "-t": {}
+    }
+    const parsed = simple_option_parser(argument_values, option_config)
+    if (parsed.error) process.exit(1)
+    const run_requested = !!parsed.options["-r"]
+    const trigger_requested = !!parsed.options["-t"]
+    const requested_names = parsed.rest
+
+    if (trigger_requested) {
+      this.run_trigger()
+      process.exit(0)
+    }
+
+    const configuration_files = requested_names.length > 0 ?
+      requested_names.map(x => path.join(this.configuration_directory, x + ".json")) :
+      fs.readdirSync(this.configuration_directory)
+      .filter(x => x.endsWith(".json"))
+      .map(x => path.join(this.configuration_directory, x))
+      .sort()
+
+    const configuration_groups = this.read_configuration_groups(configuration_files)
+
+    const tasks_by_uuid = new Map()
+
+    for (const group of configuration_groups) {
+      const uuid_list = group.uuids
+      const entry_list = group.entries
+
+      for (const disk_uuid of uuid_list) {
+        const mount_point = this.mount_point_for_uuid(disk_uuid)
+        if (!mount_point) continue
+
+        for (const entry of entry_list) {
+          const source_path = entry.source
+          if (
+            !fs.existsSync(source_path) ||
+            !fs.statSync(source_path).isDirectory() ||
+            fs.readdirSync(source_path).length === 0
+          ) {
+            console.log("source path not accessible or empty: " + source_path)
+            continue
+          }
+
+          const destination_path = entry.target.startsWith("/") ?
+            entry.target :
+            path.join(mount_point, entry.target)
+
+          if (!fs.existsSync(destination_path)) {
+            console.log("destination path does not exist: " + destination_path)
+            continue
+          }
+
+          const relative_paths = this.eligible_relative_paths(source_path, entry)
+          if (relative_paths.length === 0) {
+            console.log("no source files matched: \"" + source_path + "\"")
+            continue
+          }
+
+          if (!tasks_by_uuid.has(disk_uuid)) tasks_by_uuid.set(disk_uuid, [])
+          tasks_by_uuid.get(disk_uuid).push([source_path, destination_path, relative_paths, entry])
+        }
       }
     }
-  };
-  (async () => {
-    for (const [source_path, destination_path, relative_paths, entry] of tasks)
-      await run_rsync(source_path, destination_path, relative_paths, entry, !run_requested)
-    process.exit(0)
-  })().catch(e => {
-    process.stderr.write(e.message + "\n");
-    process.exit(1)
-  })
+
+    const failed = await this.run_tasks_grouped(tasks_by_uuid, run_requested)
+    process.exit(failed ? 1 : 0)
+  }
 }
 
-main()
+
+
+new backup_disk_class().main(process.argv.slice(2))

@@ -1,0 +1,142 @@
+#!/usr/bin/env node
+
+// pack: compose and remove file layers by filename suffix
+//
+// add:
+//   optionally applies archive, compression, and encryption layers
+//   archive is added automatically for multiple sources or directories
+//
+// remove:
+//   infers layers from suffixes (.tar, .zst, .e) and removes them in reverse order
+//
+// output:
+//   always derived from the stem name of the source
+//   archive extracts into a directory, others produce a file
+
+import { execFileSync } from "node:child_process";
+import { cpSync, mkdirSync, mkdtempSync, statSync } from "node:fs";
+import { basename } from "node:path";
+import { tmpdir } from "node:os";
+
+function parse_options(argument_list, option_config) {
+  const options = {};
+  const rest = [];
+  const length = argument_list.length;
+  let index = 0;
+
+  while (index < length) {
+    const value = argument_list[index];
+    if (value === "--") {
+      index += 1;
+      break;
+    }
+    if (value.length < 2 || value.charCodeAt(0) !== 45) {
+      break;
+    }
+    if (!option_config[value]) {
+      break;
+    }
+    const option_data = option_config[value];
+    if (option_data.requires_value) {
+      index += 1;
+      options[value] = argument_list[index];
+      index += 1;
+    } else {
+      options[value] = true;
+      index += 1;
+    }
+  }
+
+  for (; index < length; index += 1) {
+    rest.push(argument_list[index]);
+  }
+
+  return { options, rest };
+}
+
+const parsed = parse_options(process.argv.slice(2), {
+  "-c": { requires_value: false },
+  "-e": { requires_value: false }
+});
+
+const options = parsed.options;
+const rest = parsed.rest;
+const mode = rest[0];
+const list = rest.slice(1);
+const root = mkdtempSync(`${tmpdir()}/pack-`);
+const path = word => `${root}/${word}`;
+const run = (program, words) => execFileSync(program, words, { stdio: "inherit" });
+
+if (mode === "add") {
+  const use_compression = !!options["-c"];
+  const use_encryption = !!options["-e"];
+  const use_archive = list.length > 1 || statSync(list[0]).isDirectory();
+
+  let input = list[0];
+  const output =
+    basename(list[0]) +
+    (use_archive ? ".tar" : "") +
+    (use_compression ? ".zst" : "") +
+    (use_encryption ? ".e" : "");
+
+  if (use_archive) {
+    input = path("archive");
+    run("tar", ["-cf", input, ...list]);
+  }
+
+  if (use_compression) {
+    const file = path("compression");
+    run("zstd", ["-q", "-f", input, "-o", file]);
+    input = file;
+  }
+
+  if (use_encryption) {
+    const file = path("encryption");
+    run("scrypt", ["enc", input, file]);
+    input = file;
+  }
+
+  if (input !== output) cpSync(input, output);
+} else if (mode === "remove") {
+  const source = list[0];
+  let stem = basename(source);
+  let has_archive = false;
+  let has_compression = false;
+  let has_encryption = false;
+
+  while (true) {
+    if (stem.endsWith(".e")) {
+      has_encryption = true;
+      stem = stem.slice(0, -2);
+    } else if (stem.endsWith(".zst")) {
+      has_compression = true;
+      stem = stem.slice(0, -4);
+    } else if (stem.endsWith(".tar")) {
+      has_archive = true;
+      stem = stem.slice(0, -4);
+    } else {
+      break;
+    }
+  }
+
+  let input = source;
+
+  if (has_encryption) {
+    const file = path("decryption");
+    run("scrypt", ["dec", input, file]);
+    input = file;
+  }
+
+  if (has_compression) {
+    const file = path("decompression");
+    run("zstd", ["-q", "-d", "-f", input, "-o", file]);
+    input = file;
+  }
+
+  if (has_archive) {
+    mkdirSync(stem, { recursive: true });
+    run("tar", ["-xf", input, "-C", stem]);
+  } else {
+    cpSync(input, stem);
+  }
+}

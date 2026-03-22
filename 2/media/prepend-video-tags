@@ -53,12 +53,13 @@ function parse_numeric(value, default_value) {
 }
 
 function get_duration_string(duration) {
-  if (duration == null) return "d0"
+  if (!duration) return "d0"
+  const durations = [100, 500, 2500, 5000]
   const d = parseFloat(duration)
-  if (d < 500) return "d1"
-  if (d > 5000) return "d4"
-  if (d > 2500) return "d3"
-  return "d2"
+  for (let i = 0; i < durations.length; i += 1) {
+    if (d < durations[i]) return "d" + (i + 1)
+  }
+  return "d" + (durations.length)
 }
 
 function parse_frame_rate(r_frame_rate) {

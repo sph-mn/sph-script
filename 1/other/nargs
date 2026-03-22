@@ -3,7 +3,6 @@
 # For each newline-delimited line from stdin, execute: command line.
 # example: find . | nargs echo the argument is:
 
-while read line
-do
+while IFS= read -r line; do
   "$@" "$line"
 done

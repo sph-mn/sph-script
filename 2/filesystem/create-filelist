@@ -15,7 +15,7 @@ fi
 a="/home/nonroot/t/file-list/$1"
 
 # disk size/usage header
-df --si --output=size,avail,pcent . > "$a"
+df --output=size,avail -B1 . | tail -n 1 > "$a"
 
 # file listing
 find . -xdev -type f >> "$a"

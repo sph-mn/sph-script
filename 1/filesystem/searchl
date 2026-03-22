@@ -1,4 +1,4 @@
 #!/bin/sh
 # recursively in ".", output "path: line" for each line containing all input strings. depends on files-filter from sph-utils.
 # arguments: string ...
-find . -type d \( -name node_modules -o -name .git -o -name cache -o -name vendor \) -prune -o -type f -print | files-filter -l "$@"
+find -L . -type d \( -name node_modules -o -name .git -o -name cache -o -name vendor \) -prune -o -type f -print | files-filter -l "$@"

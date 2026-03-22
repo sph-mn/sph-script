@@ -95,7 +95,7 @@ function main() {
   }
 
   let merge_hash = resolve_merge(argument_value);
-
+    console.log(merge_hash)
   let revision_set;
   if (target_branch && target_branch.length > 0) {
     const verify_text = git_output(["rev-parse", "--verify", target_branch + "^{commit}"]).trim();
