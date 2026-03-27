@@ -1,3 +1,7 @@
+# sph-script
+a collection of various scripts.
+
+## 1
 ~~~
 filesystem
   collect-config
@@ -16,13 +20,12 @@ filesystem
   mvup
   path-directories
   path-permissions
-  search
-  searchl
   splice
+git
+  git-log
 other
   backup-disk
   clip
-  git-log
   nargs
   nargsp
   repl
@@ -36,8 +39,6 @@ text
   compress-spaces
   file-lines-set-operations
   generate-password
-  lines-filter
-  lines-reject
   lowercase
   newline-to-comma
   newline-to-space
@@ -51,7 +52,10 @@ time
   posixtime-to-date
   tzdate
   year-week-count
+~~~
 
+## 2
+~~~
 convert
   binary
   freemind2indent
@@ -74,6 +78,8 @@ filesystem
   merge-files
   move-and-link
   name-add-date
+  pack
+  permission-sheet-to-shell
   prefix-sort
   prepend-date
   prepend-media-bitrate
@@ -83,6 +89,14 @@ filesystem
   set-permissions
   splice-if-single
   tidyfiles
+git
+  git-changes
+  git-log-commit
+  git-log-diff
+  git-log-file
+  git-log-short
+  git-push
+  git-status
 media
   aac2wav
   audio-file-loudness
@@ -118,16 +132,10 @@ other
   cpioc
   cpioe
   dimensions-to-volume
-  dwm-show-info
   e
   emacs-open-in-background
   first
   g
-  git-create-stable-branch
-  git-log-short
-  git-merge-stable-master
-  git-push
-  git-stati
   golden-ratio
   gui-emacs
   gui-md5sum
@@ -196,10 +204,7 @@ time
   hms-to-ks
   hms-to-minutes
   hours-and-minutes-till-midnight
-  ks-time
   ks-to-hms
-  uptime-duration-ks
-  uptime-start-ks
 ~~~
 
 # general
@@ -236,14 +241,6 @@ which would mean that you can put scripts in a directory named "exe" in your hom
   * arguments: string
 * iso-date: display current iso date "yyyy-mm-dd".
 * iso-week-number: display current iso week number.
-* lines-reject: inverse of lines-filter: keep lines where none of the strings match.
-* lines-filter
-  * filter stdin lines by strings or regexps; default case-insensitive.
-  * arguments: [options ...] string ...
-  * options
-    * -a  all strings must match, the default
-    * -o  any string must match
-    * -n  no string must match
 * comma-to-newline: replace commas with newlines on stdin.
 * lowercase: map stdin to lowercase.
 * newline-to-comma: convert newline-delimited items on stdin to comma-separated.
@@ -291,9 +288,6 @@ which would mean that you can put scripts in a directory named "exe" in your hom
     * 700 /srv/http
     * 700 /srv
   * alternative tool: namei -m
-* fig
-  * recursively in ".", list relative paths where the path itself contains all input strings.
-  * arguments: [lines-filter-option ...] string ...
 * collect-config
   * this script moves given paths to another central directoriy,
   * for example a versioning repository, and then links the files back to the original place.
@@ -458,9 +452,45 @@ which would mean that you can put scripts in a directory named "exe" in your hom
 * merge-stereo-images: combine two images into one side-by-side image.
 
 # extended documentation
+## permission-sheet-to-shell
+define filesystem permissions in a json file with css-like logic.
+permission-sheet-to-shell will compile this json file to a shell script that applies these permissions.
+
+this way, one gets as output a script that will ensure the permissions are set correctly whenever the script is run.
+
+see [other/doc/permission-sheets.md](other/doc/permission-sheets.md)
+
 ## backup-disk
+define rsync filters and destination uuids in configuration files.
+run `backup-disk <configuration_file_name>` to sync to currently mounted target partitions.
+`backup-disk` syncs all configurations.
 
+see [other/doc/backup-disk.md](other/doc/backup-disk.md)
 
+## mount-home
+* mount filesystems to automatically chosen paths under ~/mnt
+* mount filesystems to $HOME/mnt/{last-part-of-source}
+
+## examples
+~~~
+$ mount-home /dev/sdd1
+~~~
+mounts the filesystem to /home/username/mnt/dev/sdd1
+
+~~~
+$ mount-home -s -l label1 label2
+~~~
+mounts with sudo and by partition label
+
+## benefits
+* paths are automatically chosen
+* paths are automatically created
+* paths are predictable
+* mount multiple sources in one call
+
+## command-line interface
+mount filesystems to $HOME/mnt/{source_basename_or_label}
+benefits: mount paths are automatically chosen, mount paths are predictable, and multiple sources can be mounted in one call.
 
 ## git-log
 a compact "git log" format
@@ -484,30 +514,25 @@ tantalum@online.de 2014-08-15 - f472c3f
 M    sph/cli.scm
 ~~~
 
-## git-log-file
-like git-log but takes keywords to search for in changed file names. searches on the most recent 16 commits by default.
+## generate-password
+generate random ascii or unicode passwords of custom length.
 
 ~~~
-git-log-file keyword ...
-git-log-file -n 200 keyword ...
+arguments: length [type]
 ~~~
 
-## git-log-commit
-like git-log but takes keywords to search for in commit messages. searches on the most recent 16 commits by default.
-
+examples:
 ~~~
-git-log-commit keyword ...
-git-log-commit -n 200 keyword ...
-~~~
-
-## git-changes
-display the diff that a commit or merge request merge created. similar to the gitlab changes.
-
-~~~
-git-changes git-changes single-commit-or-branch [target-branch]
+generate-password unicode 8
+->
+🏊飨跻콭螯嗲і쫒
 ~~~
 
-by default, target-branch is the parent commit of the given commit or branch.
+~~~
+generate-password ascii 18
+->
+)xRqK&N0x:Le$POC
+~~~
 
 ## with-dialog-and-delay
 show a yes/no dialog on the command-line and only execute command when the answer is yes.
@@ -523,118 +548,3 @@ waiting 5 seconds...
 command execution started
 test
 ~~~
-
-## mount-home
-* mount filesystems to automatically chosen paths under ~/mnt
-* mount filesystems to $HOME/mnt/{last-part-of-source}
-
-## examples
-$ mount-home /dev/sdd1
-
-mounts the filesystem to /home/username/mnt/dev/sdd1
-
-$ mount-home -s -l label1 label2
-
-mounts with sudo and by partition label
-
-## benefits
-* paths are automatically chosen
-* paths are automatically created
-* paths are predictable
-* mount multiple sources in one call
-
-## command-line interface
-mount filesystems to $HOME/mnt/{source_basename_or_label}
-benefits: mount paths are automatically chosen, mount paths are predictable, and multiple sources can be mounted in one call.
-
-## backup-disk
-`backup-disk` synchronizes directories from available source paths to available targets located on mounted disks identified by UUIDs.
-It reads JSON configuration files from `~/.config/backup-disk/`.
-Each configuration describes one or more disks and the directories to mirror.
-Only existing sources and mounted targets are processed; missing paths are skipped silently.
-
-### Command-line interface
-```
-backup-disk [options] [name...]
-```
-
-#### Options
-* `--run`
-  Execute actual synchronization. Without this flag, operations run in dry-run mode (no changes made).
-* `--trigger`
-  Run udev and block device rescan (`udevadm trigger` and `blkid`) only, then exit.
-* `--help`
-  Show usage information and list available configurations.
-
-#### Arguments
-* `[name...]`
-  One or more configuration file names (without `.json` extension).
-  If omitted, all `.json` files in `~/.config/backup-disk/` are used.
-
-### Behavior summary
-* Each configuration is a JSON array of groups.
-* Each group contains:
-  * `uuids`: list of disk UUIDs the group applies to.
-  * `entries`: list of source-target mapping objects.
-* For every group:
-  * For every UUID that is currently mounted, each entry is evaluated.
-  * For each entry:
-    * If `source` exists and the `target` path is resolvable, rsync is invoked.
-    * Exclusion and inclusion patterns are applied if specified.
-
-### Minimal configuration
-```json
-[
-  {
-    "uuids": ["123e4567-e89b-12d3-a456-426614174000"],
-    "entries": [
-      {
-        "source": "/home/user/documents",
-        "target": "mirror/documents"
-      }
-    ]
-  }
-]
-```
-This mirrors `/home/user/documents` to `mirror/documents` on the mounted disk with the specified UUID.
-
-### Full configuration example
-```json
-[
-  {
-    "uuids": [
-      "11111111-1111-1111-1111-111111111111",
-      "22222222-2222-2222-2222-222222222222"
-    ],
-    "entries": [
-      {
-        "source": "/home/user/photos",
-        "target": "backups/photos",
-        "includes": ["albums", "events"],
-        "include_filter": ["^important/.*"],
-        "excludes": [
-          "temp",
-          ".cache",
-          "drafts"
-        ],
-        "exclude_filter": [
-          "\\.thumbnails/.*"
-        ]
-      },
-      {
-        "source": "/home/user/projects",
-        "target": "backups/projects"
-      },
-      {
-        "source": "/var/data",
-        "target": "backups/system/data"
-      }
-    ]
-  }
-]
-```
-
-#### Notes
-* Regex filters are JSON strings that will be compiled as `RegExp` objects.
-* Target paths not starting with `/` are interpreted relative to the mount point of the disk.
-* Logs and detailed rsync output go to standard output and standard error.

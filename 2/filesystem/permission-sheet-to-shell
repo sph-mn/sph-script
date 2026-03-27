@@ -1,0 +1,324 @@
+#!/usr/bin/env node
+
+"use strict";
+
+const fs = require("node:fs");
+
+function main() {
+  const input_text = read_stdin_text();
+  const normalized_rule_list = parse_sheet_text(input_text);
+  const shell_text = emit_shell_script(normalized_rule_list);
+  write_stdout_text(shell_text);
+}
+
+function read_stdin_text() {
+  return fs.readFileSync(0, "utf8");
+}
+
+function write_stdout_text(text) {
+  process.stdout.write(text);
+}
+
+function parse_sheet_text(input_text) {
+  const rule_list = JSON.parse("[\n" + input_text + "\n]\n");
+  return flatten_rule_list(rule_list, "");
+}
+
+function flatten_rule_list(rule_list, parent_selector) {
+  const result = [];
+
+  for (const rule of rule_list) {
+    const flat_rule_list = flatten_rule(rule, parent_selector);
+    for (const flat_rule of flat_rule_list) {
+      result.push(flat_rule);
+    }
+  }
+
+  return result;
+}
+
+function flatten_rule(rule, parent_selector) {
+  const selector_list = normalize_selector_list(rule[0], parent_selector);
+  const declaration_object = is_plain_object(rule[1]) ? rule[1] : {};
+  const nested_start_index = is_plain_object(rule[1]) ? 2 : 1;
+  const result = [];
+
+  if (Object.keys(declaration_object).length > 0) {
+    result.push(normalize_rule(selector_list, declaration_object));
+  }
+
+  for (let index = nested_start_index; index < rule.length; index += 1) {
+    const nested_rule = rule[index];
+    for (const nested_parent_selector of selector_list) {
+      const nested_flat_rule_list = flatten_rule(nested_rule, nested_parent_selector);
+      for (const flat_rule of nested_flat_rule_list) {
+        result.push(flat_rule);
+      }
+    }
+  }
+
+  return result;
+}
+
+function normalize_rule(selector_list, declaration_object) {
+  const recursive = declaration_object.recursive === true;
+  const owner = declaration_object.owner || "";
+  const group = declaration_object.group || "";
+
+  let file_mode = "";
+  let directory_mode = "";
+
+  if (typeof declaration_object.permissions === "string") {
+    file_mode = permission_text_to_mode(declaration_object.permissions, false);
+    directory_mode = permission_text_to_mode(declaration_object.permissions, true);
+  }
+
+  if (typeof declaration_object.file_permissions === "string") {
+    file_mode = permission_text_to_mode(declaration_object.file_permissions, false);
+  }
+
+  if (typeof declaration_object.directory_permissions === "string") {
+    directory_mode = permission_text_to_mode(declaration_object.directory_permissions, true);
+  }
+
+  return {
+    selector_list,
+    recursive,
+    owner,
+    group,
+    file_mode,
+    directory_mode
+  };
+}
+
+function normalize_selector_list(selector_value, parent_selector) {
+  if (typeof selector_value === "string") {
+    return [join_selector(parent_selector, selector_value)];
+  }
+
+  return selector_value.map((selector) => join_selector(parent_selector, selector));
+}
+
+function join_selector(parent_selector, child_selector) {
+  if (!parent_selector || child_selector.startsWith("/")) {
+    return child_selector;
+  }
+
+  if (parent_selector.endsWith("/")) {
+    return parent_selector + child_selector;
+  }
+
+  return parent_selector + "/" + child_selector;
+}
+
+function emit_shell_script(normalized_rule_list) {
+  const line_list = [];
+
+  emit_shell_prelude(line_list);
+
+  for (const normalized_rule of normalized_rule_list) {
+    emit_rule(line_list, normalized_rule);
+  }
+
+  line_list.push("");
+
+  return line_list.join("\n");
+}
+
+function emit_shell_prelude(line_list) {
+  line_list.push("#!/bin/sh");
+  line_list.push("set -e");
+  line_list.push("");
+  line_list.push("apply_path_owner_group() {");
+  line_list.push("  path=$1");
+  line_list.push("  owner=$2");
+  line_list.push("  group=$3");
+  line_list.push("");
+  line_list.push("  if test -n \"$owner\" && test -n \"$group\"; then");
+  line_list.push("    chown \"$owner:$group\" \"$path\"");
+  line_list.push("    return");
+  line_list.push("  fi");
+  line_list.push("");
+  line_list.push("  if test -n \"$owner\"; then");
+  line_list.push("    chown \"$owner\" \"$path\"");
+  line_list.push("    return");
+  line_list.push("  fi");
+  line_list.push("");
+  line_list.push("  if test -n \"$group\"; then");
+  line_list.push("    chown \":$group\" \"$path\"");
+  line_list.push("  fi");
+  line_list.push("}");
+  line_list.push("");
+  line_list.push("visit_tree() {");
+  line_list.push("  path=$1");
+  line_list.push("  callback_name=$2");
+  line_list.push("  shift 2");
+  line_list.push("");
+  line_list.push("  \"$callback_name\" \"$path\" \"$@\"");
+  line_list.push("");
+  line_list.push("  if test -d \"$path\"; then");
+  line_list.push("    for child_path in \"$path\"/* \"$path\"/.[!.]* \"$path\"/..?*; do");
+  line_list.push("      test -e \"$child_path\" || continue");
+  line_list.push("      visit_tree \"$child_path\" \"$callback_name\" \"$@\"");
+  line_list.push("    done");
+  line_list.push("  fi");
+  line_list.push("}");
+  line_list.push("");
+  line_list.push("apply_tree_owner_group() {");
+  line_list.push("  root_path=$1");
+  line_list.push("  owner=$2");
+  line_list.push("  group=$3");
+  line_list.push("  visit_tree \"$root_path\" apply_path_owner_group \"$owner\" \"$group\"");
+  line_list.push("}");
+  line_list.push("");
+  line_list.push("apply_path_permissions() {");
+  line_list.push("  path=$1");
+  line_list.push("  file_mode=$2");
+  line_list.push("  directory_mode=$3");
+  line_list.push("");
+  line_list.push("  if test -d \"$path\"; then");
+  line_list.push("    test -n \"$directory_mode\" && chmod \"$directory_mode\" \"$path\"");
+  line_list.push("    return");
+  line_list.push("  fi");
+  line_list.push("");
+  line_list.push("  test -n \"$file_mode\" && chmod \"$file_mode\" \"$path\"");
+  line_list.push("}");
+  line_list.push("");
+  line_list.push("apply_tree_permissions() {");
+  line_list.push("  root_path=$1");
+  line_list.push("  file_mode=$2");
+  line_list.push("  directory_mode=$3");
+  line_list.push("  visit_tree \"$root_path\" apply_path_permissions \"$file_mode\" \"$directory_mode\"");
+  line_list.push("}");
+  line_list.push("");
+}
+
+function emit_rule(line_list, normalized_rule) {
+  if (normalized_rule.recursive) {
+    emit_recursive_rule(line_list, normalized_rule);
+    return;
+  }
+
+  emit_non_recursive_rule(line_list, normalized_rule);
+}
+
+function emit_recursive_rule(line_list, normalized_rule) {
+  for (const selector of normalized_rule.selector_list) {
+    line_list.push("for path in " + selector + "; do");
+    line_list.push("  test -e \"$path\" || continue");
+
+    if (normalized_rule.owner || normalized_rule.group) {
+      line_list.push(
+        "  apply_tree_owner_group \"$path\" " +
+        shell_quote(normalized_rule.owner) +
+        " " +
+        shell_quote(normalized_rule.group)
+      );
+    }
+
+    if (normalized_rule.file_mode || normalized_rule.directory_mode) {
+      line_list.push(
+        "  apply_tree_permissions \"$path\" " +
+        shell_quote(normalized_rule.file_mode) +
+        " " +
+        shell_quote(normalized_rule.directory_mode)
+      );
+    }
+
+    line_list.push("done");
+    line_list.push("");
+  }
+}
+
+function emit_non_recursive_rule(line_list, normalized_rule) {
+  line_list.push("for path in " + normalized_rule.selector_list.join(" ") + "; do");
+  line_list.push("  test -e \"$path\" || continue");
+
+  if (normalized_rule.owner || normalized_rule.group) {
+    line_list.push(
+      "  apply_path_owner_group \"$path\" " +
+      shell_quote(normalized_rule.owner) +
+      " " +
+      shell_quote(normalized_rule.group)
+    );
+  }
+
+  if (normalized_rule.file_mode || normalized_rule.directory_mode) {
+    line_list.push(
+      "  apply_path_permissions \"$path\" " +
+      shell_quote(normalized_rule.file_mode) +
+      " " +
+      shell_quote(normalized_rule.directory_mode)
+    );
+  }
+
+  line_list.push("done");
+  line_list.push("");
+}
+
+function permission_text_to_mode(permission_text, is_directory) {
+  const part_list = permission_text.split(",");
+  const normalized_part_list = [];
+
+  for (const part of part_list) {
+    normalized_part_list.push(part.trim());
+  }
+
+  while (normalized_part_list.length < 3) {
+    normalized_part_list.push("");
+  }
+
+  return normalized_part_list
+    .map((part) => permission_part_to_digit(part, is_directory))
+    .join("");
+}
+
+function permission_part_to_digit(permission_part, is_directory) {
+  let read = false;
+  let write = false;
+  let execute = false;
+
+  for (const character of permission_part) {
+    switch (character) {
+      case "r":
+        read = true;
+        break;
+      case "w":
+        write = true;
+        break;
+      case "x":
+        execute = true;
+        break;
+    }
+  }
+
+  if (is_directory && read) {
+    execute = true;
+  }
+
+  let digit = 0;
+
+  if (read) {
+    digit += 4;
+  }
+
+  if (write) {
+    digit += 2;
+  }
+
+  if (execute) {
+    digit += 1;
+  }
+
+  return String(digit);
+}
+
+function shell_quote(value) {
+  return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";
+}
+
+function is_plain_object(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+main();

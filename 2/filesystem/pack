@@ -13,10 +13,21 @@
 //   always derived from the stem name of the source
 //   archive extracts into a directory, others produce a file
 
-import { execFileSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, statSync } from "node:fs";
-import { basename } from "node:path";
-import { tmpdir } from "node:os";
+import {
+  execFileSync
+} from "node:child_process";
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  statSync
+} from "node:fs";
+import {
+  basename
+} from "node:path";
+import {
+  tmpdir
+} from "node:os";
 
 function parse_options(argument_list, option_config) {
   const options = {};
@@ -51,23 +62,32 @@ function parse_options(argument_list, option_config) {
     rest.push(argument_list[index]);
   }
 
-  return { options, rest };
+  return {
+    options,
+    rest
+  };
 }
 
-const parsed = parse_options(process.argv.slice(2), {
-  "-c": { requires_value: false },
-  "-e": { requires_value: false }
-});
-
-const options = parsed.options;
-const rest = parsed.rest;
-const mode = rest[0];
-const list = rest.slice(1);
+const argument_list = process.argv.slice(2);
+const mode = argument_list[0];
 const root = mkdtempSync(`${tmpdir()}/pack-`);
 const path = word => `${root}/${word}`;
-const run = (program, words) => execFileSync(program, words, { stdio: "inherit" });
+const run = (program, words) => execFileSync(program, words, {
+  stdio: "inherit"
+});
 
 if (mode === "add") {
+  const parsed = parse_options(argument_list.slice(1), {
+    "-c": {
+      requires_value: false
+    },
+    "-e": {
+      requires_value: false
+    }
+  });
+
+  const options = parsed.options;
+  const list = parsed.rest;
   const use_compression = !!options["-c"];
   const use_encryption = !!options["-e"];
   const use_archive = list.length > 1 || statSync(list[0]).isDirectory();
@@ -98,7 +118,8 @@ if (mode === "add") {
 
   if (input !== output) cpSync(input, output);
 } else if (mode === "remove") {
-  const source = list[0];
+  const parsed = parse_options(argument_list.slice(1), {});
+  const source = parsed.rest[0];
   let stem = basename(source);
   let has_archive = false;
   let has_compression = false;
@@ -134,7 +155,9 @@ if (mode === "add") {
   }
 
   if (has_archive) {
-    mkdirSync(stem, { recursive: true });
+    mkdirSync(stem, {
+      recursive: true
+    });
     run("tar", ["-xf", input, "-C", stem]);
   } else {
     cpSync(input, stem);

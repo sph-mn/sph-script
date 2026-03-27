@@ -1,2 +1,12 @@
 #!/bin/sh
-while read line; do echo "$1$line$1"; done
+
+if test -n "$2"
+then
+  suffix="$2"
+else
+  suffix="$1"
+fi
+
+echo $suffix
+
+while read line; do echo "$1$line$suffix"; done

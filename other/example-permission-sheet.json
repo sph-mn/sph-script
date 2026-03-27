@@ -1,0 +1,84 @@
+[
+  "/a",
+  {
+    "owner": "u1",
+    "group": "g1",
+    "recursive": true,
+    "file_permissions": "rw",
+    "directory_permissions": "rwx"
+  },
+
+  [
+    "b",
+    {
+      "permissions": "r"
+    }
+  ],
+
+  [
+    "c/*",
+    {
+      "permissions": "rw,r,r"
+    }
+  ],
+
+  [
+    ["d", "e"],
+    {
+      "owner": "u2",
+      "group": "g2"
+    }
+  ],
+
+  [
+    "f",
+    {
+      "recursive": true
+    },
+
+    [
+      "g",
+      {
+        "permissions": "rwx"
+      }
+    ],
+
+    [
+      "h/*",
+      {
+        "owner": "u3"
+      }
+    ],
+
+    [
+      "/x/y",
+      {
+        "group": "g4",
+        "permissions": "rw"
+      }
+    ]
+  ]
+],
+
+[
+  ["/1", "/2/*"],
+  {
+    "permissions": "r"
+  }
+],
+
+[
+  "/3",
+  {
+    "owner": "u5",
+    "group": "g5"
+  }
+],
+
+[
+  "/4",
+  {
+    "recursive": true,
+    "permissions": "rw"
+  }
+]
