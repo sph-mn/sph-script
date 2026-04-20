@@ -3,4 +3,4 @@
 # recursively in ".", list relative paths where the path itself contains all input strings.
 # arguments: [lines-filter-option ...] string ...
 
-find . -type d \( -name node_modules -o -name .git -o -name cache -o -name vendor \) -prune -o -print | lines-filter "$@"
+find . -type d \( -name node_modules -o -name .git -o -name cache -o -name vendor \) -prune -o -print 2>/dev/null | lines-filter "$@"

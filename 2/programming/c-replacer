@@ -1,0 +1,414 @@
+#!/usr/bin/coffee
+fs = require "fs"
+class stream_partition
+  @split: (text) ->
+    separator = "\n\n---\n\n"
+    separator_index = text.indexOf separator
+    if separator_index <= 0
+      return {
+        has_separator: false
+        command_text: ""
+        content_text: text
+      }
+    separator_end = separator_index + separator.length
+    if separator_end >= text.length
+      return {
+        has_separator: false
+        command_text: ""
+        content_text: text
+      }
+    {
+      has_separator: true
+      command_text: text.slice(0, separator_index)
+      content_text: text.slice(separator_end)
+    }
+class c_lex
+  constructor: (@text) ->
+  scan: (callbacks = {}) ->
+    text = @text
+    text_length = text.length
+    index = 0
+    escape = false
+    line_start_candidate = true
+    state = {
+      in_block_comment: false
+      in_line_comment: false
+      in_preprocessor: false
+      in_string: false
+      in_char: false
+      brace_depth: 0
+      paren_depth: 0
+      bracket_depth: 0
+      line_start_candidate: true
+    }
+    while index < text_length
+      char = text[index]
+      next_char = text[index + 1]
+      state.line_start_candidate = line_start_candidate
+      if state.in_block_comment
+        if char is "*" and next_char is "/"
+          state.in_block_comment = false
+          line_start_candidate = false
+          index += 2
+          continue
+        line_start_candidate = char is "\n"
+        index += 1
+        continue
+      if state.in_line_comment
+        if char is "\n"
+          state.in_line_comment = false
+          line_start_candidate = true
+        else
+          line_start_candidate = false
+        index += 1
+        continue
+      if state.in_preprocessor
+        if callbacks.on_code_char?
+          callbacks.on_code_char char, index, state
+        if char is "\n" and not escape
+          state.in_preprocessor = false
+          line_start_candidate = true
+        else
+          line_start_candidate = false
+        escape = char is "\\" and not escape
+        if char isnt "\\"
+          escape = false
+        index += 1
+        continue
+      if state.in_string
+        if char is "\"" and not escape
+          state.in_string = false
+        if char is "\\" and not escape
+          escape = true
+        else
+          escape = false
+        line_start_candidate = char is "\n"
+        index += 1
+        continue
+      if state.in_char
+        if char is "'" and not escape
+          state.in_char = false
+        if char is "\\" and not escape
+          escape = true
+        else
+          escape = false
+        line_start_candidate = char is "\n"
+        index += 1
+        continue
+      if line_start_candidate and char is "#"
+        state.in_preprocessor = true
+        if callbacks.on_code_char?
+          callbacks.on_code_char char, index, state
+        line_start_candidate = false
+        index += 1
+        continue
+      if char is "/" and next_char is "*"
+        state.in_block_comment = true
+        line_start_candidate = false
+        index += 2
+        continue
+      if char is "/" and next_char is "/"
+        state.in_line_comment = true
+        line_start_candidate = false
+        index += 2
+        continue
+      if char is "\""
+        if callbacks.on_code_char?
+          callbacks.on_code_char char, index, state
+        state.in_string = true
+        escape = false
+        line_start_candidate = false
+        index += 1
+        continue
+      if char is "'"
+        if callbacks.on_code_char?
+          callbacks.on_code_char char, index, state
+        state.in_char = true
+        escape = false
+        line_start_candidate = false
+        index += 1
+        continue
+      if callbacks.on_code_char?
+        callbacks.on_code_char char, index, state
+      if char is "("
+        state.paren_depth += 1
+      else if char is ")"
+        state.paren_depth -= 1
+      else if char is "["
+        state.bracket_depth += 1
+      else if char is "]"
+        state.bracket_depth -= 1
+      else if char is "{"
+        state.brace_depth += 1
+      else if char is "}"
+        state.brace_depth -= 1
+      if char is "\n"
+        line_start_candidate = true
+      else
+        line_start_candidate = false
+      index += 1
+  first_words: (count) ->
+    words = []
+    current = ""
+    @scan {
+      on_code_char: (char) ->
+        return if words.length >= count
+        if /[A-Za-z0-9_]/.test char
+          current += char
+          return
+        if current.length
+          words.push current
+          current = ""
+    }
+    if current.length and words.length < count
+      words.push current
+    words
+  extract_units: ->
+    units = []
+    unit_start = -1
+    unit_kind = ""
+    @scan {
+      on_code_char: (char, index, state) =>
+        if unit_start < 0
+          if state.brace_depth is 0 and state.line_start_candidate and not /\s/.test char
+            unit_start = index
+            unit_kind = @detect_unit_kind index
+          return
+        if char is "}" and state.brace_depth is 1 and unit_kind is "function"
+          units.push {
+            start_offset: unit_start
+            end_offset: index + 1
+            text: @text.slice(unit_start, index + 1)
+          }
+          unit_start = -1
+          unit_kind = ""
+          return
+        if char is ";" and state.brace_depth is 0 and state.paren_depth is 0 and state.bracket_depth is 0
+          units.push {
+            start_offset: unit_start
+            end_offset: index + 1
+            text: @text.slice(unit_start, index + 1)
+          }
+          unit_start = -1
+          unit_kind = ""
+    }
+    units
+  detect_unit_kind: (start_index) ->
+    lex = new c_lex @text.slice start_index
+    words = lex.first_words 2
+    return "aggregate" if words[0] is "typedef"
+    return "aggregate" if words[0] is "struct"
+    return "aggregate" if words[0] is "union"
+    "function"
+  find_top_level_brace_pair: ->
+    open_index = -1
+    close_index = -1
+    @scan {
+      on_code_char: (char, index, state) ->
+        if char is "{" and state.brace_depth is 0 and open_index < 0
+          open_index = index
+          return
+        if char is "}" and state.brace_depth is 1 and open_index >= 0 and close_index < 0
+          close_index = index
+    }
+    return null unless open_index >= 0 and close_index >= 0
+    {
+      open_index: open_index
+      close_index: close_index
+    }
+  find_last_top_level_open_paren: ->
+    last_index = -1
+    @scan {
+      on_code_char: (char, index, state) ->
+        if char is "(" and state.paren_depth is 0 and state.bracket_depth is 0
+          last_index = index
+    }
+    last_index
+class binding_unit
+  @parse_supported_unit: (text, start_offset = 0) ->
+    unit = @parse text, start_offset
+    return unit if unit? and unit.supported
+    null
+  @parse: (text, start_offset = 0) ->
+    trimmed = text.trim()
+    return null unless trimmed.length
+    aggregate = @parse_aggregate trimmed, start_offset
+    return aggregate if aggregate?
+    function_unit = @parse_function trimmed, start_offset
+    return function_unit if function_unit?
+    null
+  @parse_aggregate: (text, start_offset) ->
+    head = /^\s*(typedef\s+)?(struct|union)\b/.exec text
+    return null unless head?
+    lex = new c_lex text
+    body = lex.find_top_level_brace_pair()
+    return null unless body?
+    kind = head[2]
+    is_typedef = !!head[1]
+    if is_typedef
+      suffix = text.slice body.close_index + 1
+      name = @last_identifier_before_semicolon suffix
+      return null unless name?
+      return {
+        kind: kind
+        name: name
+        key: "#{kind}:#{name}"
+        start_offset: start_offset
+        end_offset: start_offset + text.length
+        text: text
+        supported: true
+      }
+    prefix = text.slice 0, body.open_index
+    match = /^\s*(struct|union)\s+([A-Za-z_]\w*)\b/.exec prefix
+    return null unless match?
+    return null unless match[1] is kind
+    name = match[2]
+    {
+      kind: kind
+      name: name
+      key: "#{kind}:#{name}"
+      start_offset: start_offset
+      end_offset: start_offset + text.length
+      text: text
+      supported: true
+    }
+  @parse_function: (text, start_offset) ->
+    return null unless /\}\s*$/.test text
+    lex = new c_lex text
+    body = lex.find_top_level_brace_pair()
+    return null unless body?
+    return null unless body.close_index is text.length - 1
+    prefix = text.slice 0, body.open_index
+    prefix_lex = new c_lex prefix
+    paren_index = prefix_lex.find_last_top_level_open_paren()
+    return null unless paren_index >= 0
+    name = @identifier_before prefix, paren_index
+    return null unless name?
+    {
+      kind: "function"
+      name: name
+      key: "function:#{name}"
+      start_offset: start_offset
+      end_offset: start_offset + text.length
+      text: text
+      supported: true
+    }
+  @identifier_before: (text, index) ->
+    position = index - 1
+    while position >= 0 and /\s/.test text[position]
+      position -= 1
+    end = position + 1
+    while position >= 0 and /[A-Za-z0-9_]/.test text[position]
+      position -= 1
+    return null if end <= position + 1
+    name = text.slice position + 1, end
+    return name if /^[A-Za-z_]\w*$/.test name
+    null
+  @last_identifier_before_semicolon: (text) ->
+    match = /([A-Za-z_]\w*)\s*;\s*$/.exec text
+    return null unless match?
+    match[1]
+class diagnostics
+  @describe_invalid_command_text: (command_text, units) ->
+    lines = []
+    lines.push "invalid command text"
+    if units.length is 0
+      lines.push "extracted top-level units: 0"
+      lines.push "command preview: #{@preview command_text, 240}"
+      return lines.join "\n"
+    lines.push "extracted top-level units: #{units.length}"
+    unit_index = 0
+    while unit_index < units.length
+      unit = units[unit_index]
+      parsed = binding_unit.parse unit.text, 0
+      preview = @preview unit.text
+      if parsed?
+        lines.push "unit #{unit_index + 1}: supported #{parsed.key} at offsets #{unit.start_offset} to #{unit.end_offset} :: #{preview}"
+      else
+        lines.push "unit #{unit_index + 1}: unsupported at offsets #{unit.start_offset} to #{unit.end_offset} :: #{preview}"
+      unit_index += 1
+    lines.join "\n"
+  @preview: (text, limit = 120) ->
+    normalized = text.replace /\s+/g, " "
+    return normalized if normalized.length <= limit
+    normalized.slice(0, limit - 3) + "..."
+class command_set
+  @parse: (command_text) ->
+    return [] unless /\S/.test command_text
+    scanner = new c_lex command_text
+    units = scanner.extract_units()
+    commands = []
+    seen = new Map()
+    if units.length is 0
+      throw new Error diagnostics.describe_invalid_command_text command_text, units
+    unit_index = 0
+    while unit_index < units.length
+      unit = units[unit_index]
+      command = binding_unit.parse_supported_unit unit.text, 0
+      unless command?
+        throw new Error diagnostics.describe_invalid_command_text command_text, units
+      if seen.has command.key
+        throw new Error "duplicate command for #{command.key}"
+      seen.set command.key, true
+      commands.push command
+      unit_index += 1
+    commands
+class replacement_engine
+  @index_content: (content_text) ->
+    scanner = new c_lex content_text
+    units = scanner.extract_units()
+    index = new Map()
+    unit_index = 0
+    while unit_index < units.length
+      unit = units[unit_index]
+      parsed = binding_unit.parse_supported_unit unit.text, unit.start_offset
+      unit_index += 1
+      continue unless parsed?
+      if index.has parsed.key
+        throw new Error "duplicate content binding for #{parsed.key}"
+      index.set parsed.key, parsed
+    index
+  @apply: (commands, content_text) ->
+    content_index = @index_content content_text
+    replacements = []
+    command_index = 0
+    while command_index < commands.length
+      command = commands[command_index]
+      target = content_index.get command.key
+      unless target?
+        throw new Error "missing binding for #{command.key}"
+      replacements.push {
+        start_offset: target.start_offset
+        end_offset: target.end_offset
+        text: command.text
+      }
+      command_index += 1
+    replacements.sort (left, right) -> right.start_offset - left.start_offset
+    result = content_text
+    replacement_index = 0
+    while replacement_index < replacements.length
+      replacement = replacements[replacement_index]
+      result =
+        result.slice(0, replacement.start_offset) +
+        replacement.text +
+        result.slice(replacement.end_offset)
+      replacement_index += 1
+    result
+class main
+  @run: ->
+    input_text = fs.readFileSync 0, "utf8"
+    partition = stream_partition.split input_text
+    unless partition.has_separator
+      process.stdout.write partition.content_text
+      return
+    unless /\S/.test partition.command_text
+      process.stdout.write partition.content_text
+      return
+    try
+      commands = command_set.parse partition.command_text
+      output_text = replacement_engine.apply commands, partition.content_text
+      process.stdout.write output_text
+    catch error
+      process.stderr.write "#{error.message}\n"
+      process.exit 1
+main.run()

@@ -316,3 +316,52 @@ pack remove dir.tar.zst.e
 ->
 dir/
 ```
+
+# c-replacer
+`c-replacer` performs structural rewriting of C source files.
+
+It operates on top-level units such as functions or type definitions, not on arbitrary text fragments. Input is partitioned into units, matched against replacement instructions, and selectively rewritten.
+
+The goal is deterministic, machine-oriented transformation of C code without partial edits or ambiguous matches.
+## Model
+The program enforces three constraints:
+* input is split into top-level units starting at column 0
+* replacements apply only to entire units
+* separators are explicit and not part of content
+
+Units are separated by:
+```
+
+---
+
+```
+This separator is structural and never included in output units.
+## Usage
+Pipe a source file into the program:
+```
+cat input.c | c-replacer
+```
+or:
+```
+c-replacer < input.c
+```
+The program reads from stdin and writes the transformed result to stdout.
+## Input structure
+The input consists of two regions:
+* instruction area
+* content area
+
+These are separated by the same unit separator:
+```
+
+---
+
+```
+The instruction area defines replacement operations.
+The content area contains the C code to transform.
+## Requirements
+* top-level units must start at column 0
+* no indentation before unit definitions
+* separators must match exactly `\n\n---\n\n`
+
+Deviation from these constraints leads to undefined behavior.

@@ -24,7 +24,7 @@ do
 done
 if test $# -eq 0
 then
-  echo "usage: $0 [-s] [-l] [-o opts] source ..."
+  echo "arguments: [-s] [-l] [-o opts] source ..."
   echo "mount_dir: $mount_dir"
   exit
 fi
