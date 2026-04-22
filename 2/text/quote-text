@@ -1,0 +1,14 @@
+#!/usr/bin/env node
+
+import { readFileSync } from "node:fs";
+
+const args = process.argv.slice(2);
+const wrap = (s) => `~~~\n${s.replace(/\s+$/, "")}\n~~~`;
+
+if (args.length === 0) {
+  process.stdout.write(wrap(readFileSync(0, "utf8")) + "\n");
+} else {
+  process.stdout.write(
+    args.map(p => `${p}\n${wrap(readFileSync(p, "utf8"))}`).join("\n\n") + "\n"
+  );
+}
