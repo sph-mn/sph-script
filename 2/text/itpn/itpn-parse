@@ -16,6 +16,7 @@ def canonicalize(input_io, indent_width)
   end
 end
 file_paths = ARGV.empty? ? ["-"] : ARGV
+file_line = nil
 begin
   file_paths.each do |path|
     input_io = path == "-" ? STDIN : File.open(path, "r")
