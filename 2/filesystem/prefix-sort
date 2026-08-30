@@ -1,63 +1,94 @@
-#!/usr/bin/guile
-!#
+#!/usr/bin/env node
 
-(define description
-  "group files into directories based on delimiter separated prefixes, if at least two files with the given prefix exist.
-   for example, a.1 and a.2 are moved to a/a.1 and a/a.2. the default delimiter is \".\".
-   depends on guile and sph-lib")
+const fs = require("node:fs");
+const path = require("node:path");
 
-(use-modules (sph) (sph cli)
-  (sph list) (sph list other)
-  (sph alist) (ice-9 pretty-print) (srfi srfi-1) (sph filesystem) (sph string))
+function parse_arguments(values) {
+  let run = false;
+  let delimiter = ".";
+  let index = 0;
 
-(define default-delimiter #\.)
+  while (index < values.length && values[index][0] === "-") {
+    if (values[index] === "-r") {
+      run = true;
+      index += 1;
+    } else if (values[index] === "-d") {
+      delimiter = values[index + 1];
+      index += 2;
+    } else {
+      throw new Error("unknown option: " + values[index]);
+    }
+  }
 
-(define (prefix-sort-action-data delimiter paths)
-  (let*
-    ( (paths (map path->full-path paths))
-      (prefixes-and-paths
-        (let*
-          ( (basenames (map basename paths)) (dirnames (map dirname paths))
-            (prefixes (map (l (a) (first (string-split a delimiter))) basenames)))
-          (filter-map
-            (l (prefix dir base)
-              (let (prefix-count (count (l (a) (string-equal? prefix a)) prefixes))
-                (and (< 1 prefix-count)
-                  (let
-                    ((target (string-append dir "/" prefix)) (source (string-append dir "/" base)))
-                    (and (not (string-equal? target source)) (pair target source))))))
-            prefixes dirnames basenames))))
-    (map-apply (l (target . sources) (pair target (map tail sources)))
-      (group prefixes-and-paths first))))
+  return {
+    run,
+    delimiter,
+    paths: values.slice(index)
+  };
+}
 
-(define (dry-run-f name) (l a (pretty-print (pair name a))))
+function make_actions(delimiter, paths) {
+  const groups = new Map();
 
-(define (prefix-sort dry-run? delimiter paths)
-  (let
-    ( (rename-file (if dry-run? (dry-run-f (q rename-file)) rename-file))
-      (mkdir (if dry-run? (dry-run-f (q mkdir)) mkdir)))
-    (each
-      (l (target-and-sources)
-        (catch #t
-          (nullary
-            (let (target (first target-and-sources))
-              (if (not (file-exists? target)) (mkdir target))
-              (each (l (source) (rename-file source (string-append target "/" (basename source))))
-                (tail target-and-sources))))
-          (l a (display-line (append a target-and-sources)))))
-      (prefix-sort-action-data delimiter paths))))
+  for (const value of paths) {
+    const source = path.resolve(value);
+    const target = path.join(
+      path.dirname(source),
+      path.basename(source).split(delimiter, 1)[0]
+    );
 
-(define (prefix-sort-cli)
-  (let*
-    ( (cli
-        (cli-create #:options
-          (q ((delimiter #:names #\d #:value-required? #t) (dry-run) ((paths ...)))) #:description
-          description))
-      (arguments (cli))
-      (delimiter
-        (let (a (alist-ref-q arguments delimiter))
-          (if (and (string? a) (= 1 (string-length a))) (string-ref a 0) default-delimiter))))
-    (prefix-sort (alist-ref-q arguments dry-run) delimiter
-      (any->list (alist-ref-q arguments paths)))))
+    if (source === target)
+      continue;
 
-(prefix-sort-cli)
+    if (!groups.has(target))
+      groups.set(target, []);
+
+    groups.get(target).push(source);
+  }
+
+  return [...groups]
+    .filter(([, sources]) => sources.length > 1)
+    .map(([target, sources]) => ({target, sources}));
+}
+
+function verify_actions(actions) {
+  for (const action of actions) {
+    if (fs.existsSync(action.target) && !fs.statSync(action.target).isDirectory())
+      throw new Error("target is not a directory: " + action.target);
+
+    for (const source of action.sources) {
+      const destination = path.join(action.target, path.basename(source));
+
+      fs.statSync(source);
+
+      if (fs.existsSync(destination))
+        throw new Error("destination exists: " + destination);
+    }
+  }
+}
+
+function prefix_sort(run, delimiter, paths) {
+  const actions = make_actions(delimiter, paths);
+
+  verify_actions(actions);
+
+  for (const action of actions) {
+    if (run) {
+      if (!fs.existsSync(action.target))
+        fs.mkdirSync(action.target);
+
+      for (const source of action.sources)
+        fs.renameSync(source, path.join(action.target, path.basename(source)));
+    } else {
+      if (!fs.existsSync(action.target))
+        console.log("mkdir", action.target);
+
+      for (const source of action.sources)
+        console.log("rename", source, path.join(action.target, path.basename(source)));
+    }
+  }
+}
+
+const options = parse_arguments(process.argv.slice(2));
+
+prefix_sort(options.run, options.delimiter, options.paths);

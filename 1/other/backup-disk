@@ -7,6 +7,9 @@ Configuration files define source paths, target locations, and inclusion or excl
 Eligible subdirectories are discovered via filesystem traversal, filtered, and collapsed to minimal prefixes.
 
 For each available disk, rsync is invoked with a generated file list to perform incremental synchronization.
+Destination paths outside the currently selected source prefixes are removed so that each target is a real mirror
+of its configured source selection.
+
 Supports dry-run mode by default, explicit execution via "-r", and udev trigger via "-t".
 Tasks are grouped per disk and executed concurrently across disks.
 */
@@ -78,52 +81,88 @@ class backup_disk_class {
     const sorted = paths_list.slice().sort()
     const output = []
     let previous = null
-    for (const p of sorted)
-      if (previous === null || !p.startsWith(previous + "/")) {
-        output.push(p)
-        previous = p
+    for (const current_path of sorted)
+      if (previous === null || !current_path.startsWith(previous + "/")) {
+        output.push(current_path)
+        previous = current_path
       }
     return output
   }
 
-  escape_re(s) {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  escape_re(value) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
   }
 
   eligible_relative_paths(source_path, entry) {
-    let stdout_text = ""
-    try {
-      stdout_text = child_process.execFileSync("find", [source_path, "-xdev", "-type", "d"], {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "ignore"],
-        maxBuffer: this.max_buffer_size
-      })
-    } catch (err) {
-      if (typeof err.stdout === "string" && err.stdout.length > 0) stdout_text = err.stdout
-      else stdout_text = ""
-    }
-    if (!stdout_text || stdout_text.length === 0) return []
+    const find_result = child_process.spawnSync("find", [source_path, "-xdev", "-type", "d"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      maxBuffer: this.max_buffer_size
+    })
+    const stdout_text = typeof find_result.stdout === "string" ? find_result.stdout : ""
+    if (!stdout_text) return []
+
     const root_re = new RegExp("^" + this.escape_re(source_path) + "/?")
     const include_literals = entry.includes || null
     const exclude_literals = entry.excludes || null
-    const include_regexes = entry.include_filter ? entry.include_filter.map(p => new RegExp(p)) : null
-    const exclude_regexes = entry.exclude_filter ? entry.exclude_filter.map(p => new RegExp(p)) : null
+    const include_regexes = entry.include_filter ? entry.include_filter.map(pattern => new RegExp(pattern)) : null
+    const exclude_regexes = entry.exclude_filter ? entry.exclude_filter.map(pattern => new RegExp(pattern)) : null
     const relative_paths = []
+
     for (const line of stdout_text.split(/\r?\n/)) {
       const relative = line.trim().replace(root_re, "")
       if (!relative) continue
-      const literal_included = !include_literals || include_literals.some(x => relative.startsWith(x))
-      const regex_included = !include_regexes || include_regexes.some(r => r.test(relative))
-      const literal_excluded = exclude_literals && exclude_literals.some(x => relative.includes(x))
-      const regex_excluded = exclude_regexes && exclude_regexes.some(r => r.test(relative))
+      const literal_included = !include_literals || include_literals.some(token => relative.startsWith(token))
+      const regex_included = !include_regexes || include_regexes.some(regex => regex.test(relative))
+      const literal_excluded = exclude_literals && exclude_literals.some(token => relative.includes(token))
+      const regex_excluded = exclude_regexes && exclude_regexes.some(regex => regex.test(relative))
       if (literal_included && regex_included && !literal_excluded && !regex_excluded) relative_paths.push(relative)
     }
+
     return this.collapse_prefixes(relative_paths)
   }
 
+  clean_destination(destination_path, relative_paths, dry_run_flag) {
+    const selected_paths = relative_paths.slice().sort()
+
+    const clean_directory = (directory_path, relative_path) => {
+      for (const directory_entry of fs.readdirSync(directory_path, {
+        withFileTypes: true
+      })) {
+        const child_relative_path = relative_path ?
+          relative_path + "/" + directory_entry.name :
+          directory_entry.name
+
+        if (selected_paths.includes(child_relative_path)) continue
+
+        const selected_descendant = selected_paths.some(
+          selected_path => selected_path.startsWith(child_relative_path + "/")
+        )
+        const child_path = path.join(directory_path, directory_entry.name)
+
+        if (selected_descendant && directory_entry.isDirectory()) {
+          clean_directory(child_path, child_relative_path)
+          continue
+        }
+
+        process.stdout.write("*deleting " + child_relative_path + "\n")
+        if (!dry_run_flag)
+          fs.rmSync(child_path, {
+            recursive: true,
+            force: true
+          })
+      }
+    }
+
+    clean_directory(destination_path, "")
+  }
+
   rsync_patterns_from_token(token) {
-    const t = token.replace(/^\/+/, "").replace(/\/$/, "")
-    return [`--exclude=**/*${t}*/**`, `--exclude=**/*${t}*`]
+    const normalized_token = token.replace(/^\/+/, "").replace(/\/$/, "")
+    return [
+      `--exclude=**/*${normalized_token}*/**`,
+      `--exclude=**/*${normalized_token}*`
+    ]
   }
 
   run_rsync(source_path, destination_path, relative_paths, entry, dry_run_flag) {
@@ -131,16 +170,33 @@ class backup_disk_class {
       const temporary_directory = fs.mkdtempSync(path.join(os.tmpdir(), "backup-disk-"))
       const list_file_path = path.join(temporary_directory, "rsync_list")
       fs.writeFileSync(list_file_path, relative_paths.join("\n"))
-      const rsync_arguments = ["--recursive", "--sparse", "--links", "--ignore-errors", "--one-file-system", "--delete", "--delete-before", "--size-only", "--itemize-changes"]
+
+      const rsync_arguments = [
+        "--recursive",
+        "--sparse",
+        "--links",
+        "--ignore-errors",
+        "--one-file-system",
+        "--delete",
+        "--delete-before",
+        "--delete-excluded",
+        "--size-only",
+        "--itemize-changes"
+      ]
+
       if (entry.excludes)
         for (const token of entry.excludes)
-          for (const pattern of this.rsync_patterns_from_token(token)) rsync_arguments.push(pattern)
+          for (const pattern of this.rsync_patterns_from_token(token))
+            rsync_arguments.push(pattern)
+
       rsync_arguments.push(`--files-from=${list_file_path}`)
       if (dry_run_flag) rsync_arguments.push("--dry-run")
       rsync_arguments.push(source_path, destination_path)
+
       const child = child_process.spawn("rsync", rsync_arguments, {
         stdio: ["ignore", "inherit", "inherit"]
       })
+
       child.on("close", code => {
         fs.rmSync(temporary_directory, {
           recursive: true,
@@ -149,12 +205,13 @@ class backup_disk_class {
         if (code === 0) resolve()
         else reject(new Error("rsync failed"))
       })
-      child.on("error", err => {
+
+      child.on("error", error => {
         fs.rmSync(temporary_directory, {
           recursive: true,
           force: true
         })
-        reject(err)
+        reject(error)
       })
     })
   }
@@ -178,32 +235,40 @@ class backup_disk_class {
   }
 
   async run_tasks_grouped(tasks_by_uuid, run_requested) {
-    const run_one_uuid = async (uuid, tasks) => {
+    const run_one_uuid = async (disk_uuid, tasks) => {
       let failed = false
+
       for (const [source_path, destination_path, relative_paths, entry] of tasks) {
         try {
-          await this.run_rsync(
-            source_path,
+          this.clean_destination(
             destination_path,
             relative_paths,
-            entry,
             !run_requested
           )
-        } catch (e) {
+
+          if (relative_paths.length > 0)
+            await this.run_rsync(
+              source_path,
+              destination_path,
+              relative_paths,
+              entry,
+              !run_requested
+            )
+        } catch (error) {
           failed = true
-          process.stderr.write(e.message + "\n")
+          process.stderr.write(error.message + "\n")
         }
       }
+
       return failed
     }
 
     const per_uuid_promises = []
-    for (const [uuid, tasks] of tasks_by_uuid.entries()) {
-      per_uuid_promises.push(run_one_uuid(uuid, tasks))
-    }
+    for (const [disk_uuid, tasks] of tasks_by_uuid.entries())
+      per_uuid_promises.push(run_one_uuid(disk_uuid, tasks))
 
     const results = await Promise.all(per_uuid_promises)
-    return results.some(x => x)
+    return results.some(result => result)
   }
 
   async main(argument_values) {
@@ -213,6 +278,7 @@ class backup_disk_class {
     }
     const parsed = simple_option_parser(argument_values, option_config)
     if (parsed.error) process.exit(1)
+
     const run_requested = !!parsed.options["-r"]
     const trigger_requested = !!parsed.options["-t"]
     const requested_names = parsed.rest
@@ -223,14 +289,13 @@ class backup_disk_class {
     }
 
     const configuration_files = requested_names.length > 0 ?
-      requested_names.map(x => path.join(this.configuration_directory, x + ".json")) :
+      requested_names.map(name => path.join(this.configuration_directory, name + ".json")) :
       fs.readdirSync(this.configuration_directory)
-      .filter(x => x.endsWith(".json"))
-      .map(x => path.join(this.configuration_directory, x))
+      .filter(name => name.endsWith(".json"))
+      .map(name => path.join(this.configuration_directory, name))
       .sort()
 
     const configuration_groups = this.read_configuration_groups(configuration_files)
-
     const tasks_by_uuid = new Map()
 
     for (const group of configuration_groups) {
@@ -243,6 +308,7 @@ class backup_disk_class {
 
         for (const entry of entry_list) {
           const source_path = entry.source
+
           if (
             !fs.existsSync(source_path) ||
             !fs.statSync(source_path).isDirectory() ||
@@ -262,13 +328,16 @@ class backup_disk_class {
           }
 
           const relative_paths = this.eligible_relative_paths(source_path, entry)
-          if (relative_paths.length === 0) {
-            console.log("no source files matched: \"" + source_path + "\"")
-            continue
-          }
 
-          if (!tasks_by_uuid.has(disk_uuid)) tasks_by_uuid.set(disk_uuid, [])
-          tasks_by_uuid.get(disk_uuid).push([source_path, destination_path, relative_paths, entry])
+          if (!tasks_by_uuid.has(disk_uuid))
+            tasks_by_uuid.set(disk_uuid, [])
+
+          tasks_by_uuid.get(disk_uuid).push([
+            source_path,
+            destination_path,
+            relative_paths,
+            entry
+          ])
         }
       }
     }
@@ -277,7 +346,5 @@ class backup_disk_class {
     process.exit(failed ? 1 : 0)
   }
 }
-
-
 
 new backup_disk_class().main(process.argv.slice(2))
