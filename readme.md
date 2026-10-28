@@ -38,7 +38,7 @@ binary, freemind2indent, hex, indent2freemind, sxml2xml, xml2sxml
 
 filesystem:
 clone-disk, delete-duplicate-files, file-size-sum, format-encrypt, gui-group, list-file-size, move-and-link, pack, prefix-sort, prepend-media-bitrate, remove-extension, set-permissions, tidyfiles
-create-filelist, fig-full, find-by-md5sum, get-unique-path, hardlink-to-copy, merge-files, name-add-date, permission-sheet-to-shell, prepend-date, prepend-to-filename, rename-lowercase, splice-if-single
+create-filelist, fig-full, find-by-md5sum, get-unique-path, hardlink-to-copy, merge-files, name-add-date, prepend-date, prepend-to-filename, rename-lowercase, splice-if-single
 
 git:
 git-changes, git-log-commit, git-log-diff, git-log-file, git-log-short, git-push, git-status
@@ -206,38 +206,6 @@ test
 * merge-stereo-videos: combine videos side-by-side
 * split-stereo-video: split stereo video
 * merge-stereo-images: combine images side-by-side
-
-## permission-sheet-to-shell
-define filesystem permissions in a json file with css-like logic.
-permission-sheet-to-shell will compile this json file to a shell script that ensures the permissions are set accordingly whenever the script is run.
-
-example sheet:
-~~~
-[
-  "/root",
-  {
-    "owner": "root",
-    "group": "root",
-    "recursive": true,
-    "file_permissions": "rw",
-    "directory_permissions": "rwx"
-  },
-  [
-    "exe/*",
-    { "permissions": "rwx" }
-  ]
-],
-[
-  "/srv/http",
-  {
-    "owner": "nonroot",
-    "group": "http",
-    "recursive": true
-  }
-]
-~~~
-
-see [other/doc/permission-sheets.md](other/doc/permission-sheets.md)
 
 ## backup-disk
 define rsync filters and destination uuids in configuration files.

@@ -1,31 +1,38 @@
 #!/bin/sh
 
-# mount filesystem then search for image and video files and move them into an automatically created directory.
+# mount filesystem then search for image and video files and move them into automatically created directories.
 # prepends the current date to file names and lowercases the file names (this also changes .JPG to .jpg).
 # example: get-photos /dev/sdb1
 
 sudo umount /mnt/photos --quiet
-m="/mnt/photos"
-mkdir -p "$m"
-sudo mount "$1" -o rw,umask=000,errors=continue "$m"
-filename_regexp="(.jpg|.mp4|.rw2)$"
+mount_path="/mnt/photos"
+mkdir -p "$mount_path"
+sudo mount "$1" -o rw,umask=000,errors=continue "$mount_path"
 
-if test 0 = $(find "$m" -type f | grep -iE $filename_regexp | wc -l)
+if test 0 = $(find "$mount_path" -type f | grep -iE '(.jpg|.mp4|.rw2)$' | wc -l)
 then
   echo no files found
-  sudo umount "$m"
+  sudo umount "$mount_path"
   exit
 fi
 
 year=$(date +%Y)
 year_month=$(date +%Y-%m)
-t="/home/nonroot/personal/photos/$year/0/$year_month"
-mkdir -p "$t"
-cd "$t"
 
-# --no-clobber prevents overwriting existing files
-find "$m" -type f | grep -iE $filename_regexp | nargs /usr/bin/mv --no-clobber --target-directory=.
+photo_path="/home/nonroot/personal/photos/$year/0/$year_month"
+video_path="/home/nonroot/personal/videos/$year/0/$year_month"
+
+mkdir -p "$photo_path" "$video_path"
+
+find "$mount_path" -type f | grep -iE '(.jpg|.rw2)$' | nargs /usr/bin/mv --no-clobber --target-directory="$photo_path"
+find "$mount_path" -type f | grep -iE '(.mp4)$' | nargs /usr/bin/mv --no-clobber --target-directory="$video_path"
+
+cd "$photo_path"
 find . -type f | nargs prepend-date
 find . -type f | nargs rename-lowercase
 
-sudo umount "$m"
+cd "$video_path"
+find . -type f | nargs prepend-date
+find . -type f | nargs rename-lowercase
+
+sudo umount "$mount_path"
