@@ -1,350 +1,264 @@
 #!/usr/bin/env node
-
-/*
-Copies selected directory subsets to mounted backup disks identified by UUID.
-
-Configuration files define source paths, target locations, and inclusion or exclusion rules.
-Eligible subdirectories are discovered via filesystem traversal, filtered, and collapsed to minimal prefixes.
-
-For each available disk, rsync is invoked with a generated file list to perform incremental synchronization.
-Destination paths outside the currently selected source prefixes are removed so that each target is a real mirror
-of its configured source selection.
-
-Supports dry-run mode by default, explicit execution via "-r", and udev trigger via "-t".
-Tasks are grouped per disk and executed concurrently across disks.
-*/
-
-const fs = require("fs")
-const os = require("os")
-const path = require("path")
-const child_process = require("child_process")
-
-function simple_option_parser(argument_list, option_config) {
-  const options = {};
-  const rest = [];
-  const length = argument_list.length;
-  let index = 0;
-  while (index < length) {
-    const value = argument_list[index];
-    if (value === "--") {
-      index += 1;
-      break;
+const fs = require("node:fs/promises")
+const {COPYFILE_FICLONE} = require("node:fs").constants
+const os = require("node:os")
+const path = require("node:path")
+const {execFile, execFileSync} = require("node:child_process")
+const execute = require("node:util").promisify(execFile)
+function parse_options(args) {
+  let run = false
+  let trigger = false
+  let index = 0
+  while (index < args.length) {
+    const arg = args[index]
+    if (arg === "--") {
+      index += 1
+      break
     }
-    if (value.length !== 2) break;
-    if (value.charCodeAt(0) !== 45) break;
-    if (value.charCodeAt(1) === 45) break;
-    const option_data = option_config[value];
-    if (!option_data) return {
-      error: 1,
-      options: {},
-      rest: []
-    };
-    if (option_data.requires_value) {
-      if (index + 1 >= length) return {
-        error: 1,
-        options: {},
-        rest: []
-      };
-      index += 1;
-      options[value] = argument_list[index];
-      index += 1;
-    } else {
-      options[value] = true;
-      index += 1;
-    }
+    if (arg.length !== 2 || !arg.startsWith("-")) break
+    if (arg === "-r") run = true
+    else if (arg === "-t") trigger = true
+    else throw new Error("unknown option: " + arg)
+    index += 1
   }
-  for (; index < length; index += 1) rest.push(argument_list[index]);
-  return {
-    error: 0,
-    options,
-    rest
-  };
+  return {run, trigger, names: args.slice(index)}
 }
-
-class backup_disk_class {
-  constructor() {
-    this.configuration_directory = path.join(os.homedir(), ".config", "backup-disk")
-    this.max_buffer_size = Math.floor(os.totalmem() * 0.5)
-  }
-
-  mount_point_for_uuid(disk_uuid) {
-    try {
-      return child_process.execFileSync("findmnt", ["-n", "-o", "TARGET", `/dev/disk/by-uuid/${disk_uuid}`], {
-        encoding: "utf8"
-      }).trim()
-    } catch {
-      return ""
-    }
-  }
-
-  collapse_prefixes(paths_list) {
-    const sorted = paths_list.slice().sort()
-    const output = []
-    let previous = null
-    for (const current_path of sorted)
-      if (previous === null || !current_path.startsWith(previous + "/")) {
-        output.push(current_path)
-        previous = current_path
-      }
-    return output
-  }
-
-  escape_re(value) {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-  }
-
-  eligible_relative_paths(source_path, entry) {
-    const find_result = child_process.spawnSync("find", [source_path, "-xdev", "-type", "d"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-      maxBuffer: this.max_buffer_size
-    })
-    const stdout_text = typeof find_result.stdout === "string" ? find_result.stdout : ""
-    if (!stdout_text) return []
-
-    const root_re = new RegExp("^" + this.escape_re(source_path) + "/?")
-    const include_literals = entry.includes || null
-    const exclude_literals = entry.excludes || null
-    const include_regexes = entry.include_filter ? entry.include_filter.map(pattern => new RegExp(pattern)) : null
-    const exclude_regexes = entry.exclude_filter ? entry.exclude_filter.map(pattern => new RegExp(pattern)) : null
-    const relative_paths = []
-
-    for (const line of stdout_text.split(/\r?\n/)) {
-      const relative = line.trim().replace(root_re, "")
-      if (!relative) continue
-      const literal_included = !include_literals || include_literals.some(token => relative.startsWith(token))
-      const regex_included = !include_regexes || include_regexes.some(regex => regex.test(relative))
-      const literal_excluded = exclude_literals && exclude_literals.some(token => relative.includes(token))
-      const regex_excluded = exclude_regexes && exclude_regexes.some(regex => regex.test(relative))
-      if (literal_included && regex_included && !literal_excluded && !regex_excluded) relative_paths.push(relative)
-    }
-
-    return this.collapse_prefixes(relative_paths)
-  }
-
-  clean_destination(destination_path, relative_paths, dry_run_flag) {
-    const selected_paths = relative_paths.slice().sort()
-
-    const clean_directory = (directory_path, relative_path) => {
-      for (const directory_entry of fs.readdirSync(directory_path, {
-        withFileTypes: true
-      })) {
-        const child_relative_path = relative_path ?
-          relative_path + "/" + directory_entry.name :
-          directory_entry.name
-
-        if (selected_paths.includes(child_relative_path)) continue
-
-        const selected_descendant = selected_paths.some(
-          selected_path => selected_path.startsWith(child_relative_path + "/")
-        )
-        const child_path = path.join(directory_path, directory_entry.name)
-
-        if (selected_descendant && directory_entry.isDirectory()) {
-          clean_directory(child_path, child_relative_path)
-          continue
-        }
-
-        process.stdout.write("*deleting " + child_relative_path + "\n")
-        if (!dry_run_flag)
-          fs.rmSync(child_path, {
-            recursive: true,
-            force: true
-          })
-      }
-    }
-
-    clean_directory(destination_path, "")
-  }
-
-  rsync_patterns_from_token(token) {
-    const normalized_token = token.replace(/^\/+/, "").replace(/\/$/, "")
-    return [
-      `--exclude=**/*${normalized_token}*/**`,
-      `--exclude=**/*${normalized_token}*`
-    ]
-  }
-
-  run_rsync(source_path, destination_path, relative_paths, entry, dry_run_flag) {
-    return new Promise((resolve, reject) => {
-      const temporary_directory = fs.mkdtempSync(path.join(os.tmpdir(), "backup-disk-"))
-      const list_file_path = path.join(temporary_directory, "rsync_list")
-      fs.writeFileSync(list_file_path, relative_paths.join("\n"))
-
-      const rsync_arguments = [
-        "--recursive",
-        "--sparse",
-        "--links",
-        "--ignore-errors",
-        "--one-file-system",
-        "--delete",
-        "--delete-before",
-        "--delete-excluded",
-        "--size-only",
-        "--itemize-changes"
-      ]
-
-      if (entry.excludes)
-        for (const token of entry.excludes)
-          for (const pattern of this.rsync_patterns_from_token(token))
-            rsync_arguments.push(pattern)
-
-      rsync_arguments.push(`--files-from=${list_file_path}`)
-      if (dry_run_flag) rsync_arguments.push("--dry-run")
-      rsync_arguments.push(source_path, destination_path)
-
-      const child = child_process.spawn("rsync", rsync_arguments, {
-        stdio: ["ignore", "inherit", "inherit"]
-      })
-
-      child.on("close", code => {
-        fs.rmSync(temporary_directory, {
-          recursive: true,
-          force: true
-        })
-        if (code === 0) resolve()
-        else reject(new Error("rsync failed"))
-      })
-
-      child.on("error", error => {
-        fs.rmSync(temporary_directory, {
-          recursive: true,
-          force: true
-        })
-        reject(error)
-      })
-    })
-  }
-
-  read_configuration_groups(configuration_files) {
-    const configuration_groups = []
-    for (const file_path of configuration_files) {
-      const parsed = JSON.parse(fs.readFileSync(file_path, "utf8"))
-      for (const group of parsed) configuration_groups.push(group)
-    }
-    return configuration_groups
-  }
-
-  run_trigger() {
-    child_process.execFileSync("udevadm", ["trigger", "--subsystem-match=block"], {
-      stdio: "ignore"
-    })
-    child_process.execFileSync("sh", ["-lc", "blkid -p -o export /dev/mapper/* >/dev/null 2>&1"], {
-      stdio: "ignore"
-    })
-  }
-
-  async run_tasks_grouped(tasks_by_uuid, run_requested) {
-    const run_one_uuid = async (disk_uuid, tasks) => {
-      let failed = false
-
-      for (const [source_path, destination_path, relative_paths, entry] of tasks) {
-        try {
-          this.clean_destination(
-            destination_path,
-            relative_paths,
-            !run_requested
-          )
-
-          if (relative_paths.length > 0)
-            await this.run_rsync(
-              source_path,
-              destination_path,
-              relative_paths,
-              entry,
-              !run_requested
-            )
-        } catch (error) {
-          failed = true
-          process.stderr.write(error.message + "\n")
-        }
-      }
-
-      return failed
-    }
-
-    const per_uuid_promises = []
-    for (const [disk_uuid, tasks] of tasks_by_uuid.entries())
-      per_uuid_promises.push(run_one_uuid(disk_uuid, tasks))
-
-    const results = await Promise.all(per_uuid_promises)
-    return results.some(result => result)
-  }
-
-  async main(argument_values) {
-    const option_config = {
-      "-r": {},
-      "-t": {}
-    }
-    const parsed = simple_option_parser(argument_values, option_config)
-    if (parsed.error) process.exit(1)
-
-    const run_requested = !!parsed.options["-r"]
-    const trigger_requested = !!parsed.options["-t"]
-    const requested_names = parsed.rest
-
-    if (trigger_requested) {
-      this.run_trigger()
-      process.exit(0)
-    }
-
-    const configuration_files = requested_names.length > 0 ?
-      requested_names.map(name => path.join(this.configuration_directory, name + ".json")) :
-      fs.readdirSync(this.configuration_directory)
-      .filter(name => name.endsWith(".json"))
-      .map(name => path.join(this.configuration_directory, name))
-      .sort()
-
-    const configuration_groups = this.read_configuration_groups(configuration_files)
-    const tasks_by_uuid = new Map()
-
-    for (const group of configuration_groups) {
-      const uuid_list = group.uuids
-      const entry_list = group.entries
-
-      for (const disk_uuid of uuid_list) {
-        const mount_point = this.mount_point_for_uuid(disk_uuid)
-        if (!mount_point) continue
-
-        for (const entry of entry_list) {
-          const source_path = entry.source
-
-          if (
-            !fs.existsSync(source_path) ||
-            !fs.statSync(source_path).isDirectory() ||
-            fs.readdirSync(source_path).length === 0
-          ) {
-            console.log("source path not accessible or empty: " + source_path)
-            continue
-          }
-
-          const destination_path = entry.target.startsWith("/") ?
-            entry.target :
-            path.join(mount_point, entry.target)
-
-          if (!fs.existsSync(destination_path)) {
-            console.log("destination path does not exist: " + destination_path)
-            continue
-          }
-
-          const relative_paths = this.eligible_relative_paths(source_path, entry)
-
-          if (!tasks_by_uuid.has(disk_uuid))
-            tasks_by_uuid.set(disk_uuid, [])
-
-          tasks_by_uuid.get(disk_uuid).push([
-            source_path,
-            destination_path,
-            relative_paths,
-            entry
-          ])
-        }
-      }
-    }
-
-    const failed = await this.run_tasks_grouped(tasks_by_uuid, run_requested)
-    process.exit(failed ? 1 : 0)
+async function try_path(operation, filename) {
+  try {
+    return await operation(filename)
+  } catch (error) {
+    if (error.code !== "ENOENT" && error.code !== "ENOTDIR") throw error
+    return null
   }
 }
-
-new backup_disk_class().main(process.argv.slice(2))
+async function mount_point(uuid) {
+  try {
+    const {stdout} = await execute("findmnt",
+      ["--json", "--first-only", "--output", "TARGET", "--source", "/dev/disk/by-uuid/" + uuid])
+    return JSON.parse(stdout).filesystems[0].target
+  } catch (error) {
+    if (error.code !== 1) throw error
+    return null
+  }
+}
+async function mount_points() {
+  const text = await fs.readFile("/proc/self/mountinfo", "utf8")
+  return new Set(text.trimEnd().split("\n").map(line => line.split(" ")[4].replace(/\\([0-7]{3})/g,
+    (_, value) => String.fromCharCode(parseInt(value, 8)))))
+}
+// All filters match source-relative paths beginning with "/" and without a trailing slash.
+// includes selects exact directory paths; excludes matches literal substrings.
+// include_filter and exclude_filter use JavaScript regular expressions.
+// Only excludes applies throughout selected subtrees. The source root is not selected.
+function compile_rules(entry) {
+  return {includes: entry.includes, excludes: entry.excludes,
+    include_filter: entry.include_filter?.map(pattern => new RegExp(pattern)),
+    exclude_filter: entry.exclude_filter?.map(pattern => new RegExp(pattern))}
+}
+function excluded(relative, rules) {
+  return rules.excludes?.some(token => relative.includes(token))
+}
+function eligible(relative, rules) {
+  return (!rules.includes || rules.includes.includes(relative)) && (!rules.include_filter || rules.include_filter.some(regex => regex.test(relative))) && (!rules.exclude_filter || !rules.exclude_filter.some(regex => regex.test(relative)))
+}
+function source_boundary(context, relative, stat) {
+  return relative !== "" && (stat.dev !== context.source_device || context.mounts.has(path.join(context.source,
+    relative)))
+}
+async function select_directory(context, relative, stat, entries) {
+  if (relative && excluded("/" + relative, context.rules)) return null
+  if (relative && eligible("/" + relative, context.rules)) return {stat, children: null}
+  const children = new Map()
+  if (!source_boundary(context, relative, stat)) {
+    entries ??= await fs.readdir(path.join(context.source, relative), {withFileTypes: true})
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue
+      const child = relative ? relative + "/" + entry.name : entry.name
+      const child_stat = await fs.lstat(path.join(context.source, child))
+      const selected = await select_directory(context, child, child_stat)
+      if (selected) children.set(entry.name, selected)
+    }
+  }
+  return !relative || children.size ? {stat, children} : null
+}
+async function desired_children(context, relative, node) {
+  if (node.children !== null) return node.children
+  const children = new Map()
+  if (source_boundary(context, relative, node.stat)) return children
+  for (const entry of await fs.readdir(path.join(context.source, relative), {withFileTypes: true})) {
+    const child = relative ? relative + "/" + entry.name : entry.name
+    if (excluded("/" + child, context.rules)) continue
+    const stat = await fs.lstat(path.join(context.source, child))
+    if (stat.isDirectory() || (!source_boundary(context, child, stat) && (stat.isFile() || stat.isSymbolicLink()))) children.set(entry.name,
+      {stat, children: null})
+  }
+  return children
+}
+function check_destination(context, filename, stat) {
+  if (stat.dev !== context.destination_device || context.mounts.has(filename)) throw new Error("destination filesystem boundary: " + filename)
+}
+async function plan_remove(context, filename, stat, operations) {
+  check_destination(context, filename, stat)
+  if (stat.isDirectory()) {
+    for (const name of await fs.readdir(filename)) {
+      const child = path.join(filename, name)
+      await plan_remove(context, child, await fs.lstat(child), operations)
+    }
+    operations.push(["rmdir", filename])
+  } else {
+    operations.push(["unlink", filename])
+  }
+}
+function entry_type(stat) {
+  if (stat.isDirectory()) return "directory"
+  if (stat.isFile()) return "file"
+  if (stat.isSymbolicLink()) return "link"
+  return "other"
+}
+function mtime(stat) {
+  return Math.round(stat.mtimeMs)
+}
+async function plan_entry(context, relative, node, destination_stat) {
+  const source = path.join(context.source, relative)
+  const destination = path.join(context.destination, relative)
+  const type = entry_type(node.stat)
+  if (destination_stat) {
+    check_destination(context, destination, destination_stat)
+    if (entry_type(destination_stat) !== type) {
+      await plan_remove(context, destination, destination_stat, context.changes)
+      destination_stat = null
+    }
+  }
+  if (type === "directory") {
+    if (!destination_stat) context.changes.push(["mkdir", destination])
+    await plan_directory(context, relative, node, !!destination_stat)
+  } else if (type === "file") {
+    if (!destination_stat || node.stat.size !== destination_stat.size || mtime(node.stat) !== mtime(destination_stat)) context.changes.push(["copy",
+      destination, source, node.stat])
+  } else if (type === "link") {
+    const target = await fs.readlink(source)
+    if (!destination_stat || target !== await fs.readlink(destination)) context.changes.push(["link",
+      destination, target])
+  }
+}
+async function plan_directory(context, relative, node, exists) {
+  const destination = path.join(context.destination, relative)
+  const desired = await desired_children(context, relative, node)
+  const existing = new Set(exists ? await fs.readdir(destination) : [])
+  for (const [name, child] of desired) {
+    const child_relative = relative ? relative + "/" + name : name
+    const stat = existing.delete(name) ? await fs.lstat(path.join(destination, name)) : null
+    await plan_entry(context, child_relative, child, stat)
+  }
+  for (const name of existing) {
+    const filename = path.join(destination, name)
+    await plan_remove(context, filename, await fs.lstat(filename), context.deletions)
+  }
+}
+async function copy_file(source, temporary, stat) {
+  if (stat.blocks * 512 < stat.size) {
+    await execute("cp", ["--sparse=always", "--reflink=auto", "--", source, temporary])
+  } else {
+    await fs.copyFile(source, temporary, COPYFILE_FICLONE)
+  }
+  await fs.utimes(temporary, stat.atimeMs / 1000, mtime(stat) / 1000)
+}
+async function apply_plan(context, run) {
+  let staging = null
+  try {
+    for (const operations of [context.changes, context.deletions]) {
+      for (const [operation, filename, source, stat] of operations) {
+        const label = operation === "unlink" || operation === "rmdir" ? "deleting" : operation
+        console.log(label + " " + filename)
+        if (!run) continue
+        if (operation === "mkdir") await fs.mkdir(filename)
+        else if (operation === "unlink") await fs.unlink(filename)
+        else if (operation === "rmdir") await fs.rmdir(filename)
+        else {
+          staging ??= await fs.mkdtemp(path.join(context.destination, ".backup-disk-"))
+          const temporary = path.join(staging, "entry")
+          if (operation === "copy") await copy_file(source, temporary, stat)
+          else await fs.symlink(source, temporary)
+          await fs.rename(temporary, filename)
+        }
+      }
+    }
+  } finally {
+    if (staging) await fs.rm(staging, {recursive: true, force: true})
+  }
+}
+function contains(parent, child) {
+  const relative = path.relative(parent, child)
+  return !relative || (!path.isAbsolute(relative) && relative !== ".." && !relative.startsWith("../"))
+}
+async function synchronize(mount, entry, run) {
+  const source = await try_path(fs.realpath, entry.source)
+  const source_stat = source && await fs.lstat(source)
+  const entries = source_stat?.isDirectory() && await fs.readdir(source, {withFileTypes: true})
+  if (!entries?.length) {
+    console.log("source path not accessible or empty: " + entry.source)
+    return
+  }
+  const target = path.isAbsolute(entry.target) ? entry.target : path.join(mount, entry.target)
+  const destination = await try_path(fs.realpath, target)
+  const destination_stat = destination && await fs.lstat(destination)
+  if (!destination_stat?.isDirectory()) {
+    console.log("destination path is not an existing directory: " + target)
+    return
+  }
+  if (source_stat.dev === destination_stat.dev && (contains(source, destination) || contains(destination,
+    source))) throw new Error("source and destination overlap: " + source + " -> " + destination)
+  const context = {source, destination, source_device: source_stat.dev,
+    destination_device: destination_stat.dev, mounts: await mount_points(),
+    rules: compile_rules(entry), changes: [], deletions: []}
+  const selection = await select_directory(context, "", source_stat, entries)
+  await plan_directory(context, "", selection, true)
+  await apply_plan(context, run)
+}
+async function run_disk(uuid, entries, run) {
+  let failed = false
+  try {
+    const mount = await mount_point(uuid)
+    if (!mount) return false
+    for (const entry of entries) {
+      try {
+        await synchronize(mount, entry, run)
+      } catch (error) {
+        failed = true
+        console.error(uuid + ": " + error.message)
+      }
+    }
+  } catch (error) {
+    failed = true
+    console.error(uuid + ": " + error.message)
+  }
+  return failed
+}
+async function main(args) {
+  const {run, trigger, names} = parse_options(args)
+  if (trigger) {
+    execFileSync("udevadm", ["trigger", "--subsystem-match=block"], {stdio: "ignore"})
+    execFileSync("sh", ["-lc", "blkid -p -o export /dev/mapper/* >/dev/null 2>&1"],
+      {stdio: "ignore"})
+    return
+  }
+  const directory = path.join(os.homedir(), ".config", "backup-disk")
+  const files = names.length ? names.map(name => name + ".json") : (await fs.readdir(directory)).filter(name => name.endsWith(".json")).sort()
+  const tasks = new Map()
+  for (const file of files) {
+    const groups = JSON.parse(await fs.readFile(path.join(directory, file), "utf8"))
+    for (const group of groups) {
+      for (const uuid of group.uuids) {
+        if (!tasks.has(uuid)) tasks.set(uuid, [])
+        tasks.get(uuid).push(...group.entries)
+      }
+    }
+  }
+  const results = await Promise.all(Array.from(tasks,
+    ([uuid, entries]) => run_disk(uuid, entries, run)))
+  if (results.some(Boolean)) process.exitCode = 1
+}
+main(process.argv.slice(2)).catch(error => {
+  console.error(error.message)
+  process.exitCode = 1
+})
